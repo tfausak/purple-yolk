@@ -1,0 +1,121 @@
+{
+  "//": "https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide",
+  "patterns": [
+    {
+      "include": "#character"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#reserved"
+    },
+    {
+      "include": "#identifier"
+    },
+    {
+      "include": "#string"
+    }
+  ],
+  "repository": {
+    "character": {
+      "captures": {
+        "1": {
+          "name": "constant.character.escape.haskell"
+        }
+      },
+      "match": "'(?:[^'\\\\n\\r]|(\\\\(?:[abfnrtv\\\\\"']|\\^[A-Z@\\[\\\\\\]\\^_]|(?:NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC1|DC2|DC3|DC4|NAK|SYN|ETB|CAN|EM|SUB|ESC|FS|GS|RS|US|SP|DEL)|[0-9]+|o[0-7]+|x[0-9A-Fa-f]+)))'",
+      "name": "constant.character.haskell"
+    },
+    "comment": {
+      "patterns": [
+        {
+          "include": "#commentPragma"
+        },
+        {
+          "include": "#commentBlock"
+        },
+        {
+          "include": "#commentLine"
+        }
+      ]
+    },
+    "commentBlock": {
+      "begin": "{-",
+      "end": "-}",
+      "name": "comment.block.haskell",
+      "patterns": [
+        {
+          "include": "#commentBlock"
+        }
+      ]
+    },
+    "commentLine": {
+      "match": "(?<![!#$%&*+./<=>?@\\\\\\^|~:])-{2,}(?![!#$%&*+./<=>?@\\\\\\^|~:]).*",
+      "name": "comment.line.double-dash.haskell"
+    },
+    "commentPragma": {
+      "begin": "{-#",
+      "end": "#-}",
+      "name": "keyword.other.haskell"
+    },
+    "identifier": {
+      "patterns": [
+        {
+          "include": "#identifierConstructor"
+        }
+      ]
+    },
+    "identifierConstructor": {
+      "match": "\\b[A-Z][a-z_A-Z0-9']*",
+      "name": "storage.type.haskell"
+    },
+    "number": {
+      "match": "\\b(?:[0-9]+[eE][+-]?[0-9]+|[0-9]+[.][0-9]+(?:[eE][+-]?[0-9]+)?|0[oO][0-7]+|0[xX][0-9A-Fa-f]+|[0-9]+)\\b",
+      "name": "constant.numeric.haskell"
+    },
+    "reserved": {
+      "patterns": [
+        {
+          "include": "#reservedSoft"
+        },
+        {
+          "include": "#reservedHard"
+        }
+      ]
+    },
+    "reservedHard": {
+      "match": "\\b(?:case|class|data|default|deriving|do|else|foreign|if|import|in|infix[lr]?|instance|let|module|newtype|of|then|type|where|_)\\b",
+      "name": "keyword.control.haskell"
+    },
+    "reservedSoft": {
+      "match": "\\b(as|hiding|qualified)\\b",
+      "name": "keyword.control.haskell"
+    },
+    "string": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.haskell",
+      "patterns": [
+        {
+          "include": "#stringCharacter"
+        }
+      ]
+    },
+    "stringCharacter": {
+      "captures": {
+        "1": {
+          "name": "comment.block.haskell"
+        },
+        "2": {
+          "name": "constant.character.escape.haskell"
+        }
+      },
+      "match": "(^[ \\t]*\\\\|\\\\[ \\t]+\\\\|\\\\[ \\t]*$)|[^\"\\\\\\n\\r]|(\\\\(?:[abfnrtv\\\\\"'&]|\\^[A-Z@\\[\\\\\\]\\^_]|(?:NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC1|DC2|DC3|DC4|NAK|SYN|ETB|CAN|EM|SUB|ESC|FS|GS|RS|US|SP|DEL)|[0-9]+|o[0-7]+|x[0-9A-Fa-f]+))"
+    }
+  },
+  "scopeName": "source.haskell"
+}

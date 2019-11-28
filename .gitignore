@@ -1,0 +1,5 @@
+# https://git-scm.com/docs/gitignore
+/dist/
+/node_modules/
+/package-lock.json
+/purple-yolk-*.vsix

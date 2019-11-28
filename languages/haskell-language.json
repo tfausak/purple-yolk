@@ -1,0 +1,82 @@
+{
+  "//": "https://code.visualstudio.com/api/language-extensions/language-configuration-guide",
+  "autoClosingPairs": [
+    [
+      "'",
+      "'"
+    ],
+    [
+      "`",
+      "`"
+    ],
+    [
+      "\"",
+      "\""
+    ],
+    [
+      "(",
+      ")"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "{",
+      "}"
+    ]
+  ],
+  "brackets": [
+    [
+      "(",
+      ")"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "{",
+      "}"
+    ]
+  ],
+  "comments": {
+    "blockComment": [
+      "{-",
+      "-}"
+    ],
+    "lineComment": "--"
+  },
+  "indentationRules": {
+    "decreaseIndentPattern": "(?!)",
+    "increaseIndentPattern": "\\b(?:else|do|in|let|of|then|where)$",
+    "indentNextLinePattern": "(?!)",
+    "unIndentedLinePattern": "(?!)"
+  },
+  "surroundingPairs": [
+    [
+      "'",
+      "'"
+    ],
+    [
+      "`",
+      "`"
+    ],
+    [
+      "\"",
+      "\""
+    ],
+    [
+      "(",
+      ")"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "{",
+      "}"
+    ]
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "//": "https://code.visualstudio.com/api/references/extension-manifest",
+  "activationEvents": [
+    "onLanguage:haskell"
+  ],
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "grammars": [
+      {
+        "language": "cabal",
+        "path": "grammars/cabal-grammar.json",
+        "scopeName": "source.cabal"
+      },
+      {
+        "language": "haskell",
+        "path": "grammars/haskell-grammar.json",
+        "scopeName": "source.haskell"
+      }
+    ],
+    "languages": [
+      {
+        "aliases": [
+          "Cabal"
+        ],
+        "configuration": "languages/cabal-language.json",
+        "extensions": [
+          ".cabal"
+        ],
+        "id": "cabal"
+      },
+      {
+        "aliases": [
+          "Haskell"
+        ],
+        "configuration": "languages/haskell-language.json",
+        "extensions": [
+          ".hs"
+        ],
+        "id": "haskell"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "cabal",
+        "path": "snippets/cabal-snippets.json"
+      },
+      {
+        "language": "haskell",
+        "path": "snippets/haskell-snippets.json"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^5.2.1",
+    "vscode-languageserver": "^5.2.1"
+  },
+  "description": "A Haskell IDE.",
+  "devDependencies": {
+    "eslint": "^6.7.1",
+    "vsce": "^1.69.0",
+    "webpack-cli": "^3.3.10",
+    "webpack": "^4.41.2"
+  },
+  "displayName": "Purple Yolk",
+  "keywords": [
+    "haskell"
+  ],
+  "engines": {
+    "node": "^12.4.0",
+    "npm": "^6.9.0",
+    "vscode": "^1.40.2"
+  },
+  "homepage": "https://github.com/tfausak/purple-yolk",
+  "icon": "images/purple-yolk.png",
+  "license": "ISC",
+  "main": "dist/client.js",
+  "name": "purple-yolk",
+  "publisher": "taylorfausak",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tfausak/purple-yolk.git"
+  },
+  "scripts": {
+    "eslint": "eslint",
+    "vsce": "vsce",
+    "vscode:prepublish": "eslint . && webpack -p",
+    "webpack": "webpack"
+  },
+  "version": "0.0.0"
+}

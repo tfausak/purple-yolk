@@ -1,0 +1,14 @@
+{
+  "//": "https://code.visualstudio.com/docs/editor/userdefinedsnippets",
+  "conditional expression": {
+    "body": [
+      "if ${1:predicate}",
+      "\t${2:true}",
+      "else",
+      "\t${0:false}"
+    ],
+    "prefix": [
+      "if"
+    ]
+  }
+}

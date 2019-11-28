@@ -1,0 +1,129 @@
+{
+  "//": "https://code.visualstudio.com/docs/editor/userdefinedsnippets",
+  "case expression": {
+    "body": [
+      "case ${1:expression} of",
+      "\t${2:pattern} -> ${0:expression}"
+    ],
+    "prefix": [
+      "case"
+    ]
+  },
+  "class declaration": {
+    "body": [
+      "class ${1:Class} ${2:Type} where",
+      "\t${3:method} :: ${0:Type}"
+    ],
+    "prefix": [
+      "class"
+    ]
+  },
+  "conditional expression": {
+    "body": [
+      "if ${1:predicate} then ${2:true} else ${0:false}"
+    ],
+    "prefix": [
+      "if"
+    ]
+  },
+  "data declaration": {
+    "body": [
+      "data ${1:Type} = ${0:Constructor}"
+    ],
+    "prefix": [
+      "data"
+    ]
+  },
+  "default declaration": {
+    "body": [
+      "default ($0)"
+    ],
+    "prefix": [
+      "default"
+    ]
+  },
+  "do expression": {
+    "body": [
+      "do",
+      "\t${0:statement}"
+    ],
+    "prefix": [
+      "do"
+    ]
+  },
+  "fixity declaration": {
+    "body": [
+      "${1|infix,infixl,infixr|} ${2|0,1,2,3,4,5,6,7,8,9|} ${0:operator}"
+    ],
+    "prefix": [
+      "infix"
+    ]
+  },
+  "foreign declaration": {
+    "body": [
+      "foreign ${1|import,export|} ${2:ccall} \"${3:header}\" ${4:identifier} :: ${0:Type}"
+    ],
+    "prefix": [
+      "foreign"
+    ]
+  },
+  "import declaration": {
+    "body": [
+      "import ${1:Module} (${0:identifier})"
+    ],
+    "prefix": [
+      "import"
+    ]
+  },
+  "instance declaration": {
+    "body": [
+      "instance ${1:Class} ${2:Type} where",
+      "\t${3:method} = ${0:expression}"
+    ],
+    "prefix": [
+      "instance"
+    ]
+  },
+  "let expression": {
+    "body": [
+      "let ${1:pattern} = ${2:expression} in ${0:expression}"
+    ],
+    "prefix": [
+      "let"
+    ]
+  },
+  "module declaration": {
+    "body": [
+      "module ${1:Module} (${2:export}) where",
+      "",
+      "$0"
+    ],
+    "prefix": [
+      "module"
+    ]
+  },
+  "newtype declaration": {
+    "body": [
+      "newtype ${1:Type} = ${2:Constructor} ${0:Type}"
+    ],
+    "prefix": [
+      "newtype"
+    ]
+  },
+  "qualified import declaration": {
+    "body": [
+      "import qualified ${1:Module} as ${0:Alias}"
+    ],
+    "prefix": [
+      "import"
+    ]
+  },
+  "type declaration": {
+    "body": [
+      "type ${1:Alias} = ${0:Definition}"
+    ],
+    "prefix": [
+      "type"
+    ]
+  }
+}

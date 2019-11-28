@@ -1,0 +1,36 @@
+{
+  "//": "https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#keyword"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#operator"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "match": "^\\s*--.*$",
+      "name": "comment.line.double-dash.cabal"
+    },
+    "keyword": {
+      "match": "^\\s*\\S+:",
+      "name": "keyword.other.cabal"
+    },
+    "number": {
+      "match": "\\b\\d+([.]\\d+)*\\b",
+      "name": "constant.numeric.cabal"
+    },
+    "operator": {
+      "match": "==|>=|<=|>|<|\\|\\||&&|\\^>=",
+      "name": "keyword.operator.cabal"
+    }
+  },
+  "scopeName": "source.cabal"
+}
