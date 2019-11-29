@@ -1,12 +1,11 @@
 'use strict';
 
-const path = require('path');
 const vscode = require('vscode-languageclient');
 
 module.exports = {
   activate: (context) => {
     const nodeModule = {
-      module: context.asAbsolutePath(path.join('dist', 'server.js')),
+      module: context.asAbsolutePath('./dist/server.js'),
       transport: vscode.TransportKind.ipc,
     };
     const client = new vscode.LanguageClient(

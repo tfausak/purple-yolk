@@ -1,4 +1,5 @@
 # https://git-scm.com/docs/gitignore
+/elm-stuff/
 /dist/
 /node_modules/
 /package-lock.json
