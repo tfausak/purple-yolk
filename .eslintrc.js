@@ -4,7 +4,7 @@
 module.exports = {
   env: { node: true },
   extends: 'eslint:all',
-  ignorePatterns: ['dist/', 'elm-stuff/', '!.eslintrc.js'],
+  ignorePatterns: ['dist/', 'output/', '!.eslintrc.js'],
   parserOptions: { ecmaVersion: 6 },
   rules: {
     'array-element-newline': ['error', 'consistent'],

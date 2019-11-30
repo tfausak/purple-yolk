@@ -1,10 +1,5 @@
 'use strict';
 
-const vscode = require('vscode-languageserver');
+const Main = require('../output/Main/index.js');
 
-const app = require('../elm-stuff/main.js').Elm.Main.init();
-
-app.ports.log.subscribe(console.log);
-
-const connection = vscode.createConnection();
-connection.listen();
+Main.main();

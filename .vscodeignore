@@ -1,8 +1,7 @@
 # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#.vscodeignore
 .gitignore
 client/
-elm-stuff/
-elm.json
 node_modules/
+output/
 server/
 webpack.config.js
