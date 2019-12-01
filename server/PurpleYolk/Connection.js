@@ -1,13 +1,20 @@
-/* eslint-disable id-length */
 'use strict';
 
 const vscode = require('vscode-languageserver');
 
 exports.create = () => vscode.createConnection();
 
-exports.listen = (x) => () => x.listen();
+exports.listen = (connection) => () => {
+  connection.listen();
+  return {};
+};
 
-exports.onDidSaveTextDocument = (x) => (f) => () =>
-  x.onDidSaveTextDocument((e) => f(e)());
+exports.onDidSaveTextDocument = (connection) => (callback) => () => {
+  connection.onDidSaveTextDocument((event) => callback(event)());
+  return {};
+};
 
-exports.onInitialize = (x) => (f) => () => x.onInitialize(f);
+exports.onInitialize = (connection) => (callback) => () => {
+  connection.onInitialize(() => callback());
+  return {};
+};

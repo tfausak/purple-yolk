@@ -1,11 +1,12 @@
 module PurpleYolk.String
   ( append
   , concat
-  , inspect
+  , join
   ) where
 
 foreign import append :: String -> String -> String
 
-foreign import concat :: Array String -> String
+foreign import join :: String -> Array String -> String
 
-foreign import inspect :: String -> String
+concat :: Array String -> String
+concat = join ""

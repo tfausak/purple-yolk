@@ -1,6 +1,11 @@
-/* eslint-disable id-length */
 'use strict';
 
-exports.onData = (x) => (f) => () => x.on('data', (d) => f(d.toString())());
+exports.onData = (stream) => (callback) => () => {
+  stream.on('data', (data) => callback(data.toString())());
+  return {};
+};
 
-exports.write = (x) => (s) => () => x.write(s);
+exports.write = (stream) => (string) => () => {
+  stream.write(string);
+  return {};
+};

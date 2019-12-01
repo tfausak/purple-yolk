@@ -1,7 +1,6 @@
-/* eslint-disable id-length */
 'use strict';
 
-exports.log = (x) => () => {
-  console.log(x);
+exports.log = (string) => () => {
+  console.log(`${new Date().toISOString()} ${string}`);
   return {};
 };

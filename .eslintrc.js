@@ -10,6 +10,7 @@ module.exports = {
     'array-element-newline': ['error', 'consistent'],
     'capitalized-comments': 'off',
     'comma-dangle': ['error', 'always-multiline'],
+    'dot-location': ['error', 'property'],
     'function-call-argument-newline': ['error', 'consistent'],
     'implicit-arrow-linebreak': 'off',
     indent: ['error', 2, { SwitchCase: 1 }],
@@ -19,6 +20,8 @@ module.exports = {
     'no-magic-numbers': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'object-curly-spacing': ['error', 'always'],
+    'object-property-newline':
+      ['error', { allowAllPropertiesOnSameLine: true }],
     'one-var': ['error', 'never'],
     'padded-blocks': ['error', 'never'],
     'quote-props': ['error', 'as-needed'],

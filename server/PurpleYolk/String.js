@@ -1,8 +1,5 @@
-/* eslint-disable id-length */
 'use strict';
 
-exports.append = (x) => (y) => `${x}${y}`;
+exports.append = (first) => (second) => `${first}${second}`;
 
-exports.concat = (xs) => xs.join('');
-
-exports.inspect = (x) => JSON.stringify(x);
+exports.join = (separator) => (strings) => strings.join(separator);

@@ -1,14 +1,16 @@
-/* eslint-disable id-length */
 'use strict';
 
-const process = require('child_process');
+const child = require('child_process');
 
-exports.onClose = (x) => (f) => () => x.on('close', (c, s) => f(c)(s)());
+exports.onClose = (proc) => (callback) => () => {
+  proc.on('close', (code, signal) => callback(code)(signal)());
+  return {};
+};
 
-exports.spawn = (x) => (xs) => () => process.spawn(x, xs);
+exports.spawn = (command) => (args) => () => child.spawn(command, args);
 
-exports.stderr = (x) => x.stderr;
+exports.stderr = (proc) => proc.stderr;
 
-exports.stdin = (x) => x.stdin;
+exports.stdin = (proc) => proc.stdin;
 
-exports.stdout = (x) => x.stdout;
+exports.stdout = (proc) => proc.stdout;
