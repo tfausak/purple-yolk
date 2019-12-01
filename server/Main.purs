@@ -20,6 +20,8 @@ main =
     bind = IO.bind
     discard = IO.bind
   in do
+    Console.log "Starting up ..."
+
     ghci <- Process.spawn "stack"
       -- Separate from GHC, Stack tries to colorize its messages. We don't try to
       -- parse Stack's output, so it doesn't really matter. But it's annoying to
@@ -47,18 +49,22 @@ main =
       ]
 
     Stream.onData (Process.stderr ghci) \ chunk ->
-      Console.log (String.append "ghci stderr: " chunk)
+      Console.log (String.append "ghci stderr: " (String.inspect chunk))
 
     Stream.onData (Process.stdout ghci) \ chunk ->
-      Console.log (String.append "ghci stdout: " chunk)
+      Console.log (String.append "ghci stdout: " (String.inspect chunk))
 
     Process.onClose ghci \ code signal ->
       Exception.throw (String.concat
-        ["GHCi closed with code ", Int.toString code, " and signal ", signal])
+        [ "GHCi closed with code "
+        , Int.inspect code
+        , " and signal "
+        , String.inspect signal
+        ])
 
     let
       write message = do
-        Console.log (String.append "ghci stdin: " message)
+        Console.log (String.append "ghci stdin: " (String.inspect message))
         Stream.write (Process.stdin ghci) (String.append message "\n")
     write ":set prompt \"{- purple-yolk -}\\n\""
     write ":set +c"
@@ -73,4 +79,5 @@ main =
         (Path.toString (Url.toPath event.textDocument.uri)))
 
     Connection.listen connection
-    Console.log "Purple Yolk is up and running!"
+
+    Console.log "Up and running!"

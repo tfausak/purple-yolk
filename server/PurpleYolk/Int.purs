@@ -1,5 +1,5 @@
 module PurpleYolk.Int
-  ( toString
+  ( inspect
   ) where
 
-foreign import toString :: Int -> String
+foreign import inspect :: Int -> String

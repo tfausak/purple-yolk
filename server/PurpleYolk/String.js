@@ -4,3 +4,5 @@
 exports.append = (x) => (y) => `${x}${y}`;
 
 exports.concat = (xs) => xs.join('');
+
+exports.inspect = (x) => JSON.stringify(x);
