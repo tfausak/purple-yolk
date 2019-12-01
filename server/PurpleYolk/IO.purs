@@ -5,10 +5,15 @@ module PurpleYolk.IO
   , pure
   ) where
 
-foreign import data IO :: Type -> Type
+import PurpleYolk.Unit as Unit
 
-foreign import bind :: forall a b . IO a -> (a -> IO b) -> IO b
+newtype IO a = IO (Unit.Unit -> a)
 
-foreign import map :: forall a b . (a -> b) -> IO a -> IO b
+bind :: forall a b . IO a -> (a -> IO b) -> IO b
+bind (IO x) f = f (x Unit.unit)
 
-foreign import pure :: forall a . a -> IO a
+map :: forall a b . (a -> b) -> IO a -> IO b
+map f (IO x) = IO \ unit -> f (x unit)
+
+pure :: forall a . a -> IO a
+pure x = IO \ _ -> x
