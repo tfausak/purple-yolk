@@ -3,8 +3,6 @@ module PurpleYolk.Stream
   , Stream
   , Writable
   , onData
-  , readable
-  , writable
   , write
   ) where
 
@@ -18,12 +16,6 @@ foreign import onData
 
 foreign import write :: Stream Writable -> String -> IO.IO Unit.Unit
 
-newtype Readable = Readable Unit.Unit
+data Readable
 
-newtype Writable = Writable Unit.Unit
-
-readable :: Readable
-readable = Readable Unit.unit
-
-writable :: Writable
-writable = Writable Unit.unit
+data Writable

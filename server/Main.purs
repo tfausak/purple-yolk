@@ -52,24 +52,25 @@ main =
     Stream.onData (Process.stdout ghci) \ chunk ->
       Console.log (String.append "ghci stdout: " chunk)
 
-    Process.onClose ghci \ code _signal ->
-      Exception.throw (String.append "GHCi closed with code " (Int.toString code))
+    Process.onClose ghci \ code signal ->
+      Exception.throw (String.concat
+        ["GHCi closed with code ", Int.toString code, " and signal ", signal])
 
-    Stream.write (Process.stdin ghci) ":set prompt \"{- purple-yolk -}\\n\"\n"
-    Stream.write (Process.stdin ghci) ":set +c\n"
+    let
+      write message = do
+        Console.log (String.append "ghci stdin: " message)
+        Stream.write (Process.stdin ghci) (String.append message "\n")
+    write ":set prompt \"{- purple-yolk -}\\n\""
+    write ":set +c"
 
     connection <- Connection.create
 
     Connection.onInitialize connection (IO.pure
       { capabilities: { textDocumentSync: { save: true } } })
 
-    Connection.onDidSaveTextDocument connection \ event -> do
-      let url = event.textDocument.uri
-      Console.log (Url.toString url)
-      let path = Url.toPath url
-      let string = Path.toString path
-      Console.log string
-      Stream.write (Process.stdin ghci) (String.append ":load " (String.append string "\n"))
+    Connection.onDidSaveTextDocument connection \ event ->
+      write (String.append ":load "
+        (Path.toString (Url.toPath event.textDocument.uri)))
 
     Connection.listen connection
     Console.log "Purple Yolk is up and running!"
