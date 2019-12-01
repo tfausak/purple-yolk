@@ -8,21 +8,12 @@ module PurpleYolk.List
   , reverse
   ) where
 
-import PurpleYolk.Inspect as Inspect
-import PurpleYolk.String as String
-
 foreign import fromArrayWith
   :: forall a . List a -> (a -> List a -> List a) -> Array a -> List a
 
 data List a
   = Nil
   | Cons a (List a)
-
-instance listHasInspect :: Inspect.HasInspect a => Inspect.HasInspect (List a) where
-  inspect xs = case xs of
-    Nil -> "Nil"
-    Cons x ys -> String.concat
-      ["Cons (", Inspect.inspect x, ") (", Inspect.inspect ys, ")"]
 
 append :: forall a . List a -> List a -> List a
 append xs ys = foldr Cons ys xs

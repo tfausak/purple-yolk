@@ -5,17 +5,11 @@ module PurpleYolk.Queue
   , enqueue
   ) where
 
-import PurpleYolk.Inspect as Inspect
 import PurpleYolk.List as List
 import PurpleYolk.Maybe as Maybe
-import PurpleYolk.String as String
 import PurpleYolk.Tuple as Tuple
 
 data Queue a = Queue (List.List a) (List.List a)
-
-instance queueHasInspect :: Inspect.HasInspect a => Inspect.HasInspect (Queue a) where
-  inspect (Queue f r) = String.concat
-    ["Queue (", Inspect.inspect f, ") (", Inspect.inspect r, ")"]
 
 dequeue :: forall a . Queue a -> Maybe.Maybe (Tuple.Tuple a (Queue a))
 dequeue (Queue f r) = case f of

@@ -8,7 +8,7 @@ import PurpleYolk.Connection as Connection
 import PurpleYolk.Console as Console
 import PurpleYolk.Exception as Exception
 import PurpleYolk.IO as IO
-import PurpleYolk.Inspect as Inspect
+import PurpleYolk.Int as Int
 import PurpleYolk.Maybe as Maybe
 import PurpleYolk.Mutable as Mutable
 import PurpleYolk.Path as Path
@@ -29,20 +29,29 @@ main = do
   connection <- initializeConnection ghci queue
 
   let
-    loop = do
+    worker = do
       jobs <- Mutable.read queue
       case Queue.dequeue jobs of
-        Maybe.Nothing -> do
-          Console.log "Nothing to do."
-          IO.delay 1.0 loop -- TODO: Shorten delay and remove logging.
+        Maybe.Nothing -> IO.delay 0.1 worker
         Maybe.Just result -> do
           Mutable.modify queue \ _ -> Tuple.second result
           let job = Tuple.first result
           Console.log (String.append "STDIN " job.command)
           Stream.write (Process.stdin ghci) (String.append job.command "\n")
-          -- TODO: Wait for command to finish.
-          loop
-  loop
+          let
+            wait = do
+              buffer <- Mutable.read stdout
+              case String.indexOf prompt buffer of
+                Maybe.Nothing -> IO.delay 0.1 wait
+                Maybe.Just index -> do
+                  let
+                    before = String.substring 0 index buffer
+                    after = String.substring (Int.add index (String.length prompt)) (String.length buffer) buffer
+                  Mutable.modify stdout \ _ -> after
+                  Console.log (String.append "STDOUT " before) -- TODO
+                  IO.delay 0.0 worker
+          wait
+  worker
 
 initializeGhci
   :: Mutable.Mutable String
@@ -78,17 +87,24 @@ initializeGhci stdout stderr = do
   Stream.onData (Process.stdout ghci) \ chunk ->
     Mutable.modify stdout \ buffer -> String.append buffer chunk
 
-  Stream.onData (Process.stderr ghci) \ chunk ->
+  Stream.onData (Process.stderr ghci) \ chunk -> do
     Mutable.modify stderr \ buffer -> String.append buffer chunk
-    -- TODO: Output STDERR using line buffering.
+    let
+      drain = do
+        buffer <- Mutable.read stderr
+        case String.indexOf "\n" buffer of
+          Maybe.Nothing -> IO.pure Unit.unit
+          Maybe.Just index -> do
+            let
+              line = String.substring 0 index buffer
+              rest = String.substring (Int.add index 1) (String.length buffer) buffer
+            Console.log (String.append "STDERR " (String.trim line))
+            Mutable.modify stderr \ _ -> rest
+            drain
+    drain
 
-  Process.onClose ghci \ code signal ->
-    Exception.throw (String.concat
-      [ "GHCi closed with code "
-      , Inspect.inspect code
-      , " and signal "
-      , Inspect.inspect signal
-      ])
+  Process.onClose ghci \ _code _signal ->
+    Exception.throw "GHCi closed unexpectedly!"
 
   IO.pure ghci
 
@@ -97,13 +113,16 @@ type Job =
   , command :: String
   }
 
+prompt :: String
+prompt = "{- purple-yolk -}"
+
 initializeQueue :: IO.IO (Mutable.Mutable (Queue.Queue Job))
 initializeQueue = do
   queue <- Mutable.new Queue.empty
 
   Mutable.modify queue (Queue.enqueue
     { callback: Console.log
-    , command: ":set prompt \"{- purple-yolk -}\\n\""
+    , command: String.concat [":set prompt \"", prompt, "\\n\""]
     })
 
   Mutable.modify queue (Queue.enqueue
