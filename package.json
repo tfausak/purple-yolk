@@ -87,7 +87,7 @@
     "eslint": "eslint",
     "purs": "purs",
     "vsce": "vsce",
-    "vscode:prepublish": "eslint . && purs compile server/Main.purs && webpack",
+    "vscode:prepublish": "eslint . && purs compile server/**/*.purs && webpack",
     "webpack": "webpack"
   },
   "version": "0.0.0"
