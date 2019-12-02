@@ -4,6 +4,7 @@ module Main
 
 import PurpleYolk.IO (bind, discard)
 
+import PurpleYolk.Array as Array
 import PurpleYolk.Connection as Connection
 import PurpleYolk.Console as Console
 import PurpleYolk.Exception as Exception
@@ -48,7 +49,12 @@ main = do
                     before = String.substring 0 index buffer
                     after = String.substring (Int.add index (String.length prompt)) (String.length buffer) buffer
                   Mutable.modify stdout \ _ -> after
-                  Console.log (String.append "STDOUT " before) -- TODO
+                  -- TODO
+                  IO.mapM_
+                    (\ line -> if Int.equal (String.length line) 0
+                      then IO.pure Unit.unit
+                      else Console.log (String.append "STDOUT " line))
+                    (Array.map String.trim (String.split "\n" before))
                   IO.delay 0.0 worker
           wait
   worker
