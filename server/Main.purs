@@ -49,12 +49,7 @@ main = do
                     before = String.substring 0 index buffer
                     after = String.substring (Int.add index (String.length prompt)) (String.length buffer) buffer
                   Mutable.modify stdout \ _ -> after
-                  -- TODO
-                  IO.mapM_
-                    (\ line -> if Int.equal (String.length line) 0
-                      then IO.pure Unit.unit
-                      else Console.log (String.append "STDOUT " line))
-                    (Array.map String.trim (String.split "\n" before))
+                  job.callback before
                   IO.delay 0.0 worker
           wait
   worker
@@ -127,16 +122,23 @@ initializeQueue = do
   queue <- Mutable.new Queue.empty
 
   Mutable.modify queue (Queue.enqueue
-    { callback: Console.log
+    { callback: defaultCallback
     , command: String.concat [":set prompt \"", prompt, "\\n\""]
     })
 
   Mutable.modify queue (Queue.enqueue
-    { callback: Console.log
+    { callback: defaultCallback
     , command: ":set +c"
     })
 
   IO.pure queue
+
+defaultCallback :: String -> IO.IO Unit.Unit
+defaultCallback string = IO.mapM_
+  (\ line -> if Int.equal (String.length line) 0
+    then IO.pure Unit.unit
+    else Console.log (String.append "STDOUT " line))
+  (Array.map String.trim (String.split "\n" string))
 
 initializeConnection
   :: Process.Process
@@ -150,7 +152,7 @@ initializeConnection ghci queue = do
 
   Connection.onDidSaveTextDocument connection \ event ->
     Mutable.modify queue (Queue.enqueue
-      { callback: Console.log
+      { callback: defaultCallback
       , command: String.append ":load " (Path.toString (Url.toPath event.textDocument.uri))
       })
 
