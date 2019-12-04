@@ -12,6 +12,7 @@ import PurpleYolk.IO as IO
 import PurpleYolk.Int as Int
 import PurpleYolk.Maybe as Maybe
 import PurpleYolk.Mutable as Mutable
+import PurpleYolk.Package as Package
 import PurpleYolk.Path as Path
 import PurpleYolk.Process as Process
 import PurpleYolk.Queue as Queue
@@ -45,7 +46,7 @@ main = do
 -- because we use the presence of the prompt in the output to determine when
 -- GHCi is done processing a command.
 prompt :: String
-prompt = "{- purple-yolk -}"
+prompt = String.concat ["{- purple-yolk/", Package.version, " -}"]
 
 type Job =
   { command :: String
