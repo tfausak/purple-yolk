@@ -1,3 +1,19 @@
+{- TODO
+Handle JSON output from GHCi when loading files. It looks like this:
+  {
+    "span": {
+      "file": "c:\\Users\\Taylor\\.vscode\\extensions\\purple-yolk\\Example.hs",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 1
+    },
+    "doc": "Module `Prelude' implicitly imported",
+    "severity": "SevWarning",
+    "reason": "Opt_WarnImplicitPrelude"
+  }
+-}
+
 module Main
   ( main
   ) where
