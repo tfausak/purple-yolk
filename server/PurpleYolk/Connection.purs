@@ -11,6 +11,7 @@ module PurpleYolk.Connection
   ) where
 
 import PurpleYolk.IO as IO
+import PurpleYolk.Nullable as Nullable
 import PurpleYolk.Unit as Unit
 import PurpleYolk.Url as Url
 
@@ -37,9 +38,11 @@ foreign import sendDiagnostics
 
 -- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#diagnostic
 type Diagnostic =
-  { message :: String
+  { code :: Nullable.Nullable String
+  , message :: String
   , range :: Range
-  -- TODO: Add more fields.
+  , severity :: Nullable.Nullable Int
+  , source :: String
   }
 
 -- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#range

@@ -15,6 +15,7 @@ import PurpleYolk.List as List
 import PurpleYolk.Maybe as Maybe
 import PurpleYolk.Message as Message
 import PurpleYolk.Mutable as Mutable
+import PurpleYolk.Nullable as Nullable
 import PurpleYolk.Package as Package
 import PurpleYolk.Path as Path
 import PurpleYolk.Process as Process
@@ -226,7 +227,10 @@ messageToDiagnostic message =
     (Url.fromPath (Path.fromString message.span.file))
     (Tuple.Tuple
       (messageIdentifier message)
-      { message: message.doc
+      { code: case message.reason of
+        Maybe.Nothing -> Nullable.null
+        Maybe.Just reason -> Nullable.notNull reason
+      , message: message.doc
       , range:
         { end:
           { character: Int.subtract message.span.endCol 1
@@ -237,6 +241,12 @@ messageToDiagnostic message =
           , line: Int.subtract message.span.startLine 1
           }
         }
+      -- TODO: Report deferred type errors as errors instead of warnings.
+      , severity: case message.severity of
+        "SevError" -> Nullable.notNull 1
+        "SevWarning" -> Nullable.notNull 2
+        _ -> Nullable.null
+      , source: "ghc"
       })
 
 messageIdentifier :: Message.Message -> String
