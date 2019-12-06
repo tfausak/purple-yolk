@@ -26,8 +26,8 @@ import PurpleYolk.Tuple as Tuple
 import PurpleYolk.Unit as Unit
 import PurpleYolk.Url as Url
 
-main :: IO.IO Unit.Unit
-main = do
+main :: String -> Array String -> IO.IO Unit.Unit
+main command arguments = do
 
   -- First we initialize a job queue. This is how we send input to GHCi and
   -- react to its output.
@@ -43,7 +43,7 @@ main = do
   -- capture its output.
   stdout <- Mutable.new ""
   stderr <- Mutable.new ""
-  ghci <- initializeGhci stdout stderr
+  ghci <- initializeGhci command arguments stdout stderr
 
   processJobs queue stdout ghci
 
@@ -263,35 +263,13 @@ messageIdentifier message = String.join " "
   ]
 
 initializeGhci
-  :: Mutable.Mutable String
+  :: String
+  -> Array String
+  -> Mutable.Mutable String
   -> Mutable.Mutable String
   -> IO.IO Process.Process
-initializeGhci stdout stderr = do
-  ghci <- Process.spawn "stack"
-    -- Separate from GHC, Stack tries to colorize its messages. We don't try to
-    -- parse Stack's output, so it doesn't really matter. But it's annoying to
-    -- see the ANSI escape codes in the debug output.
-    [ "--color=never"
-    -- Explicitly setting the terminal width avoids a warning about `stty`.
-    , "--terminal-width=0"
-    , "exec"
-    , "--"
-    , "ghci"
-    -- This one is critical. Rather than trying to parse GHC's human-readable
-    -- output, we can get it to print out JSON instead. Note that the
-    -- messages themselves are still human readable. It's the metadata that
-    -- gets turned into structured JSON.
-    , "-ddump-json"
-    -- Deferring type errors turns them into warnings, which allows more
-    -- warnings to be reported when there are type errors.
-    , "-fdefer-type-errors"
-    -- We're not interested in actually building anything, just type
-    -- checking. This has the nice side effect of making things faster.
-    , "-fno-code"
-    -- Using multiple cores should be faster. Might need to actually
-    -- benchmark this, and maybe expose it as an option.
-    , "-j"
-    ]
+initializeGhci command arguments stdout stderr = do
+  ghci <- Process.spawn command arguments
 
   -- When GHCi outputs to STDOUT we simply append to our buffer.
   Stream.onData (Process.stdout ghci) \ chunk ->

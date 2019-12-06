@@ -14,6 +14,17 @@
     "Programming Languages"
   ],
   "contributes": {
+    "configuration": {
+      "properties": {
+        "purpleYolk.ghci.command": {
+          "default": "stack --color never --terminal-width 0 exec -- ghci -ddump-json -fdefer-type-errors -fno-code -j",
+          "markdownDescription": "The command to start GHCi. Note that `-ddump-json`, which requires at least GHC 8.2.1, is necessary in order for Purple Yolk to work.",
+          "pattern": "\\S",
+          "type": "string"
+        }
+      },
+      "title": "Purple Yolk"
+    },
     "grammars": [
       {
         "language": "cabal",

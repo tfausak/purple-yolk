@@ -7,6 +7,7 @@ module.exports = {
   ignorePatterns: ['dist/', 'output/', '!.eslintrc.js'],
   parserOptions: { ecmaVersion: 6 },
   rules: {
+    'array-bracket-newline': ['error', 'consistent'],
     'array-element-newline': ['error', 'consistent'],
     'capitalized-comments': 'off',
     'comma-dangle': ['error', 'always-multiline'],
@@ -18,7 +19,8 @@ module.exports = {
     'multiline-comment-style': ['error', 'separate-lines'],
     'no-console': 'off',
     'no-magic-numbers': 'off',
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'no-unused-vars':
+      ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     'object-curly-spacing': ['error', 'always'],
     'object-property-newline':
       ['error', { allowAllPropertiesOnSameLine: true }],

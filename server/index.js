@@ -2,4 +2,6 @@
 
 const Main = require('../output/Main/index.js');
 
-Main.main();
+const [_code, _server, ghci, ..._rest] = process.argv;
+const [command, ...args] = ghci.split(/\s+/u);
+Main.main(command)(args)();
