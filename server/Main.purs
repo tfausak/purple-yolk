@@ -241,10 +241,12 @@ messageToDiagnostic message =
           , line: Int.subtract message.span.startLine 1
           }
         }
-      -- TODO: Report deferred type errors as errors instead of warnings.
       , severity: case message.severity of
         "SevError" -> Nullable.notNull 1
-        "SevWarning" -> Nullable.notNull 2
+        "SevWarning" -> case message.reason of
+          Maybe.Just "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
+          Maybe.Just "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
+          _ -> Nullable.notNull 2
         _ -> Nullable.null
       , source: "ghc"
       })
