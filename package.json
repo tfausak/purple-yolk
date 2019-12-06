@@ -3,6 +3,13 @@
   "activationEvents": [
     "onLanguage:haskell"
   ],
+  "badges": [
+    {
+      "description": "Build status",
+      "href": "https://travis-ci.org/tfausak/purple-yolk",
+      "url": "https://travis-ci.org/tfausak/purple-yolk.svg?branch=master"
+    }
+  ],
   "categories": [
     "Programming Languages"
   ],
@@ -85,9 +92,10 @@
   },
   "scripts": {
     "eslint": "eslint",
+    "test": "eslint . && purs compile server/*.purs server/**/*.purs && webpack -p",
     "purs": "purs",
     "vsce": "vsce",
-    "vscode:prepublish": "eslint . && purs compile server/**/*.purs && webpack",
+    "vscode:prepublish": "npm test",
     "webpack": "webpack"
   },
   "version": "0.0.1"
