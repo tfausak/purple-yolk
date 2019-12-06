@@ -60,7 +60,7 @@ type Job =
 -- TODO: Use a better data structure.
 type Map k v = List.List (Tuple.Tuple k v)
 
-type Diagnostics = Map Url.Url (List.List Connection.Diagnostic)
+type Diagnostics = Map Url.Url (Map String Connection.Diagnostic)
 
 -- If there's nothing interesting to do with the output, simply print each line
 -- out to the console. The assumption here is that any structured output from
@@ -161,11 +161,11 @@ sendDiagnosticsHelper connection diagnostics = case diagnostics of
 
 sendDiagnostic
   :: Connection.Connection
-  -> Tuple.Tuple Url.Url (List.List Connection.Diagnostic)
+  -> Tuple.Tuple Url.Url (Map String Connection.Diagnostic)
   -> IO.IO Unit.Unit
-sendDiagnostic connection (Tuple.Tuple url list) = Connection.sendDiagnostics
+sendDiagnostic connection (Tuple.Tuple url map) = Connection.sendDiagnostics
   connection
-  { diagnostics: List.toArray list, uri: url }
+  { diagnostics: List.toArray (List.map Tuple.second map), uri: url }
 
 addDiagnostic
   :: Mutable.Mutable Diagnostics
@@ -173,21 +173,42 @@ addDiagnostic
   -> IO.IO Unit.Unit
 addDiagnostic diagnostics message = do
   let
-    compareKeys x y = String.equal (Url.toString x) (Url.toString y)
-    combineValues x y = List.append y x
     Tuple.Tuple url (Tuple.Tuple identifier diagnostic) = messageToDiagnostic message
-    newValue = Tuple.Tuple url (List.Cons diagnostic List.Nil)
-  -- TODO: Avoid duplicating diagnostics.
-  Console.log identifier
+
+    compareKeys :: Url.Url -> Url.Url -> Boolean
+    compareKeys old new = String.equal (Url.toString old) (Url.toString new)
+
+    combineValues
+      :: Map String Connection.Diagnostic
+      -> Map String Connection.Diagnostic
+      -> Map String Connection.Diagnostic
+    combineValues = merge String.equal \ _old new -> new
+
+    newValue :: Tuple.Tuple Url.Url (Map String Connection.Diagnostic)
+    newValue = Tuple.Tuple url (List.Cons (Tuple.Tuple identifier diagnostic) List.Nil)
+
   Mutable.modify diagnostics (upsert compareKeys combineValues newValue)
+
+merge
+  :: forall k v
+  . (k -> k -> Boolean)
+  -> (v -> v -> v)
+  -> Map k v
+  -> Map k v
+  -> Map k v
+merge compareKeys combineValues old new =
+  case old of
+    List.Nil -> new
+    List.Cons first rest -> merge compareKeys combineValues rest
+      (upsert compareKeys combineValues first new)
 
 upsert
   :: forall k v
   . (k -> k -> Boolean)
   -> (v -> v -> v)
   -> Tuple.Tuple k v
-  -> List.List (Tuple.Tuple k v)
-  -> List.List (Tuple.Tuple k v)
+  -> Map k v
+  -> Map k v
 upsert compareKeys combineValues newValue list = case list of
   List.Nil -> List.Cons newValue List.Nil
   List.Cons oldValue rest -> let key = Tuple.first oldValue in
