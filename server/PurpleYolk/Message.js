@@ -1,12 +1,35 @@
 'use strict';
 
+const checkType = (json, keys, expected) => {
+  let value = json;
+
+  keys.forEach((key) => {
+    value = value[key];
+  });
+
+  const actual = typeof value;
+
+  if (actual !== expected) {
+    const path = keys.join('.');
+    throw new Error(`expected ${path} to be ${expected} but got ${actual}`);
+  }
+};
+
+const getReason = (nothing, just, json) => {
+  if (typeof json.reason === 'string') {
+    return just(json.reason);
+  } else if (json.reason === null) {
+    return nothing;
+  }
+  throw new Error(`invalid reason: ${json.reason}`);
+};
+
 exports.fromJsonWith = (nothing) => (just) => (string) => {
   try {
     const json = JSON.parse(string);
 
     [
       [['doc'], 'string'],
-      [['reason'], 'string'],
       [['severity'], 'string'],
       [['span'], 'object'],
       [['span', 'endCol'], 'number'],
@@ -14,17 +37,7 @@ exports.fromJsonWith = (nothing) => (just) => (string) => {
       [['span', 'file'], 'string'],
       [['span', 'startCol'], 'number'],
       [['span', 'startLine'], 'number'],
-    ].forEach(([keys, expected]) => {
-      let value = json;
-      keys.forEach((key) => {
-        value = value[key];
-      });
-      const actual = typeof value;
-      if (actual !== expected) {
-        const path = keys.join('.');
-        throw new Error(`expected ${path} to be ${expected} but got ${actual}`);
-      }
-    });
+    ].forEach(([keys, expected]) => checkType(json, keys, expected));
 
     if (json.span.file === '<interactive>') {
       throw new Error('ignoring interactive span');
@@ -32,7 +45,7 @@ exports.fromJsonWith = (nothing) => (just) => (string) => {
 
     return just({
       doc: json.doc,
-      reason: json.reason,
+      reason: getReason(nothing, just, json),
       severity: json.severity,
       span: {
         endCol: json.span.endCol,

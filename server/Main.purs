@@ -247,7 +247,7 @@ messageIdentifier message = String.join " "
   , Int.toString message.span.endLine
   , Int.toString message.span.endCol
   , message.severity
-  , message.reason
+  , Maybe.withDefault "unknown" message.reason
   ]
 
 initializeGhci

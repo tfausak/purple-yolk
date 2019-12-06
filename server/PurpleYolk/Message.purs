@@ -14,7 +14,7 @@ foreign import fromJsonWith
 
 type Message =
   { doc :: String
-  , reason :: String
+  , reason :: Maybe.Maybe String
   , severity :: String
   , span ::
     { endCol :: Int
