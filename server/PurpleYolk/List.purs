@@ -6,10 +6,13 @@ module PurpleYolk.List
   , fromArray
   , map
   , reverse
+  , toArray
   ) where
 
 foreign import fromArrayWith
   :: forall a . List a -> (a -> List a -> List a) -> Array a -> List a
+
+foreign import toArray :: forall a . List a -> Array a
 
 data List a
   = Nil

@@ -2,6 +2,8 @@
 
 exports.append = (first) => (second) => `${first}${second}`;
 
+exports.equal = (first) => (second) => first === second;
+
 exports.indexOfWith = (nothing) => (just) => (needle) => (haystack) => {
   const index = haystack.indexOf(needle);
   if (index === -1) {

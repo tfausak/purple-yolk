@@ -8,14 +8,12 @@ module PurpleYolk.Url
 
 import PurpleYolk.Path as Path
 
+foreign import data Url :: Type
+
 foreign import fromPath :: Path.Path -> Url
+
+foreign import fromString :: String -> Url
 
 foreign import toPath :: Url -> Path.Path
 
-newtype Url = Url String
-
-fromString :: String -> Url
-fromString = Url
-
-toString :: Url -> String
-toString (Url string) = string
+foreign import toString :: Url -> String

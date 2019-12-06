@@ -11,6 +11,7 @@ import PurpleYolk.Console as Console
 import PurpleYolk.Exception as Exception
 import PurpleYolk.IO as IO
 import PurpleYolk.Int as Int
+import PurpleYolk.List as List
 import PurpleYolk.Maybe as Maybe
 import PurpleYolk.Message as Message
 import PurpleYolk.Mutable as Mutable
@@ -34,7 +35,8 @@ main = do
   -- Next we initialize a connection with Visual Studio Code. This lets us
   -- respond to actions taken in the editor as well as display things in the
   -- interface.
-  connection <- initializeConnection queue
+  diagnostics <- Mutable.new (List.fromArray [])
+  connection <- initializeConnection queue diagnostics
 
   -- Then we spawn GHCi in a separate process and initialize some buffers to
   -- capture its output.
@@ -54,6 +56,10 @@ type Job =
   { command :: String
   , callback :: String -> IO.IO Unit.Unit
   }
+
+-- TODO: Use a better data structure.
+type Diagnostics = List.List
+  (Tuple.Tuple Url.Url (List.List Connection.Diagnostic))
 
 -- If there's nothing interesting to do with the output, simply print each line
 -- out to the console. The assumption here is that any structured output from
@@ -89,8 +95,9 @@ initializeQueue = do
 
 initializeConnection
   :: Mutable.Mutable (Queue.Queue Job)
+  -> Mutable.Mutable Diagnostics
   -> IO.IO Connection.Connection
-initializeConnection queue = do
+initializeConnection queue diagnostics = do
   connection <- Connection.create
 
   -- When the connection is initialized we need to tell VSCode which
@@ -100,37 +107,12 @@ initializeConnection queue = do
 
   -- When the user saves a text document we need to enqueue a job that tells
   -- GHCi to load that document.
-  Connection.onDidSaveTextDocument connection \ event ->
-    -- TODO: Clear existing diagnostics.
+  Connection.onDidSaveTextDocument connection \ event -> do
+    clearDiagnostics diagnostics
+    sendDiagnostics connection diagnostics
     Mutable.modify queue (Queue.enqueue
       { command: String.append ":load " (Path.toString (Url.toPath event.textDocument.uri))
-      , callback: \ string -> do
-        let
-          lines = Array.filter
-            (\ str -> Boolean.not (String.null str))
-            (Array.map String.trim (String.split "\n" string))
-        IO.mapM_
-          (\ line -> case Message.fromJson line of
-            Maybe.Nothing -> Console.log (String.append "STDOUT " line)
-            -- TODO: Send all diagnostics.
-            Maybe.Just message -> Connection.sendDiagnostics connection
-              { diagnostics:
-                [ { message: message.doc
-                  , range:
-                    { end:
-                      { character: Int.subtract message.span.endCol 1
-                      , line: Int.subtract message.span.endLine 1
-                      }
-                    , start:
-                      { character: Int.subtract message.span.startCol 1
-                      , line: Int.subtract message.span.startLine 1
-                      }
-                    }
-                  }
-                ]
-              , uri: Url.fromPath (Path.fromString message.span.file)
-              })
-          lines
+      , callback: onSave connection diagnostics
       })
 
   -- We start listening on the connection after all our callbacks have been set
@@ -138,6 +120,85 @@ initializeConnection queue = do
   Connection.listen connection
 
   IO.pure connection
+
+onSave
+  :: Connection.Connection
+  -> Mutable.Mutable Diagnostics
+  -> String
+  -> IO.IO Unit.Unit
+onSave connection diagnostics string = do
+  let
+    lines = Array.filter
+      (\ str -> Boolean.not (String.null str))
+      (Array.map String.trim (String.split "\n" string))
+  IO.mapM_
+    (\ line -> case Message.fromJson line of
+      Maybe.Nothing -> Console.log (String.append "STDOUT " line)
+      Maybe.Just message -> addDiagnostic diagnostics message)
+    lines
+  sendDiagnostics connection diagnostics
+
+clearDiagnostics :: Mutable.Mutable Diagnostics -> IO.IO Unit.Unit
+clearDiagnostics diagnostics = Mutable.modify diagnostics \ tuples -> List.map
+  (\ (Tuple.Tuple url _) -> Tuple.Tuple url List.Nil)
+  tuples
+
+sendDiagnostics
+  :: Connection.Connection
+  -> Mutable.Mutable Diagnostics
+  -> IO.IO Unit.Unit
+sendDiagnostics connection diagnostics = do
+  tuples <- Mutable.read diagnostics
+  sendDiagnosticsHelper connection tuples
+
+sendDiagnosticsHelper :: Connection.Connection -> Diagnostics -> IO.IO Unit.Unit
+sendDiagnosticsHelper connection diagnostics = case diagnostics of
+  List.Nil -> IO.pure Unit.unit
+  List.Cons first rest -> do
+    sendDiagnostic connection first
+    sendDiagnosticsHelper connection rest
+
+sendDiagnostic
+  :: Connection.Connection
+  -> Tuple.Tuple Url.Url (List.List Connection.Diagnostic)
+  -> IO.IO Unit.Unit
+sendDiagnostic connection (Tuple.Tuple url list) = Connection.sendDiagnostics
+  connection
+  { diagnostics: List.toArray list, uri: url }
+
+addDiagnostic
+  :: Mutable.Mutable Diagnostics
+  -> Message.Message
+  -> IO.IO Unit.Unit
+addDiagnostic diagnostics message = do
+  let
+    Tuple.Tuple url diagnostic = messageToDiagnostic message
+    insert tuples = case tuples of
+      List.Nil ->
+        List.Cons (Tuple.Tuple url (List.Cons diagnostic List.Nil)) tuples
+      List.Cons first@(Tuple.Tuple u ds) rest ->
+        if String.equal (Url.toString url) (Url.toString u)
+          -- TODO: Avoid duplicating diagnostics.
+          then List.Cons (Tuple.Tuple u (List.Cons diagnostic ds)) rest
+          else List.Cons first (insert rest)
+  Mutable.modify diagnostics insert
+
+messageToDiagnostic :: Message.Message -> Tuple.Tuple Url.Url Connection.Diagnostic
+messageToDiagnostic message =
+  Tuple.Tuple
+    (Url.fromPath (Path.fromString message.span.file))
+    { message: message.doc
+    , range:
+      { end:
+        { character: Int.subtract message.span.endCol 1
+        , line: Int.subtract message.span.endLine 1
+        }
+      , start:
+        { character: Int.subtract message.span.startCol 1
+        , line: Int.subtract message.span.startLine 1
+        }
+      }
+    }
 
 initializeGhci
   :: Mutable.Mutable String

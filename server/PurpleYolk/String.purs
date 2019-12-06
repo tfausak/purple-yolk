@@ -1,6 +1,7 @@
 module PurpleYolk.String
   ( append
   , concat
+  , equal
   , indexOf
   , join
   , length
@@ -14,6 +15,8 @@ import PurpleYolk.Int as Int
 import PurpleYolk.Maybe as Maybe
 
 foreign import append :: String -> String -> String
+
+foreign import equal :: String -> String -> Boolean
 
 foreign import indexOfWith
   :: Maybe.Maybe Int
