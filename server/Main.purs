@@ -58,8 +58,9 @@ type Job =
   }
 
 -- TODO: Use a better data structure.
-type Diagnostics = List.List
-  (Tuple.Tuple Url.Url (List.List Connection.Diagnostic))
+type Map k v = List.List (Tuple.Tuple k v)
+
+type Diagnostics = Map Url.Url (List.List Connection.Diagnostic)
 
 -- If there's nothing interesting to do with the output, simply print each line
 -- out to the console. The assumption here is that any structured output from
@@ -172,33 +173,61 @@ addDiagnostic
   -> IO.IO Unit.Unit
 addDiagnostic diagnostics message = do
   let
-    Tuple.Tuple url diagnostic = messageToDiagnostic message
-    insert tuples = case tuples of
-      List.Nil ->
-        List.Cons (Tuple.Tuple url (List.Cons diagnostic List.Nil)) tuples
-      List.Cons first@(Tuple.Tuple u ds) rest ->
-        if String.equal (Url.toString url) (Url.toString u)
-          -- TODO: Avoid duplicating diagnostics.
-          then List.Cons (Tuple.Tuple u (List.Cons diagnostic ds)) rest
-          else List.Cons first (insert rest)
-  Mutable.modify diagnostics insert
+    compareKeys x y = String.equal (Url.toString x) (Url.toString y)
+    combineValues x y = List.append y x
+    Tuple.Tuple url (Tuple.Tuple identifier diagnostic) = messageToDiagnostic message
+    newValue = Tuple.Tuple url (List.Cons diagnostic List.Nil)
+  -- TODO: Avoid duplicating diagnostics.
+  Console.log identifier
+  Mutable.modify diagnostics (upsert compareKeys combineValues newValue)
 
-messageToDiagnostic :: Message.Message -> Tuple.Tuple Url.Url Connection.Diagnostic
+upsert
+  :: forall k v
+  . (k -> k -> Boolean)
+  -> (v -> v -> v)
+  -> Tuple.Tuple k v
+  -> List.List (Tuple.Tuple k v)
+  -> List.List (Tuple.Tuple k v)
+upsert compareKeys combineValues newValue list = case list of
+  List.Nil -> List.Cons newValue List.Nil
+  List.Cons oldValue rest -> let key = Tuple.first oldValue in
+    if compareKeys key (Tuple.first newValue)
+      then List.Cons
+        (Tuple.Tuple key (combineValues (Tuple.second oldValue) (Tuple.second newValue)))
+        rest
+      else List.Cons
+        oldValue
+        (upsert compareKeys combineValues newValue rest)
+
+messageToDiagnostic :: Message.Message -> Tuple.Tuple Url.Url (Tuple.Tuple String Connection.Diagnostic)
 messageToDiagnostic message =
   Tuple.Tuple
     (Url.fromPath (Path.fromString message.span.file))
-    { message: message.doc
-    , range:
-      { end:
-        { character: Int.subtract message.span.endCol 1
-        , line: Int.subtract message.span.endLine 1
+    (Tuple.Tuple
+      (messageIdentifier message)
+      { message: message.doc
+      , range:
+        { end:
+          { character: Int.subtract message.span.endCol 1
+          , line: Int.subtract message.span.endLine 1
+          }
+        , start:
+          { character: Int.subtract message.span.startCol 1
+          , line: Int.subtract message.span.startLine 1
+          }
         }
-      , start:
-        { character: Int.subtract message.span.startCol 1
-        , line: Int.subtract message.span.startLine 1
-        }
-      }
-    }
+      })
+
+messageIdentifier :: Message.Message -> String
+messageIdentifier message = String.join " "
+  [ message.span.file
+  , Int.toString message.span.startLine
+  , Int.toString message.span.startCol
+  , Int.toString message.span.endLine
+  , Int.toString message.span.endCol
+  , message.severity
+  , message.reason
+  ]
 
 initializeGhci
   :: Mutable.Mutable String
