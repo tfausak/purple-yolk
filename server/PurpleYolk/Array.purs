@@ -1,7 +1,10 @@
 module PurpleYolk.Array
-  ( length
+  ( filter
+  , length
   , map
   ) where
+
+foreign import filter :: forall a . (a -> Boolean) -> Array a -> Array a
 
 foreign import length :: forall a . Array a -> Int
 

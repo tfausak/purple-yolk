@@ -1,19 +1,3 @@
-{- TODO
-Handle JSON output from GHCi when loading files. It looks like this:
-  {
-    "span": {
-      "file": "c:\\Users\\Taylor\\.vscode\\extensions\\purple-yolk\\Example.hs",
-      "startLine": 1,
-      "startCol": 1,
-      "endLine": 1,
-      "endCol": 1
-    },
-    "doc": "Module `Prelude' implicitly imported",
-    "severity": "SevWarning",
-    "reason": "Opt_WarnImplicitPrelude"
-  }
--}
-
 module Main
   ( main
   ) where
@@ -21,12 +5,14 @@ module Main
 import PurpleYolk.IO (bind, discard)
 
 import PurpleYolk.Array as Array
+import PurpleYolk.Boolean as Boolean
 import PurpleYolk.Connection as Connection
 import PurpleYolk.Console as Console
 import PurpleYolk.Exception as Exception
 import PurpleYolk.IO as IO
 import PurpleYolk.Int as Int
 import PurpleYolk.Maybe as Maybe
+import PurpleYolk.Message as Message
 import PurpleYolk.Mutable as Mutable
 import PurpleYolk.Package as Package
 import PurpleYolk.Path as Path
@@ -74,10 +60,10 @@ type Job =
 -- GHCi that we parse will not be output to anything.
 defaultCallback :: String -> IO.IO Unit.Unit
 defaultCallback string = IO.mapM_
-  (\ line -> if Int.equal (String.length line) 0
-    then IO.pure Unit.unit
-    else Console.log (String.append "STDOUT " line))
-  (Array.map String.trim (String.split "\n" string))
+  (\ line -> Console.log (String.append "STDOUT " line))
+  (Array.filter
+    (\ str -> Boolean.not (String.null str))
+    (Array.map String.trim (String.split "\n" string)))
 
 initializeQueue :: IO.IO (Mutable.Mutable (Queue.Queue Job))
 initializeQueue = do
@@ -116,8 +102,22 @@ initializeConnection queue = do
   -- GHCi to load that document.
   Connection.onDidSaveTextDocument connection \ event ->
     Mutable.modify queue (Queue.enqueue
-      { callback: defaultCallback
-      , command: String.append ":load " (Path.toString (Url.toPath event.textDocument.uri))
+      { command: String.append ":load " (Path.toString (Url.toPath event.textDocument.uri))
+      , callback: \ string -> do
+        let
+          lines = Array.filter
+            (\ str -> Boolean.not (String.null str))
+            (Array.map String.trim (String.split "\n" string))
+        IO.mapM_
+          (\ line -> case Message.fromJson line of
+            Maybe.Nothing -> Console.log (String.append "STDOUT " line)
+            -- TODO: Send diagnostics to client.
+            Maybe.Just message -> Console.log (String.concat
+              [ message.span.file
+              , ": "
+              , message.doc
+              ]))
+          lines
       })
 
   -- We start listening on the connection after all our callbacks have been set

@@ -4,11 +4,13 @@ module PurpleYolk.String
   , indexOf
   , join
   , length
+  , null
   , split
   , substring
   , trim
   ) where
 
+import PurpleYolk.Int as Int
 import PurpleYolk.Maybe as Maybe
 
 foreign import append :: String -> String -> String
@@ -35,3 +37,6 @@ concat = join ""
 
 indexOf :: String -> String -> Maybe.Maybe Int
 indexOf = indexOfWith Maybe.Nothing Maybe.Just
+
+null :: String -> Boolean
+null string = Int.equal (length string) 0
