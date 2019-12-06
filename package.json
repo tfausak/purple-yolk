@@ -90,5 +90,5 @@
     "vscode:prepublish": "eslint . && purs compile server/**/*.purs && webpack",
     "webpack": "webpack"
   },
-  "version": "0.0.0"
+  "version": "0.0.1"
 }
