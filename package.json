@@ -92,7 +92,7 @@
 	},
 	"scripts": {
 		"eslint": "eslint",
-		"test": "eslint . && purs compile server/**/*.purs && webpack -p",
+		"test": "eslint . && purs compile server/*.purs server/**/*.purs && webpack -p",
 		"purs": "purs",
 		"vsce": "vsce",
 		"vscode:prepublish": "npm test",
