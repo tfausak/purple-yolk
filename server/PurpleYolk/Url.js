@@ -2,4 +2,6 @@
 
 const url = require('url');
 
-exports.toPath = (theUrl) => url.fileURLToPath(theUrl);
+exports.fromPath = (path) => url.pathToFileURL(path);
+
+exports.toPath = (fileUrl) => url.fileURLToPath(fileUrl);

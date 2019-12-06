@@ -101,6 +101,7 @@ initializeConnection queue = do
   -- When the user saves a text document we need to enqueue a job that tells
   -- GHCi to load that document.
   Connection.onDidSaveTextDocument connection \ event ->
+    -- TODO: Clear existing diagnostics.
     Mutable.modify queue (Queue.enqueue
       { command: String.append ":load " (Path.toString (Url.toPath event.textDocument.uri))
       , callback: \ string -> do
@@ -111,12 +112,24 @@ initializeConnection queue = do
         IO.mapM_
           (\ line -> case Message.fromJson line of
             Maybe.Nothing -> Console.log (String.append "STDOUT " line)
-            -- TODO: Send diagnostics to client.
-            Maybe.Just message -> Console.log (String.concat
-              [ message.span.file
-              , ": "
-              , message.doc
-              ]))
+            -- TODO: Send all diagnostics.
+            Maybe.Just message -> Connection.sendDiagnostics connection
+              { diagnostics:
+                [ { message: message.doc
+                  , range:
+                    { end:
+                      { character: Int.subtract message.span.endCol 1
+                      , line: Int.subtract message.span.endLine 1
+                      }
+                    , start:
+                      { character: Int.subtract message.span.startCol 1
+                      , line: Int.subtract message.span.startLine 1
+                      }
+                    }
+                  }
+                ]
+              , uri: Url.fromPath (Path.fromString message.span.file)
+              })
           lines
       })
 

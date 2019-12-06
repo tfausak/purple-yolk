@@ -1,9 +1,13 @@
 module PurpleYolk.Connection
   ( Connection
+  , Diagnostic
+  , Position
+  , Range
   , create
   , listen
   , onDidSaveTextDocument
   , onInitialize
+  , sendDiagnostics
   ) where
 
 import PurpleYolk.IO as IO
@@ -25,3 +29,27 @@ foreign import onInitialize
   :: Connection
   -> IO.IO { capabilities :: { textDocumentSync :: { save :: Boolean } } }
   -> IO.IO Unit.Unit
+
+foreign import sendDiagnostics
+  :: Connection
+  -> { diagnostics :: Array Diagnostic, uri :: Url.Url }
+  -> IO.IO Unit.Unit
+
+-- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#diagnostic
+type Diagnostic =
+  { message :: String
+  , range :: Range
+  -- TODO: Add more fields.
+  }
+
+-- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#range
+type Range =
+  { end :: Position
+  , start :: Position
+  }
+
+-- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#position
+type Position =
+  { character :: Int
+  , line :: Int
+  }
