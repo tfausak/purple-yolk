@@ -26,6 +26,7 @@ module.exports = {
       ['error', { allowAllPropertiesOnSameLine: true }],
     'one-var': ['error', 'never'],
     'padded-blocks': ['error', 'never'],
+    'prefer-exponentiation-operator': 'off',
     'quote-props': ['error', 'as-needed'],
     quotes: ['error', 'single'],
   },
