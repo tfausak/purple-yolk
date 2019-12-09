@@ -17,4 +17,4 @@ exports.fromPosix = (x) => new Date(x * 1000);
 
 exports.getCurrentDate = () => new Date();
 
-exports.toPosix = (x) => Math.round(x / 1000);
+exports.toPosix = (x) => x / 1000;

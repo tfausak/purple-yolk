@@ -4,6 +4,7 @@ module Core.Type.List
   , apply
   , bind
   , compare
+  , drop
   , fromArray
   , inspect
   , length
@@ -59,6 +60,13 @@ compare f xs ys = case xs, ys of
   Cons x xs_, Cons y ys_ -> case f x y of
     Ordering.EQ -> compare f xs_ ys_
     ordering -> ordering
+
+drop :: forall a . Int -> List a -> List a
+drop n xs = case Int.compare n 1 of
+  Ordering.LT -> xs
+  _ -> case xs of
+    Nil -> Nil
+    Cons _ ys -> drop (Int.subtract n 1) ys
 
 fromArray :: forall a . Array a -> List a
 fromArray = fromArrayWith Nil Cons
