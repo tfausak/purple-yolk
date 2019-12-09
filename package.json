@@ -79,6 +79,7 @@
     "eslint": "^6.7.1",
     "purescript": "^0.13.5",
     "vsce": "^1.69.0",
+    "watchy": "^0.9.7",
     "webpack-cli": "^3.3.10",
     "webpack": "^4.41.2"
   },
@@ -103,10 +104,11 @@
   },
   "scripts": {
     "eslint": "eslint",
-    "test": "eslint . && purs compile server/*.purs server/**/*.purs && webpack -p",
+    "test": "eslint . && purs compile server/*.purs server/**/*.purs && webpack -p && node dist/test.js",
     "purs": "purs",
     "vsce": "vsce",
     "vscode:prepublish": "npm test",
+    "watchy": "watchy",
     "webpack": "webpack"
   },
   "version": "0.0.2"
