@@ -13,6 +13,8 @@ exports.compareWith = (lt) => (eq) => (gt) => (x) => (y) => {
   return eq;
 };
 
+exports.format = (x) => x.toISOString();
+
 exports.fromPosix = (x) => new Date(x * 1000);
 
 exports.getCurrentDate = () => new Date();

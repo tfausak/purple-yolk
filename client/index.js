@@ -1,18 +1,14 @@
 'use strict';
 
-const languageClient = require('vscode-languageclient');
-const vscode = require('vscode');
+const vscode = require('vscode-languageclient');
 
 module.exports = {
   activate: (context) => {
     const nodeModule = {
-      args: [
-        vscode.workspace.getConfiguration('purpleYolk').get('ghci.command'),
-      ],
       module: context.asAbsolutePath('./dist/server.js'),
-      transport: languageClient.TransportKind.ipc,
+      transport: vscode.TransportKind.ipc,
     };
-    const client = new languageClient.LanguageClient(
+    const client = new vscode.LanguageClient(
       'Purple Yolk',
       {
         debug: nodeModule,

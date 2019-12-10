@@ -1,58 +1,33 @@
 module PurpleYolk.Connection
-  ( Connection
-  , Diagnostic
-  , Position
-  , Range
+  ( ClientCapabilities
+  , Connection
+  , InitializeParams
+  , SaveOptions
+  , TextDocumentSyncOptions
   , create
   , listen
-  , onDidSaveTextDocument
   , onInitialize
-  , sendDiagnostics
   ) where
 
-import PurpleYolk.IO as IO
-import PurpleYolk.Nullable as Nullable
-import PurpleYolk.Unit as Unit
-import PurpleYolk.Url as Url
+import Core
 
 foreign import data Connection :: Type
 
-foreign import create :: IO.IO Connection
+foreign import create :: IO Connection
 
-foreign import listen :: Connection -> IO.IO Unit.Unit
-
-foreign import onDidSaveTextDocument
-  :: Connection
-  -> ({ textDocument :: { uri :: Url.Url, version :: Int } } -> IO.IO Unit.Unit)
-  -> IO.IO Unit.Unit
+foreign import listen :: Connection -> IO Unit
 
 foreign import onInitialize
   :: Connection
-  -> IO.IO { capabilities :: { textDocumentSync :: { save :: Boolean } } }
-  -> IO.IO Unit.Unit
+  -> IO InitializeParams
+  -> IO Unit
 
-foreign import sendDiagnostics
-  :: Connection
-  -> { diagnostics :: Array Diagnostic, uri :: Url.Url }
-  -> IO.IO Unit.Unit
+-- | <https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/>
 
--- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#diagnostic
-type Diagnostic =
-  { code :: Nullable.Nullable String
-  , message :: String
-  , range :: Range
-  , severity :: Nullable.Nullable Int
-  , source :: String
-  }
+type InitializeParams = { capabilities :: ClientCapabilities }
 
--- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#range
-type Range =
-  { end :: Position
-  , start :: Position
-  }
+type ClientCapabilities = { textDocumentSync :: TextDocumentSyncOptions  }
 
--- https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/#position
-type Position =
-  { character :: Int
-  , line :: Int
-  }
+type TextDocumentSyncOptions = { save :: SaveOptions }
+
+type SaveOptions = { includeText :: Boolean }

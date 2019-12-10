@@ -1,4 +1,4 @@
-module Test
+module Test.Main
   ( main
   ) where
 
@@ -14,6 +14,7 @@ main :: IO Unit
 main = do
   log "Running tests ..."
   start <- getCurrentDate
+
   describe "Core" do
 
     describe "Class" do
@@ -456,6 +457,11 @@ main = do
           split " " " a  b " ==> ["", "a", "", "b", ""]
 
     describe "Type" do
+
+      describe "Date" do
+
+        describe "format" do
+          Date.format (Date.fromPosix 0.0) ==> "1970-01-01T00:00:00.000Z"
 
       describe "IO" do
 

@@ -4,8 +4,8 @@
 module.exports = {
   entry: {
     client: './client/index.js',
-    server: './server/run-Main.js',
-    test: './server/run-Test.js',
+    server: './server/index.js',
+    test: './server/test.js',
   },
   externals: {
     vscode: 'commonjs vscode',

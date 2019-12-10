@@ -1,6 +1,7 @@
 # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#.vscodeignore
 .gitignore
 client/
+dist/test.js
 node_modules/
 output/
 server/

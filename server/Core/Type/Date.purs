@@ -1,6 +1,7 @@
 module Core.Type.Date
   ( Date
   , compare
+  , format
   , fromPosix
   , getCurrentDate
   , inspect
@@ -21,6 +22,8 @@ foreign import compareWith
   -> Date
   -> Date
   -> Ordering.Ordering
+
+foreign import format :: Date -> String
 
 foreign import fromPosix :: Number -> Date
 

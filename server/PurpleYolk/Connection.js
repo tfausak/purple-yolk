@@ -9,17 +9,7 @@ exports.listen = (connection) => () => {
   return {};
 };
 
-exports.onDidSaveTextDocument = (connection) => (callback) => () => {
-  connection.onDidSaveTextDocument((event) => callback(event)());
-  return {};
-};
-
 exports.onInitialize = (connection) => (callback) => () => {
   connection.onInitialize(() => callback());
-  return {};
-};
-
-exports.sendDiagnostics = (connection) => (payload) => () => {
-  connection.sendDiagnostics(payload);
   return {};
 };
