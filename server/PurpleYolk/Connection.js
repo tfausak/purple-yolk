@@ -9,6 +9,11 @@ exports.listen = (connection) => () => {
   return {};
 };
 
+exports.onDidSaveTextDocument = (connection) => (callback) => () => {
+  connection.onDidSaveTextDocument((params) => callback(params)());
+  return {};
+};
+
 exports.onInitialize = (connection) => (callback) => () => {
   connection.onInitialize(() => callback());
   return {};
