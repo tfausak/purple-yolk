@@ -21,7 +21,7 @@ import Core.Primitive.Function (compose, constant, identity) as Export
 import Core.Primitive.Int (toNumber) as Export
 import Core.Primitive.Number (infinity, isFinite, isNaN, nan, round) as Export
 -- import Core.Primitive.Record () as Export
-import Core.Primitive.String (join, split) as Export
+-- import Core.Primitive.String () as Export
 import Core.Type.Date (Date, getCurrentDate) as Export
 import Core.Type.IO (IO, log, throw, unsafely) as Export
 import Core.Type.List (List(Nil, Cons)) as Export

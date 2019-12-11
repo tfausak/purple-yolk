@@ -4,7 +4,12 @@ module Main
 
 import Core
 
+import Core.Primitive.String as String
 import Core.Type.Date as Date
+import Core.Type.IO as IO
+import Core.Type.List as List
+import Core.Type.Mutable as Mutable
+import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Connection as Connection
 import PurpleYolk.Package as Package
@@ -15,15 +20,22 @@ main :: IO Unit
 main = do
   print "Initializing ..."
 
-  _connection <- initializeConnection
-  _ghci <- initializeGhci
+  connection <- initializeConnection
+
+  stdout <- Mutable.new Queue.empty
+  stderr <- Mutable.new Queue.empty
+  ghci <- initializeGhci stdout stderr
+
+  jobs <- initializeJobs
 
   print "Initialized."
+
+  processJobs stdout ghci jobs
 
 print :: String -> IO Unit
 print message = do
   now <- getCurrentDate
-  log (join " " [Date.format now, message])
+  log (String.join " " [Date.format now, message])
 
 initializeConnection :: IO Connection.Connection
 initializeConnection = do
@@ -39,16 +51,19 @@ initializeConnection = do
 
   pure connection
 
-initializeGhci :: IO ChildProcess.ChildProcess
-initializeGhci = do
+initializeGhci
+  :: Mutable (Queue String)
+  -> Mutable (Queue String)
+  -> IO ChildProcess.ChildProcess
+initializeGhci stdout stderr = do
   ghci <- ChildProcess.spawn "stack"
     [ "ghci"
     , "--color"
     , "never"
     , "--terminal-width"
-    , "0"
+    , "80"
     , "--ghc-options"
-    , join " "
+    , String.join " "
       [ "-ddump-json"
       , "-fdefer-type-errors"
       , "-fno-code"
@@ -56,23 +71,86 @@ initializeGhci = do
       ]
     ]
 
-  ChildProcess.onClose ghci \ code signal -> throw (join " "
+  ChildProcess.onClose ghci \ code signal -> throw (String.join " "
     [ "GHCi closed unexpectedly with code"
     , inspect code
     , "and signal"
     , inspect signal
     ])
 
-  Readable.onData (ChildProcess.stdout ghci) \ chunk ->
-    print ("STDOUT " + chunk)
+  stdoutBuffer <- Mutable.new ""
+  Readable.onData
+    (ChildProcess.stdout ghci)
+    (handleChunk "stdout" stdoutBuffer stdout)
 
-  Readable.onData (ChildProcess.stderr ghci) \ chunk ->
-    print ("STDERR " + chunk)
-
-  Writable.write (ChildProcess.stdin ghci)
-    (join "" [":set prompt \"", prompt, "\\n\"\n"])
+  stderrBuffer <- Mutable.new ""
+  Readable.onData
+    (ChildProcess.stderr ghci)
+    (handleChunk "stderr" stderrBuffer stderr)
 
   pure ghci
 
+handleChunk
+  :: String
+  -> Mutable String
+  -> Mutable (Queue String)
+  -> String
+  -> IO Unit
+handleChunk label buffer queue chunk = do
+  Mutable.modify buffer (_ + chunk)
+  string <- Mutable.get buffer
+  case List.fromArray (String.split "\n" string) of
+    Nil -> pure unit
+    Cons _ Nil -> pure unit
+    lines -> let
+      loop xs = case xs of
+        Nil -> pure unit
+        Cons x Nil -> Mutable.set buffer x
+        Cons x ys -> do
+          print (String.join "" ["[ghci/", label, "] ", x])
+          Mutable.modify queue (Queue.enqueue x)
+          loop ys
+      in loop lines
+
 prompt :: String
-prompt = join "" ["{- purple-yolk/", Package.version, " -}"]
+prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
+
+newtype Job = Job String
+
+initializeJobs :: IO (Mutable (Queue Job))
+initializeJobs = Mutable.new (Queue.fromList (List.fromArray (map Job
+  [ String.join "" [":set prompt \"", prompt, "\\n\""]
+  , ":set +c"
+  , ":reload"
+  ])))
+
+processJobs
+  :: Mutable (Queue String)
+  -> ChildProcess.ChildProcess
+  -> Mutable (Queue Job)
+  -> IO Unit
+processJobs stdout ghci queue = do
+  jobs <- Mutable.get queue
+  case Queue.dequeue jobs of
+    Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
+    Just (Tuple (Job job) newJobs) -> do
+      Mutable.set queue newJobs
+      Writable.write (ChildProcess.stdin ghci) (job + "\n")
+      print ("[ghci/stdin] " + job)
+      processJob stdout ghci queue
+
+processJob
+  :: Mutable (Queue String)
+  -> ChildProcess.ChildProcess
+  -> Mutable (Queue Job)
+  -> IO Unit
+processJob stdout ghci queue = do
+  lines <- Mutable.get stdout
+  case Queue.dequeue lines of
+    Nothing -> IO.delay 0.1 (processJob stdout ghci queue)
+    Just (Tuple line rest) -> do
+      Mutable.set stdout rest
+      print (inspect line) -- TODO
+      if String.indexOf prompt line == -1
+        then processJob stdout ghci queue
+        else processJobs stdout ghci queue

@@ -4,6 +4,7 @@ module Test.Main
 
 import Core
 
+import Core.Primitive.String as String
 import Core.Type.Date as Date
 import Core.Type.List as List
 import Core.Type.Mutable as Mutable
@@ -445,16 +446,16 @@ main = do
       describe "String" do
 
         describe "join" do
-          join "" [] ==> ""
-          join "" ["ab"] ==> "ab"
-          join "" ["ho", "me"] ==> "home"
-          join " + " ["12", "34"] ==> "12 + 34"
+          String.join "" [] ==> ""
+          String.join "" ["ab"] ==> "ab"
+          String.join "" ["ho", "me"] ==> "home"
+          String.join " + " ["12", "34"] ==> "12 + 34"
 
         describe "split" do
-          split " " "" ==> [""]
-          split " " "ab" ==> ["ab"]
-          split " " "hello world" ==> ["hello", "world"]
-          split " " " a  b " ==> ["", "a", "", "b", ""]
+          String.split " " "" ==> [""]
+          String.split " " "ab" ==> ["ab"]
+          String.split " " "hello world" ==> ["hello", "world"]
+          String.split " " " a  b " ==> ["", "a", "", "b", ""]
 
     describe "Type" do
 
@@ -572,7 +573,7 @@ main = do
 
   end <- getCurrentDate
   let elapsed = round (1000.0 * (Date.toPosix end - Date.toPosix start))
-  log (join " " ["All tests passed in", inspect elapsed, "milliseconds."])
+  log (String.join " " ["All tests passed in", inspect elapsed, "milliseconds."])
 
 context :: Mutable (List String)
 context = unsafely (Mutable.new Nil)
@@ -588,8 +589,8 @@ assertEqual actual expected = do
   labels <- Mutable.get context
   if actual == expected
     then pure unit
-    else throw (join ""
-      [ join "." (List.toArray (List.reverse labels))
+    else throw (String.join ""
+      [ String.join "." (List.toArray (List.reverse labels))
       , ": expected "
       , inspect expected
       , " but got "

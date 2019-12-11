@@ -1,6 +1,7 @@
 module Core.Primitive.String
   ( add
   , compare
+  , indexOf
   , inspect
   , join
   , split
@@ -17,6 +18,8 @@ foreign import compareWith
   -> String
   -> String
   -> Ordering.Ordering
+
+foreign import indexOf :: String -> String -> Int
 
 foreign import inspect :: String -> String
 

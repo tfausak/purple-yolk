@@ -13,6 +13,8 @@ exports.compareWith = (lt) => (eq) => (gt) => (x) => (y) => {
   return eq;
 };
 
+exports.indexOf = (needle) => (haystack) => haystack.indexOf(needle);
+
 exports.inspect = (s) => {
   let result = '"';
   for (let i = 0; i < s.length; i += 1) {

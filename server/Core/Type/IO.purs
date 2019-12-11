@@ -2,6 +2,7 @@ module Core.Type.IO
   ( IO
   , apply
   , bind
+  , delay
   , log
   , map
   , pure
@@ -10,6 +11,8 @@ module Core.Type.IO
   ) where
 
 import Core.Type.Unit as Unit
+
+foreign import delay :: Number -> IO Unit.Unit -> IO Unit.Unit
 
 foreign import log :: String -> IO Unit.Unit
 
