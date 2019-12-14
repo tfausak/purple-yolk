@@ -127,14 +127,16 @@ handleStderr stderr chunk = do
 prompt :: String
 prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
 
-newtype Job = Job String
+type Job =
+  { command :: String
+  }
 
 initializeJobs :: IO (Mutable (Queue Job))
-initializeJobs = Mutable.new (Queue.fromList (List.fromArray (map Job
-  [ String.join "" [":set prompt \"", prompt, "\\n\""]
-  , ":set +c"
-  , ":reload"
-  ])))
+initializeJobs = Mutable.new (Queue.fromList (List.fromArray
+  [ { command: String.join "" [":set prompt \"", prompt, "\\n\""] }
+  , { command: ":set +c" }
+  , { command: ":reload" }
+  ]))
 
 processJobs
   :: Mutable (Queue String)
@@ -145,10 +147,10 @@ processJobs stdout ghci queue = do
   jobs <- Mutable.get queue
   case Queue.dequeue jobs of
     Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
-    Just (Tuple (Job job) newJobs) -> do
+    Just (Tuple job newJobs) -> do
       Mutable.set queue newJobs
-      Writable.write (ChildProcess.stdin ghci) (job + "\n")
-      print ("[ghci/stdin] " + job)
+      Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
+      print ("[ghci/stdin] " + job.command)
       processJob stdout ghci queue
 
 processJob
