@@ -23,8 +23,7 @@ main = do
   connection <- initializeConnection
 
   stdout <- Mutable.new Queue.empty
-  stderr <- Mutable.new Queue.empty
-  ghci <- initializeGhci stdout stderr
+  ghci <- initializeGhci stdout
 
   jobs <- initializeJobs
 
@@ -53,9 +52,8 @@ initializeConnection = do
 
 initializeGhci
   :: Mutable (Queue String)
-  -> Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
-initializeGhci stdout stderr = do
+initializeGhci stdout = do
   ghci <- ChildProcess.spawn "stack"
     [ "ghci"
     , "--color"
@@ -83,10 +81,8 @@ initializeGhci stdout stderr = do
     (ChildProcess.stdout ghci)
     (handleChunk "stdout" stdoutBuffer stdout)
 
-  stderrBuffer <- Mutable.new ""
-  Readable.onData
-    (ChildProcess.stderr ghci)
-    (handleChunk "stderr" stderrBuffer stderr)
+  stderr <- Mutable.new ""
+  Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
 
   pure ghci
 
@@ -111,6 +107,22 @@ handleChunk label buffer queue chunk = do
           Mutable.modify queue (Queue.enqueue x)
           loop ys
       in loop lines
+
+handleStderr :: Mutable String -> String -> IO Unit
+handleStderr stderr chunk = do
+  let
+    loop lines = case lines of
+      Nil -> pure unit
+      Cons leftover Nil -> Mutable.set stderr leftover
+      Cons first rest -> do
+        print ("[ghci/stderr] " + first)
+        loop rest
+  Mutable.modify stderr (_ + chunk)
+  buffer <- Mutable.get stderr
+  case List.fromArray (String.split "\n" buffer) of
+    Nil -> pure unit
+    Cons _ Nil -> pure unit
+    lines -> loop lines
 
 prompt :: String
 prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
