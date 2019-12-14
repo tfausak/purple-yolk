@@ -47,7 +47,8 @@ watchConfig = Notify.defaultConfig
 actionPredicate :: Notify.ActionPredicate
 actionPredicate event = not $ any
   (\ match -> match $ Notify.eventPath event)
-  [ List.isInfixOf "/dist/"
+  [ List.isInfixOf "/.git/"
+  , List.isInfixOf "/dist/"
   , List.isInfixOf "/node_modules/"
   , List.isInfixOf "/output/"
   , hasFileName "package-lock.json"
