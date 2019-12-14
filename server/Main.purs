@@ -76,8 +76,8 @@ initializeGhci queue = do
     , inspect signal
     ])
 
-  buffer <- Mutable.new ""
-  Readable.onData (ChildProcess.stdout ghci) (handleStdout buffer queue)
+  stdout <- Mutable.new ""
+  Readable.onData (ChildProcess.stdout ghci) (handleStdout stdout queue)
 
   stderr <- Mutable.new ""
   Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
@@ -126,14 +126,30 @@ prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
 
 type Job =
   { command :: String
+  , state :: State
   }
 
+data State
+  = Unqueued
+  | Queued Date
+  | Started Date Date
+
 initializeJobs :: IO (Mutable (Queue Job))
-initializeJobs = Mutable.new (Queue.fromList (List.fromArray
-  [ { command: String.join "" [":set prompt \"", prompt, "\\n\""] }
-  , { command: ":set +c" }
-  , { command: ":reload" }
-  ]))
+initializeJobs = do
+  queue <- Mutable.new Queue.empty
+  enqueueJob queue { command: String.join "" [":set prompt \"", prompt, "\\n\""], state: Unqueued }
+  enqueueJob queue { command: ":set +c", state: Unqueued }
+  enqueueJob queue { command: ":reload", state: Unqueued }
+  pure queue
+
+enqueueJob :: Mutable (Queue Job) -> Job -> IO Unit
+enqueueJob queue job = do
+  print ("Enqueueing job: " + inspect job.command)
+  case job.state of
+    Unqueued -> do
+      now <- getCurrentDate
+      Mutable.modify queue (Queue.enqueue job { state = Queued now })
+    _ -> throw "trying to enqueue a job that's not unqueued"
 
 processJobs
   :: Mutable (Queue String)
@@ -145,23 +161,47 @@ processJobs stdout ghci queue = do
   case Queue.dequeue jobs of
     Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
     Just (Tuple job newJobs) -> do
+      print ("Starting job: " + inspect job.command)
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
       print ("[ghci/stdin] " + job.command)
-      processJob stdout ghci queue
+      case job.state of
+        Queued queuedAt -> do
+          now <- getCurrentDate
+          processJob stdout ghci queue job { state = Started queuedAt now }
+        _ -> throw "trying to start a job that's not queued"
 
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
   -> Mutable (Queue Job)
+  -> Job
   -> IO Unit
-processJob stdout ghci queue = do
+processJob stdout ghci queue job = do
   lines <- Mutable.get stdout
   case Queue.dequeue lines of
-    Nothing -> IO.delay 0.1 (processJob stdout ghci queue)
+    Nothing -> IO.delay 0.1 (processJob stdout ghci queue job)
     Just (Tuple line rest) -> do
       Mutable.set stdout rest
       print (inspect line) -- TODO
       if String.indexOf prompt line == -1
-        then processJob stdout ghci queue
-        else processJobs stdout ghci queue
+        then processJob stdout ghci queue job
+        else case job.state of
+          Started queuedAt startedAt -> do
+            finishedAt <- getCurrentDate
+            let
+              ms start end = inspect <| round <|
+                1000.0 * (Date.toPosix end - Date.toPosix start)
+            print (String.join ""
+              [ "Finished job: "
+              , inspect job.command
+              , " ("
+              , ms queuedAt startedAt
+              , " + "
+              , ms startedAt finishedAt
+              , " = "
+              , ms queuedAt finishedAt
+              , ")"
+              ])
+            processJobs stdout ghci queue
+          _ -> throw "trying to finish a job that's not started"

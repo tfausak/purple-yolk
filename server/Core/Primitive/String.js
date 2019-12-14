@@ -19,7 +19,7 @@ exports.inspect = (s) => {
   let result = '"';
   for (let i = 0; i < s.length; i += 1) {
     const c = s[i];
-    if (c >= ' ' && c <= '~') {
+    if (c >= ' ' && c <= '~' && c !== '"') {
       result += c;
     } else {
       result += `\\x${c.charCodeAt(0).toString(16)}`;
