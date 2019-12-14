@@ -18,7 +18,8 @@ import PurpleYolk.Writable as Writable
 
 main :: IO Unit
 main = do
-  print "[purple-yolk] Initializing ..."
+  print (String.join " "
+    ["[purple-yolk] Starting version", Package.version, "..."])
 
   connection <- initializeConnection
 
@@ -26,8 +27,6 @@ main = do
   ghci <- initializeGhci stdout
 
   jobs <- initializeJobs
-
-  print "[purple-yolk] Initialized."
 
   processJobs stdout ghci jobs
 
@@ -122,56 +121,54 @@ handleStderr stderr chunk = do
     lines -> loop lines
 
 prompt :: String
-prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
+prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
 
-type Job =
+type Job queuedAt startedAt finishedAt =
   { command :: String
-  , state :: State
-  , onOutput :: String -> IO Unit
+  , finishedAt :: finishedAt
   , onFinish :: IO Unit
+  , onOutput :: String -> IO Unit
+  , queuedAt :: queuedAt
+  , startedAt :: startedAt
   }
 
-data State
-  = Unqueued
-  | Queued Date
-  | Started Date Date
+type UnqueuedJob = Job Unit Unit Unit
 
-initializeJobs :: IO (Mutable (Queue Job))
+type QueuedJob = Job Date Unit Unit
+
+type StartedJob = Job Date Date Unit
+
+type FinishedJob = Job Date Date Date
+
+defaultJob :: UnqueuedJob
+defaultJob =
+  { command: ""
+  , finishedAt: unit
+  , onFinish: pure unit
+  , onOutput: \ _ -> pure unit
+  , queuedAt: unit
+  , startedAt: unit
+  }
+
+initializeJobs :: IO (Mutable (Queue QueuedJob))
 initializeJobs = do
   queue <- Mutable.new Queue.empty
-  enqueueJob queue
-    { command: String.join "" [":set prompt \"", prompt, "\\n\""]
-    , state: Unqueued
-    , onOutput: \ _ -> pure unit
-    , onFinish: pure unit
-    }
-  enqueueJob queue
-    { command: ":set +c"
-    , state: Unqueued
-    , onOutput: \ _ -> pure unit
-    , onFinish: pure unit
-    }
-  enqueueJob queue
-    { command: ":reload"
-    , state: Unqueued
-    , onOutput: \ _ -> pure unit
-    , onFinish: pure unit
-    }
+  enqueueJob queue defaultJob
+    { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
+  enqueueJob queue defaultJob { command = ":set +c" }
+  enqueueJob queue defaultJob { command = ":reload" }
   pure queue
 
-enqueueJob :: Mutable (Queue Job) -> Job -> IO Unit
+enqueueJob :: Mutable (Queue QueuedJob) -> UnqueuedJob -> IO Unit
 enqueueJob queue job = do
-  print ("[purple-yolk] Enqueueing  " + inspect job.command)
-  case job.state of
-    Unqueued -> do
-      now <- getCurrentDate
-      Mutable.modify queue (Queue.enqueue job { state = Queued now })
-    _ -> throw "trying to enqueue a job that's not unqueued"
+  print ("[purple-yolk] Enqueueing " + inspect job.command)
+  now <- getCurrentDate
+  Mutable.modify queue (Queue.enqueue job { queuedAt = now })
 
 processJobs
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> Mutable (Queue Job)
+  -> Mutable (Queue QueuedJob)
   -> IO Unit
 processJobs stdout ghci queue = do
   jobs <- Mutable.get queue
@@ -182,17 +179,14 @@ processJobs stdout ghci queue = do
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
       print ("[ghci/stdin] " + job.command)
-      case job.state of
-        Queued queuedAt -> do
-          now <- getCurrentDate
-          processJob stdout ghci queue job { state = Started queuedAt now }
-        _ -> throw "trying to start a job that's not queued"
+      now <- getCurrentDate
+      processJob stdout ghci queue job { startedAt = now }
 
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> Mutable (Queue Job)
-  -> Job
+  -> Mutable (Queue QueuedJob)
+  -> StartedJob
   -> IO Unit
 processJob stdout ghci queue job = do
   lines <- Mutable.get stdout
@@ -203,23 +197,24 @@ processJob stdout ghci queue job = do
       job.onOutput line
       if String.indexOf prompt line == -1
         then processJob stdout ghci queue job
-        else case job.state of
-          Started queuedAt startedAt -> do
-            job.onFinish
-            finishedAt <- getCurrentDate
-            let
-              ms start end = inspect <| round <|
-                1000.0 * (Date.toPosix end - Date.toPosix start)
-            print (String.join ""
-              [ "[purple-yolk] Finished "
-              , inspect job.command
-              , " ("
-              , ms queuedAt startedAt
-              , " + "
-              , ms startedAt finishedAt
-              , " = "
-              , ms queuedAt finishedAt
-              , ")"
-              ])
-            processJobs stdout ghci queue
-          _ -> throw "trying to finish a job that's not started"
+        else do
+          now <- getCurrentDate
+          finishJob job { finishedAt = now }
+          processJobs stdout ghci queue
+
+finishJob :: FinishedJob -> IO Unit
+finishJob job = do
+  job.onFinish
+  let ms start end = inspect (round (1000.0 * delta start end))
+  print (String.join " "
+    [ "[purple-yolk] Finished"
+    , inspect job.command
+    , "(" + ms job.queuedAt job.startedAt
+    , "+"
+    , ms job.startedAt job.finishedAt
+    , "="
+    , ms job.queuedAt job.finishedAt + ")"
+    ])
+
+delta :: Date -> Date -> Number
+delta start end = Date.toPosix end - Date.toPosix start
