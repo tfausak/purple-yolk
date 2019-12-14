@@ -21,12 +21,11 @@ main = do
   print (String.join " "
     ["[purple-yolk] Starting version", Package.version, "..."])
 
-  connection <- initializeConnection
+  jobs <- initializeJobs
+  connection <- initializeConnection jobs
 
   stdout <- Mutable.new Queue.empty
   ghci <- initializeGhci stdout
-
-  jobs <- initializeJobs
 
   processJobs stdout ghci jobs
 
@@ -35,15 +34,16 @@ print message = do
   now <- getCurrentDate
   log (String.join " " [Date.format now, message])
 
-initializeConnection :: IO Connection.Connection
-initializeConnection = do
+initializeConnection :: JobQueue -> IO Connection.Connection
+initializeConnection jobs = do
   connection <- Connection.create
 
   Connection.onInitialize connection (pure
     { capabilities: { textDocumentSync: { save: { includeText: false } } } })
 
-  Connection.onDidSaveTextDocument connection \ params ->
-    print (inspect params)
+  Connection.onDidSaveTextDocument connection \ params -> do
+    print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
+    enqueueJob jobs defaultJob { command = ":reload" }
 
   Connection.listen connection
 
@@ -123,6 +123,8 @@ handleStderr stderr chunk = do
 prompt :: String
 prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
 
+type JobQueue = Mutable (Queue QueuedJob)
+
 type Job queuedAt startedAt finishedAt =
   { command :: String
   , finishedAt :: finishedAt
@@ -150,7 +152,7 @@ defaultJob =
   , startedAt: unit
   }
 
-initializeJobs :: IO (Mutable (Queue QueuedJob))
+initializeJobs :: IO JobQueue
 initializeJobs = do
   queue <- Mutable.new Queue.empty
   enqueueJob queue defaultJob
@@ -159,7 +161,7 @@ initializeJobs = do
   enqueueJob queue defaultJob { command = ":reload" }
   pure queue
 
-enqueueJob :: Mutable (Queue QueuedJob) -> UnqueuedJob -> IO Unit
+enqueueJob :: JobQueue -> UnqueuedJob -> IO Unit
 enqueueJob queue job = do
   print ("[purple-yolk] Enqueueing " + inspect job.command)
   now <- getCurrentDate
@@ -168,7 +170,7 @@ enqueueJob queue job = do
 processJobs
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> Mutable (Queue QueuedJob)
+  -> JobQueue
   -> IO Unit
 processJobs stdout ghci queue = do
   jobs <- Mutable.get queue
@@ -185,13 +187,13 @@ processJobs stdout ghci queue = do
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> Mutable (Queue QueuedJob)
+  -> JobQueue
   -> StartedJob
   -> IO Unit
 processJob stdout ghci queue job = do
   lines <- Mutable.get stdout
   case Queue.dequeue lines of
-    Nothing -> IO.delay 0.1 (processJob stdout ghci queue job)
+    Nothing -> IO.delay 0.01 (processJob stdout ghci queue job)
     Just (Tuple line rest) -> do
       Mutable.set stdout rest
       job.onOutput line
