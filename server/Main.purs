@@ -127,6 +127,8 @@ prompt = String.join "" ["{- purple-yolk/", Package.version, " -}"]
 type Job =
   { command :: String
   , state :: State
+  , onOutput :: String -> IO Unit
+  , onFinish :: IO Unit
   }
 
 data State
@@ -137,9 +139,24 @@ data State
 initializeJobs :: IO (Mutable (Queue Job))
 initializeJobs = do
   queue <- Mutable.new Queue.empty
-  enqueueJob queue { command: String.join "" [":set prompt \"", prompt, "\\n\""], state: Unqueued }
-  enqueueJob queue { command: ":set +c", state: Unqueued }
-  enqueueJob queue { command: ":reload", state: Unqueued }
+  enqueueJob queue
+    { command: String.join "" [":set prompt \"", prompt, "\\n\""]
+    , state: Unqueued
+    , onOutput: \ _ -> pure unit
+    , onFinish: pure unit
+    }
+  enqueueJob queue
+    { command: ":set +c"
+    , state: Unqueued
+    , onOutput: \ _ -> pure unit
+    , onFinish: pure unit
+    }
+  enqueueJob queue
+    { command: ":reload"
+    , state: Unqueued
+    , onOutput: \ _ -> pure unit
+    , onFinish: pure unit
+    }
   pure queue
 
 enqueueJob :: Mutable (Queue Job) -> Job -> IO Unit
@@ -183,11 +200,12 @@ processJob stdout ghci queue job = do
     Nothing -> IO.delay 0.1 (processJob stdout ghci queue job)
     Just (Tuple line rest) -> do
       Mutable.set stdout rest
-      print (inspect line) -- TODO
+      job.onOutput line
       if String.indexOf prompt line == -1
         then processJob stdout ghci queue job
         else case job.state of
           Started queuedAt startedAt -> do
+            job.onFinish
             finishedAt <- getCurrentDate
             let
               ms start end = inspect <| round <|
