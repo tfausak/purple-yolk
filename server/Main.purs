@@ -53,7 +53,7 @@ initializeConnection = do
 initializeGhci
   :: Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
-initializeGhci stdout = do
+initializeGhci queue = do
   ghci <- ChildProcess.spawn "stack"
     [ "ghci"
     , "--color"
@@ -76,37 +76,34 @@ initializeGhci stdout = do
     , inspect signal
     ])
 
-  stdoutBuffer <- Mutable.new ""
-  Readable.onData
-    (ChildProcess.stdout ghci)
-    (handleChunk "stdout" stdoutBuffer stdout)
+  buffer <- Mutable.new ""
+  Readable.onData (ChildProcess.stdout ghci) (handleStdout buffer queue)
 
   stderr <- Mutable.new ""
   Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
 
   pure ghci
 
-handleChunk
-  :: String
-  -> Mutable String
+handleStdout
+  :: Mutable String
   -> Mutable (Queue String)
   -> String
   -> IO Unit
-handleChunk label buffer queue chunk = do
-  Mutable.modify buffer (_ + chunk)
-  string <- Mutable.get buffer
-  case List.fromArray (String.split "\n" string) of
+handleStdout stdout queue chunk = do
+  let
+    loop lines = case lines of
+      Nil -> pure unit
+      Cons leftover Nil -> Mutable.set stdout leftover
+      Cons first rest -> do
+        print ("[ghci/stdout] " + first)
+        Mutable.modify queue (Queue.enqueue first)
+        loop rest
+  Mutable.modify stdout (_ + chunk)
+  buffer <- Mutable.get stdout
+  case List.fromArray (String.split "\n" buffer) of
     Nil -> pure unit
     Cons _ Nil -> pure unit
-    lines -> let
-      loop xs = case xs of
-        Nil -> pure unit
-        Cons x Nil -> Mutable.set buffer x
-        Cons x ys -> do
-          print (String.join "" ["[ghci/", label, "] ", x])
-          Mutable.modify queue (Queue.enqueue x)
-          loop ys
-      in loop lines
+    lines -> loop lines
 
 handleStderr :: Mutable String -> String -> IO Unit
 handleStderr stderr chunk = do
