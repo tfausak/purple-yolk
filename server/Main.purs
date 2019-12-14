@@ -18,7 +18,7 @@ import PurpleYolk.Writable as Writable
 
 main :: IO Unit
 main = do
-  print "Initializing ..."
+  print "[purple-yolk] Initializing ..."
 
   connection <- initializeConnection
 
@@ -27,7 +27,7 @@ main = do
 
   jobs <- initializeJobs
 
-  print "Initialized."
+  print "[purple-yolk] Initialized."
 
   processJobs stdout ghci jobs
 
@@ -161,7 +161,7 @@ initializeJobs = do
 
 enqueueJob :: Mutable (Queue Job) -> Job -> IO Unit
 enqueueJob queue job = do
-  print ("Enqueueing job: " + inspect job.command)
+  print ("[purple-yolk] Enqueueing  " + inspect job.command)
   case job.state of
     Unqueued -> do
       now <- getCurrentDate
@@ -178,7 +178,7 @@ processJobs stdout ghci queue = do
   case Queue.dequeue jobs of
     Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
     Just (Tuple job newJobs) -> do
-      print ("Starting job: " + inspect job.command)
+      print ("[purple-yolk] Starting " + inspect job.command)
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
       print ("[ghci/stdin] " + job.command)
@@ -211,7 +211,7 @@ processJob stdout ghci queue job = do
               ms start end = inspect <| round <|
                 1000.0 * (Date.toPosix end - Date.toPosix start)
             print (String.join ""
-              [ "Finished job: "
+              [ "[purple-yolk] Finished "
               , inspect job.command
               , " ("
               , ms queuedAt startedAt
