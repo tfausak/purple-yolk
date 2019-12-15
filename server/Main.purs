@@ -66,8 +66,7 @@ reloadGhci connection = Job.unqueued
 messageToDiagnostics :: Message.Message -> Connection.Diagnostics
 messageToDiagnostics message =
   { diagnostics:
-    -- TODO: Handle messages without reasons.
-    [ { code: Nullable.notNull message.reason
+    [ { code: message.reason
       , message: message.doc
       , range:
         { end:
@@ -81,9 +80,9 @@ messageToDiagnostics message =
         }
       , severity: case message.severity of
         "SevError" -> Nullable.notNull 1
-        "SevWarning" -> case message.reason of
-          "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
-          "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
+        "SevWarning" -> case Nullable.toMaybe message.reason of
+          Just "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
+          Just "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
           _ -> Nullable.notNull 2
         _ -> Nullable.null
       , source: "ghc"

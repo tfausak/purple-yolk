@@ -18,6 +18,7 @@ module.exports = {
     'linebreak-style': 'off',
     'multiline-comment-style': ['error', 'separate-lines'],
     'no-console': 'off',
+    'no-extra-parens': ['error', 'all', { nestedBinaryExpressions: false }],
     'no-magic-numbers': 'off',
     'no-unused-vars':
       ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

@@ -8,6 +8,7 @@ module PurpleYolk.Message
 import Core
 
 import Core.Primitive.String as String
+import Core.Type.Nullable as Nullable
 import PurpleYolk.Path as Path
 
 foreign import fromJsonWith
@@ -18,7 +19,7 @@ foreign import fromJsonWith
 
 type Message =
   { doc :: String
-  , reason :: String
+  , reason :: Nullable String
   , severity :: String
   , span :: Span
   }
@@ -41,5 +42,5 @@ key message = String.join " "
   , inspect message.span.startCol
   , inspect message.span.endLine
   , inspect message.span.endCol
-  , message.reason
+  , withDefault "unknown" (Nullable.toMaybe message.reason)
   ]
