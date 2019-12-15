@@ -17,6 +17,7 @@ import PurpleYolk.Job as Job
 import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
 import PurpleYolk.Readable as Readable
+import PurpleYolk.Url as Url
 import PurpleYolk.Writable as Writable
 
 main :: IO Unit
@@ -88,7 +89,7 @@ messageToDiagnostics message =
       , source: "ghc"
       }
     ]
-  , uri: message.span.file -- TODO: Convert path to URL.
+  , uri: Url.toString (Url.fromPath message.span.file)
   }
 
 initializeGhci

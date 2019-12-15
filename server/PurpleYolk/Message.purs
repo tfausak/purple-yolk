@@ -8,6 +8,7 @@ module PurpleYolk.Message
 import Core
 
 import Core.Primitive.String as String
+import PurpleYolk.Path as Path
 
 foreign import fromJsonWith
   :: Maybe Message
@@ -25,7 +26,7 @@ type Message =
 type Span =
   { endCol :: Int
   , endLine :: Int
-  , file :: String
+  , file :: Path.Path
   , startCol :: Int
   , startLine :: Int
   }
@@ -35,7 +36,7 @@ fromJson = fromJsonWith Nothing Just
 
 key :: Message -> String
 key message = String.join " "
-  [ message.span.file
+  [ Path.toString message.span.file
   , inspect message.span.startLine
   , inspect message.span.startCol
   , inspect message.span.endLine
