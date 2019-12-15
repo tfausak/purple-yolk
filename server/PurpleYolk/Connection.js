@@ -18,3 +18,8 @@ exports.onInitialize = (connection) => (callback) => () => {
   connection.onInitialize(() => callback());
   return {};
 };
+
+exports.sendDiagnostics = (connection) => (diagnostics) => () => {
+  connection.sendDiagnostics(diagnostics);
+  return {};
+};

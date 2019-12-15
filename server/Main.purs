@@ -9,6 +9,7 @@ import Core.Type.Date as Date
 import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Mutable as Mutable
+import Core.Type.Nullable as Nullable
 import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Connection as Connection
@@ -25,6 +26,7 @@ main = do
 
   jobs <- initializeJobs
   connection <- initializeConnection jobs
+  enqueueJob jobs (reloadGhci connection)
 
   stdout <- Mutable.new Queue.empty
   ghci <- initializeGhci stdout
@@ -45,19 +47,48 @@ initializeConnection jobs = do
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs reloadGhci
+    enqueueJob jobs (reloadGhci connection)
 
   Connection.listen connection
 
   pure connection
 
-reloadGhci :: Job.Unqueued
-reloadGhci = Job.unqueued
+reloadGhci :: Connection.Connection -> Job.Unqueued
+reloadGhci connection = Job.unqueued
   { command = ":reload"
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
-    -- TODO: Send messages to client as diagnostics.
-    Just message -> print (Message.key message + ": " + inspect message)
+    -- TODO: Aggregate multiple diagnostics.
+    Just message -> Connection.sendDiagnostics connection (messageToDiagnostics message)
+  }
+
+messageToDiagnostics :: Message.Message -> Connection.Diagnostics
+messageToDiagnostics message =
+  { diagnostics:
+    -- TODO: Handle messages without reasons.
+    [ { code: Nullable.notNull message.reason
+      , message: message.doc
+      , range:
+        { end:
+          { character: message.span.endCol - 1
+          , line: message.span.endLine - 1
+          }
+        , start:
+          { character: message.span.startCol - 1
+          , line: message.span.startLine - 1
+          }
+        }
+      , severity: case message.severity of
+        "SevError" -> Nullable.notNull 1
+        "SevWarning" -> case message.reason of
+          "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
+          "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
+          _ -> Nullable.notNull 2
+        _ -> Nullable.null
+      , source: "ghc"
+      }
+    ]
+  , uri: message.span.file -- TODO: Convert path to URL.
   }
 
 initializeGhci
@@ -143,7 +174,6 @@ initializeJobs = do
   enqueueJob queue Job.unqueued
     { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
   enqueueJob queue Job.unqueued { command = ":set +c" }
-  enqueueJob queue reloadGhci
   pure queue
 
 enqueueJob :: JobQueue -> Job.Unqueued -> IO Unit
