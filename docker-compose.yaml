@@ -1,7 +1,0 @@
-version: '3.7'
-services:
-  node:
-    image: node:12-slim
-    volumes:
-      - .:/var/purple-yolk
-    working_dir: /var/purple-yolk
