@@ -17,6 +17,7 @@ import Core.Primitive.String as String
 import Core.Type.Date as Date
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Ordering as Ordering
 import Core.Type.Queue as Queue
@@ -48,6 +49,9 @@ instance _List_HasInspect :: HasInspect a => HasInspect (List.List a) where
 
 instance _Maybe_HasInspect :: HasInspect a => HasInspect (Maybe.Maybe a) where
   inspect = Maybe.inspect inspect
+
+instance _Nullable_HasInspect :: HasInspect a => HasInspect (Nullable.Nullable a) where
+  inspect = Nullable.inspect inspect
 
 instance _Number_HasInspect :: HasInspect Number where
   inspect = Number.inspect

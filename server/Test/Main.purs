@@ -8,6 +8,7 @@ import Core.Primitive.String as String
 import Core.Type.Date as Date
 import Core.Type.List as List
 import Core.Type.Mutable as Mutable
+import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 
@@ -80,6 +81,12 @@ main = do
           apply (Just (_ * 2)) Nothing ==> Nothing
           apply (Just (_ * 2)) (Just 5) ==> Just 10
 
+        describe "Nullable" do
+          apply Nullable.null Nullable.null ==> (Nullable.null :: Nullable Int)
+          apply Nullable.null (Nullable.notNull 5) ==> (Nullable.null :: Nullable Int)
+          apply (Nullable.notNull (_ * 2)) Nullable.null ==> Nullable.null
+          apply (Nullable.notNull (_ * 2)) (Nullable.notNull 5) ==> Nullable.notNull 10
+
         describe "Queue" do
           apply Queue.empty Queue.empty ==> (Queue.empty :: Queue Int)
           apply Queue.empty (Queue.fromList (5 : Nil)) ==> (Queue.empty :: Queue Int)
@@ -118,6 +125,12 @@ main = do
           bind (Just 5) (\ _ -> Nothing) ==> (Nothing :: Maybe Int)
           bind Nothing (\ x -> Just (x * 2)) ==> Nothing
           bind (Just 5) (\ x -> Just (x * 2)) ==> Just 10
+
+        describe "Nullable" do
+          bind Nullable.null (\ _ -> Nullable.null) ==> (Nullable.null :: Nullable Int)
+          bind (Nullable.notNull 5) (\ _ -> Nullable.null) ==> (Nullable.null :: Nullable Int)
+          bind Nullable.null (\ x -> Nullable.notNull (x * 2)) ==> Nullable.null
+          bind (Nullable.notNull 5) (\ x -> Nullable.notNull (x * 2)) ==> Nullable.notNull 10
 
         describe "Queue" do
           bind Queue.empty (\ _ -> Queue.empty) ==> (Queue.empty :: Queue Int)
@@ -176,6 +189,14 @@ main = do
           compare (Just 1) (Just 1) ==> EQ
           compare (Just 1) (Just 2) ==> LT
           compare (Just 2) (Just 1) ==> GT
+
+        describe "Nullable" do
+          compare Nullable.null (Nullable.null :: Nullable Int) ==> EQ
+          compare Nullable.null (Nullable.notNull 1) ==> LT
+          compare (Nullable.notNull 1) Nullable.null ==> GT
+          compare (Nullable.notNull 1) (Nullable.notNull 1) ==> EQ
+          compare (Nullable.notNull 1) (Nullable.notNull 2) ==> LT
+          compare (Nullable.notNull 2) (Nullable.notNull 1) ==> GT
 
         describe "Number" do
           compare 1.1 1.1 ==> EQ
@@ -256,6 +277,10 @@ main = do
           inspect (Nothing :: Maybe Int) ==> "Nothing"
           inspect (Just 1) ==> "Just (1)"
 
+        describe "Nullable" do
+          inspect (Nullable.null :: Nullable Int) ==> "null"
+          inspect (Nullable.notNull 1) ==> "notNull (1)"
+
         describe "Number" do
           inspect 1.0 ==> "1.0"
           inspect 1.2 ==> "1.2"
@@ -315,6 +340,10 @@ main = do
           map (_ * 2) Nothing ==> Nothing
           map (_ * 2) (Just 5) ==> Just 10
 
+        describe "Nullable" do
+          map (_ * 2) Nullable.null ==> Nullable.null
+          map (_ * 2) (Nullable.notNull 5) ==> Nullable.notNull 10
+
         describe "Object" do
           Object.toList (map (_ * 2) Object.empty) ==> Nil
           Object.toList (map (_ * 2) (Object.fromList (Tuple "a" 5 : Nil))) ==> Tuple "a" 10 : Nil
@@ -355,6 +384,9 @@ main = do
 
         describe "Maybe" do
           pure 1 ==> Just 1
+
+        describe "Nullable" do
+          pure 1 ==> Nullable.notNull 1
 
         describe "Queue" do
           pure 1 ==> Queue.fromList (1 : Nil)
@@ -527,6 +559,16 @@ main = do
         Mutable.modify m (_ * 2)
         z <- Mutable.get m
         z ==> 14
+
+      describe "Nullable" do
+
+        describe "fromMaybe" do
+          Nullable.fromMaybe Nothing ==> (Nullable.null :: Nullable Int)
+          Nullable.fromMaybe (Just 5) ==> Nullable.notNull 5
+
+        describe "toMaybe" do
+          Nullable.toMaybe Nullable.null ==> (Nothing :: Maybe Int)
+          Nullable.toMaybe (Nullable.notNull 5) ==> Just 5
 
       describe "Object" do
 

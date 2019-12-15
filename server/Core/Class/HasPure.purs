@@ -7,6 +7,7 @@ import Core.Primitive.Array as Array
 import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Queue as Queue
 
 class HasPure t where
@@ -23,6 +24,9 @@ instance _List_HasPure :: HasPure List.List where
 
 instance _Maybe_HasPure :: HasPure Maybe.Maybe where
   pure = Maybe.pure
+
+instance _Nullable_HasPure :: HasPure Nullable.Nullable where
+  pure = Nullable.pure
 
 instance _Queue_HasPure :: HasPure Queue.Queue where
   pure = Queue.pure

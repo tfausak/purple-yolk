@@ -18,6 +18,7 @@ import Core.Primitive.String as String
 import Core.Type.Date as Date
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Ordering as Ordering
 import Core.Type.Queue as Queue
 import Core.Type.Tuple as Tuple
@@ -45,6 +46,9 @@ instance _List_HasCompare :: HasCompare a => HasCompare (List.List a) where
 
 instance _Maybe_HasCompare :: HasCompare a => HasCompare (Maybe.Maybe a) where
   compare = Maybe.compare compare
+
+instance _Nullable_HasCompare :: HasCompare a => HasCompare (Nullable.Nullable a) where
+  compare = Nullable.compare compare
 
 instance _Number_HasCompare :: HasCompare Number where
   compare = Number.compare

@@ -7,6 +7,7 @@ import Core.Primitive.Array as Array
 import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Queue as Queue
 
 class HasApply t where
@@ -23,6 +24,9 @@ instance _List_HasApply :: HasApply List.List where
 
 instance _Maybe_HasApply :: HasApply Maybe.Maybe where
   apply = Maybe.apply
+
+instance _Nullable_HasApply :: HasApply Nullable.Nullable where
+  apply = Nullable.apply
 
 instance _Queue_HasApply :: HasApply Queue.Queue where
   apply = Queue.apply

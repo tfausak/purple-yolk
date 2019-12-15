@@ -27,6 +27,7 @@ import Core.Type.IO (IO, log, throw, unsafely) as Export
 import Core.Type.List (List(Nil, Cons)) as Export
 import Core.Type.Maybe (Maybe(Nothing, Just), withDefault) as Export
 import Core.Type.Mutable (Mutable) as Export
+import Core.Type.Nullable (Nullable) as Export
 import Core.Type.Object (Object) as Export
 import Core.Type.Ordering (Ordering(EQ, GT, LT)) as Export
 import Core.Type.Queue (Queue) as Export

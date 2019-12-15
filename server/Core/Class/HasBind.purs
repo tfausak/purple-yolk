@@ -8,6 +8,7 @@ import Core.Primitive.Array as Array
 import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Queue as Queue
 import Core.Type.Unit as Unit
 
@@ -25,6 +26,9 @@ instance _List_HasBind :: HasBind List.List where
 
 instance _Maybe_HasBind :: HasBind Maybe.Maybe where
   bind = Maybe.bind
+
+instance _Nullable_HasBind :: HasBind Nullable.Nullable where
+  bind = Nullable.bind
 
 instance _Queue_HasBind :: HasBind Queue.Queue where
   bind = Queue.bind

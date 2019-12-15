@@ -7,6 +7,7 @@ import Core.Primitive.Array as Array
 import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Maybe as Maybe
+import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 
@@ -24,6 +25,9 @@ instance _List_HasMap :: HasMap List.List where
 
 instance _Maybe_HasMap :: HasMap Maybe.Maybe where
   map = Maybe.map
+
+instance _Nullable_HasMap :: HasMap Nullable.Nullable where
+  map = Nullable.map
 
 instance _Object_HasMap :: HasMap Object.Object where
   map = Object.map
