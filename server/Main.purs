@@ -10,6 +10,7 @@ import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Mutable as Mutable
 import Core.Type.Nullable as Nullable
+import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Connection as Connection
@@ -26,8 +27,9 @@ main = do
     ["[purple-yolk] Starting version", Package.version, "..."])
 
   jobs <- initializeJobs
-  connection <- initializeConnection jobs
-  enqueueJob jobs (reloadGhci connection)
+  diagnostics <- Mutable.new Object.empty
+  connection <- initializeConnection jobs diagnostics
+  enqueueJob jobs (reloadGhci connection diagnostics)
 
   stdout <- Mutable.new Queue.empty
   ghci <- initializeGhci stdout
@@ -39,8 +41,11 @@ print message = do
   now <- getCurrentDate
   log (String.join " " [Date.format now, message])
 
-initializeConnection :: JobQueue -> IO Connection.Connection
-initializeConnection jobs = do
+-- { url: { key: diagnostic } }
+type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
+
+initializeConnection :: JobQueue -> Diagnostics -> IO Connection.Connection
+initializeConnection jobs diagnostics = do
   connection <- Connection.create
 
   Connection.onInitialize connection (pure
@@ -48,47 +53,69 @@ initializeConnection jobs = do
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs (reloadGhci connection)
+    enqueueJob jobs (reloadGhci connection diagnostics)
 
   Connection.listen connection
 
   pure connection
 
-reloadGhci :: Connection.Connection -> Job.Unqueued
-reloadGhci connection = Job.unqueued
+reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
+reloadGhci connection diagnostics = Job.unqueued
   { command = ":reload"
+  , onStart = Mutable.modify diagnostics (map (constant Object.empty))
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
-    -- TODO: Aggregate multiple diagnostics.
-    Just message -> Connection.sendDiagnostics connection (messageToDiagnostics message)
+    Just message -> do
+      let uri = Url.toString (Url.fromPath message.span.file)
+      let key = Message.key message
+      let diagnostic = messageToDiagnostic message
+      Mutable.modify diagnostics \ outer -> case Object.get uri outer of
+        Nothing -> Object.set uri (Object.singleton key diagnostic) outer
+        Just inner -> Object.set uri (Object.set key diagnostic inner) outer
+      sendDiagnostics connection diagnostics
+  , onFinish = sendDiagnostics connection diagnostics
   }
 
-messageToDiagnostics :: Message.Message -> Connection.Diagnostics
-messageToDiagnostics message =
-  { diagnostics:
-    [ { code: message.reason
-      , message: message.doc
-      , range:
-        { end:
-          { character: message.span.endCol - 1
-          , line: message.span.endLine - 1
-          }
-        , start:
-          { character: message.span.startCol - 1
-          , line: message.span.startLine - 1
-          }
-        }
-      , severity: case message.severity of
-        "SevError" -> Nullable.notNull 1
-        "SevWarning" -> case Nullable.toMaybe message.reason of
-          Just "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
-          Just "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
-          _ -> Nullable.notNull 2
-        _ -> Nullable.null
-      , source: "ghc"
+sendDiagnostics :: Connection.Connection -> Diagnostics -> IO Unit
+sendDiagnostics connection mutable = do
+  diagnostics <- Mutable.get mutable
+  sendDiagnosticsHelper connection (Object.toList diagnostics)
+
+sendDiagnosticsHelper
+  :: Connection.Connection
+  -> List (Tuple String (Object Connection.Diagnostic))
+  -> IO Unit
+sendDiagnosticsHelper connection list = case list of
+  Nil -> pure unit
+  Cons (Tuple uri object) rest -> do
+    Connection.sendDiagnostics connection
+      { diagnostics: List.toArray (map second (Object.toList object))
+      , uri
       }
-    ]
-  , uri: Url.toString (Url.fromPath message.span.file)
+    sendDiagnosticsHelper connection rest
+
+messageToDiagnostic :: Message.Message -> Connection.Diagnostic
+messageToDiagnostic message =
+  { code: message.reason
+  , message: message.doc
+  , range:
+    { end:
+      { character: message.span.endCol - 1
+      , line: message.span.endLine - 1
+      }
+    , start:
+      { character: message.span.startCol - 1
+      , line: message.span.startLine - 1
+      }
+    }
+  , severity: case message.severity of
+    "SevError" -> Nullable.notNull 1
+    "SevWarning" -> case Nullable.toMaybe message.reason of
+      Just "Opt_WarnDeferredOutOfScopeVariables" -> Nullable.notNull 1
+      Just "Opt_WarnDeferredTypeErrors" -> Nullable.notNull 1
+      _ -> Nullable.notNull 2
+    _ -> Nullable.null
+  , source: "ghc"
   }
 
 initializeGhci

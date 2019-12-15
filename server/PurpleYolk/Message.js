@@ -13,6 +13,7 @@ exports.fromJsonWith = (nothing) => (just) => (string) => {
     typeof json.doc !== 'string' ||
     (typeof json.reason !== 'string' && json.reason !== null) ||
     typeof json.severity !== 'string' ||
+    json.span === null ||
     typeof json.span.endCol !== 'number' ||
     typeof json.span.endLine !== 'number' ||
     typeof json.span.file !== 'string' ||

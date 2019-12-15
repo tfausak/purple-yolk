@@ -6,6 +6,7 @@ module Core.Type.Object
   , inspect
   , map
   , set
+  , singleton
   , toList
   ) where
 
@@ -52,6 +53,9 @@ inspect f o = String.join ""
   , (List.inspect (Tuple.inspect String.inspect f) (toList o))
   , ")"
   ]
+
+singleton :: forall a . String -> a -> Object a
+singleton k v = set k v empty
 
 toList :: forall a . Object a -> List.List (Tuple.Tuple String a)
 toList = toListWith Tuple.Tuple List.Nil List.Cons
