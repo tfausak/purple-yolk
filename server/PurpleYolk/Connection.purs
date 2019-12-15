@@ -37,14 +37,51 @@ foreign import sendDiagnostics :: Connection -> Diagnostics -> IO Unit
 
 -- | <https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/>
 
-type ClientCapabilities = { textDocumentSync :: TextDocumentSyncOptions  }
-type Diagnostic = { code :: Nullable String, message :: String, range :: Range, severity :: Nullable Int, source :: String }
-type Diagnostics = { diagnostics :: Array Diagnostic, uri :: DocumentUri }
-type DidSaveTextDocumentParams = { textDocument :: TextDocumentIdentifier }
+type ClientCapabilities =
+  { textDocumentSync :: TextDocumentSyncOptions
+  }
+
+type Diagnostic =
+  { code :: Nullable String
+  , message :: String
+  , range :: Range
+  , severity :: Nullable Int
+  , source :: String
+  }
+
+type Diagnostics =
+  { diagnostics :: Array Diagnostic
+  , uri :: DocumentUri
+  }
+
+type DidSaveTextDocumentParams =
+  { textDocument :: TextDocumentIdentifier
+  }
+
 type DocumentUri = String
-type InitializeParams = { capabilities :: ClientCapabilities }
-type Position = { character :: Int, line :: Int }
-type Range = { end :: Position, start :: Position }
-type SaveOptions = { includeText :: Boolean }
-type TextDocumentIdentifier = { uri :: DocumentUri }
-type TextDocumentSyncOptions = { save :: SaveOptions }
+
+type InitializeParams =
+  { capabilities :: ClientCapabilities
+  }
+
+type Position =
+  { character :: Int
+  , line :: Int
+  }
+
+type Range =
+  { end :: Position
+  , start :: Position
+  }
+
+type SaveOptions =
+  { includeText :: Boolean
+  }
+
+type TextDocumentIdentifier =
+  { uri :: DocumentUri
+  }
+
+type TextDocumentSyncOptions =
+  { save :: SaveOptions
+  }
