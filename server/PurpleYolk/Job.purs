@@ -17,6 +17,7 @@ type Job queuedAt startedAt finishedAt =
   , finishedAt :: finishedAt
   , onFinish :: IO Unit
   , onOutput :: String -> IO Unit
+  , onStart :: IO Unit
   , queuedAt :: queuedAt
   , startedAt :: startedAt
   }
@@ -35,6 +36,7 @@ unqueued =
   , finishedAt: unit
   , onFinish: pure unit
   , onOutput: \ _ -> pure unit
+  , onStart: pure unit
   , queuedAt: unit
   , startedAt: unit
   }

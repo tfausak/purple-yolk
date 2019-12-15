@@ -13,6 +13,7 @@ import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Connection as Connection
 import PurpleYolk.Job as Job
+import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
 import PurpleYolk.Readable as Readable
 import PurpleYolk.Writable as Writable
@@ -44,7 +45,13 @@ initializeConnection jobs = do
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs Job.unqueued { command = ":reload" }
+    enqueueJob jobs Job.unqueued
+      { command = ":reload"
+      , onOutput = \ line -> case Message.fromJson line of
+        Nothing -> pure unit
+        -- TODO: Send messages to client as diagnostics.
+        Just message -> print (Message.key message + ": " + inspect message)
+      }
 
   Connection.listen connection
 
@@ -54,6 +61,7 @@ initializeGhci
   :: Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
 initializeGhci queue = do
+  -- TODO: Read command from config.
   ghci <- ChildProcess.spawn "stack"
     [ "ghci"
     , "--color"
@@ -132,6 +140,7 @@ initializeJobs = do
   enqueueJob queue Job.unqueued
     { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
   enqueueJob queue Job.unqueued { command = ":set +c" }
+  -- TODO: Use same callbacks as `onDidSaveTextDocument`.
   enqueueJob queue Job.unqueued { command = ":reload" }
   pure queue
 
@@ -155,6 +164,7 @@ processJobs stdout ghci queue = do
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
       print ("[ghci/stdin] " + job.command)
+      job.onStart
       startedJob <- Job.start job
       processJob stdout ghci queue startedJob
 
