@@ -12,6 +12,7 @@ import Core.Type.Mutable as Mutable
 import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Connection as Connection
+import PurpleYolk.Job as Job
 import PurpleYolk.Package as Package
 import PurpleYolk.Readable as Readable
 import PurpleYolk.Writable as Writable
@@ -43,7 +44,7 @@ initializeConnection jobs = do
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs defaultJob { command = ":reload" }
+    enqueueJob jobs Job.unqueued { command = ":reload" }
 
   Connection.listen connection
 
@@ -123,49 +124,22 @@ handleStderr stderr chunk = do
 prompt :: String
 prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
 
-type JobQueue = Mutable (Queue QueuedJob)
-
-type Job queuedAt startedAt finishedAt =
-  { command :: String
-  , finishedAt :: finishedAt
-  , onFinish :: IO Unit
-  , onOutput :: String -> IO Unit
-  , queuedAt :: queuedAt
-  , startedAt :: startedAt
-  }
-
-type UnqueuedJob = Job Unit Unit Unit
-
-type QueuedJob = Job Date Unit Unit
-
-type StartedJob = Job Date Date Unit
-
-type FinishedJob = Job Date Date Date
-
-defaultJob :: UnqueuedJob
-defaultJob =
-  { command: ""
-  , finishedAt: unit
-  , onFinish: pure unit
-  , onOutput: \ _ -> pure unit
-  , queuedAt: unit
-  , startedAt: unit
-  }
+type JobQueue = Mutable (Queue Job.Queued)
 
 initializeJobs :: IO JobQueue
 initializeJobs = do
   queue <- Mutable.new Queue.empty
-  enqueueJob queue defaultJob
+  enqueueJob queue Job.unqueued
     { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
-  enqueueJob queue defaultJob { command = ":set +c" }
-  enqueueJob queue defaultJob { command = ":reload" }
+  enqueueJob queue Job.unqueued { command = ":set +c" }
+  enqueueJob queue Job.unqueued { command = ":reload" }
   pure queue
 
-enqueueJob :: JobQueue -> UnqueuedJob -> IO Unit
+enqueueJob :: JobQueue -> Job.Unqueued -> IO Unit
 enqueueJob queue job = do
   print ("[purple-yolk] Enqueueing " + inspect job.command)
-  now <- getCurrentDate
-  Mutable.modify queue (Queue.enqueue job { queuedAt = now })
+  queuedJob <- Job.queue job
+  Mutable.modify queue (Queue.enqueue queuedJob)
 
 processJobs
   :: Mutable (Queue String)
@@ -181,14 +155,14 @@ processJobs stdout ghci queue = do
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
       print ("[ghci/stdin] " + job.command)
-      now <- getCurrentDate
-      processJob stdout ghci queue job { startedAt = now }
+      startedJob <- Job.start job
+      processJob stdout ghci queue startedJob
 
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
   -> JobQueue
-  -> StartedJob
+  -> Job.Started
   -> IO Unit
 processJob stdout ghci queue job = do
   lines <- Mutable.get stdout
@@ -200,11 +174,11 @@ processJob stdout ghci queue job = do
       if String.indexOf prompt line == -1
         then processJob stdout ghci queue job
         else do
-          now <- getCurrentDate
-          finishJob job { finishedAt = now }
+          finishedJob <- Job.finish job
+          finishJob finishedJob
           processJobs stdout ghci queue
 
-finishJob :: FinishedJob -> IO Unit
+finishJob :: Job.Finished -> IO Unit
 finishJob job = do
   job.onFinish
   let ms start end = inspect (round (1000.0 * delta start end))
