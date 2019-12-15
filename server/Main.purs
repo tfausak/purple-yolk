@@ -45,17 +45,20 @@ initializeConnection jobs = do
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs Job.unqueued
-      { command = ":reload"
-      , onOutput = \ line -> case Message.fromJson line of
-        Nothing -> pure unit
-        -- TODO: Send messages to client as diagnostics.
-        Just message -> print (Message.key message + ": " + inspect message)
-      }
+    enqueueJob jobs reloadGhci
 
   Connection.listen connection
 
   pure connection
+
+reloadGhci :: Job.Unqueued
+reloadGhci = Job.unqueued
+  { command = ":reload"
+  , onOutput = \ line -> case Message.fromJson line of
+    Nothing -> pure unit
+    -- TODO: Send messages to client as diagnostics.
+    Just message -> print (Message.key message + ": " + inspect message)
+  }
 
 initializeGhci
   :: Mutable (Queue String)
@@ -140,8 +143,7 @@ initializeJobs = do
   enqueueJob queue Job.unqueued
     { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
   enqueueJob queue Job.unqueued { command = ":set +c" }
-  -- TODO: Use same callbacks as `onDidSaveTextDocument`.
-  enqueueJob queue Job.unqueued { command = ":reload" }
+  enqueueJob queue reloadGhci
   pure queue
 
 enqueueJob :: JobQueue -> Job.Unqueued -> IO Unit
