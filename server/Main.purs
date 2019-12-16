@@ -21,8 +21,8 @@ import PurpleYolk.Readable as Readable
 import PurpleYolk.Url as Url
 import PurpleYolk.Writable as Writable
 
-main :: IO Unit
-main = do
+main :: Unit
+main = IO.unsafely do
   print (String.join " "
     ["[purple-yolk] Starting version", Package.version, "..."])
 

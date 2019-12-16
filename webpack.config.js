@@ -1,11 +1,13 @@
 // https://webpack.js.org/configuration/
 'use strict';
 
+const path = require('path');
+
 module.exports = {
   entry: {
     client: './client/index.js',
-    server: './server/index.js',
-    test: './server/test.js',
+    server: './server/Main.purs',
+    test: './server/Test.purs',
   },
   externals: {
     vscode: 'commonjs vscode',
@@ -14,9 +16,17 @@ module.exports = {
   module: {
     rules: [
       {
-        exclude: /node_modules/u,
         loader: 'eslint-loader',
         test: /[.]js$/u,
+      },
+      {
+        loader: 'purs-loader',
+        options: {
+          src: [
+            path.join(__dirname, 'server', '**', '*.purs'),
+          ],
+        },
+        test: /[.]purs$/u,
       },
     ],
   },

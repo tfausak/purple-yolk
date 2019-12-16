@@ -79,6 +79,7 @@
     "eslint-loader": "^3.0.3",
     "eslint": "^6.7.1",
     "purescript": "^0.13.5",
+    "purs-loader": "^3.6.0",
     "vsce": "^1.69.0",
     "watchy": "^0.9.7",
     "webpack-cli": "^3.3.10",
@@ -105,7 +106,7 @@
   },
   "scripts": {
     "eslint": "eslint",
-    "test": "purs compile server/*.purs server/*/*.purs server/*/*/*.purs && webpack && node dist/test.js",
+    "test": "webpack && node dist/test.js",
     "purs": "purs",
     "vsce": "vsce",
     "vscode:prepublish": "npm test",

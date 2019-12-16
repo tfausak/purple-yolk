@@ -1,4 +1,4 @@
-module Test.Main
+module Test
   ( main
   ) where
 
@@ -6,14 +6,15 @@ import Core
 
 import Core.Primitive.String as String
 import Core.Type.Date as Date
+import Core.Type.IO as IO
 import Core.Type.List as List
 import Core.Type.Mutable as Mutable
 import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 
-main :: IO Unit
-main = do
+main :: Unit
+main = IO.unsafely do
   log "Running tests ..."
   start <- getCurrentDate
 
