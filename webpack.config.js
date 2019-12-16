@@ -11,6 +11,15 @@ module.exports = {
     vscode: 'commonjs vscode',
   },
   mode: 'development',
+  module: {
+    rules: [
+      {
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        test: /[.]js$/,
+      }
+    ],
+  },
   output: {
     libraryTarget: 'commonjs2',
   },
