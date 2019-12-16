@@ -14,10 +14,10 @@ module.exports = {
   module: {
     rules: [
       {
-        exclude: /node_modules/,
+        exclude: /node_modules/u,
         loader: 'eslint-loader',
-        test: /[.]js$/,
-      }
+        test: /[.]js$/u,
+      },
     ],
   },
   output: {

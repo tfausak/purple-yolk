@@ -122,7 +122,6 @@ initializeGhci
   :: Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
 initializeGhci queue = do
-  -- TODO: Read command from config.
   ghci <- ChildProcess.spawn "stack"
     [ "ghci"
     , "--color"
