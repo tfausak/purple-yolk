@@ -83,7 +83,7 @@
     "vsce": "^1.69.0",
     "watchy": "^0.9.7",
     "webpack-cli": "^3.3.10",
-    "webpack": "^4.41.3"
+    "webpack": "^4.41.4"
   },
   "displayName": "Purple Yolk",
   "keywords": [
