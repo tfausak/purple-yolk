@@ -13,12 +13,14 @@ import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
+import PurpleYolk.Client as Client
 import PurpleYolk.Connection as Connection
 import PurpleYolk.Job as Job
 import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
 import PurpleYolk.Readable as Readable
 import PurpleYolk.Url as Url
+import PurpleYolk.Workspace as Workspace
 import PurpleYolk.Writable as Writable
 
 main :: Unit
@@ -50,6 +52,15 @@ initializeConnection jobs diagnostics = do
 
   Connection.onInitialize connection (pure
     { capabilities: { textDocumentSync: { save: { includeText: false } } } })
+
+  Connection.onInitialized connection do
+    Client.register
+      (Connection.client connection)
+      "workspace/didChangeConfiguration"
+    Workspace.getConfiguration
+      (Connection.workspace connection)
+      "purpleYolk"
+      \ configuration -> print (inspect configuration)
 
   Connection.onDidSaveTextDocument connection \ params -> do
     print ("[purple-yolk] Saved " + inspect params.textDocument.uri)

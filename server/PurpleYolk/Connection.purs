@@ -11,16 +11,24 @@ module PurpleYolk.Connection
   , SaveOptions
   , TextDocumentIdentifier
   , TextDocumentSyncOptions
+  , client
   , create
   , listen
   , onDidSaveTextDocument
   , onInitialize
+  , onInitialized
   , sendDiagnostics
+  , workspace
   ) where
 
 import Core
 
+import PurpleYolk.Client as Client
+import PurpleYolk.Workspace as Workspace
+
 foreign import data Connection :: Type
+
+foreign import client :: Connection -> Client.Client
 
 foreign import create :: IO Connection
 
@@ -33,7 +41,11 @@ foreign import onDidSaveTextDocument
 
 foreign import onInitialize :: Connection -> IO InitializeParams -> IO Unit
 
+foreign import onInitialized :: Connection -> IO Unit -> IO Unit
+
 foreign import sendDiagnostics :: Connection -> Diagnostics -> IO Unit
+
+foreign import workspace :: Connection -> Workspace.Workspace
 
 -- | <https://microsoft.github.io//language-server-protocol/specifications/specification-3-14/>
 

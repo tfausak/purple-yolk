@@ -2,6 +2,8 @@
 
 const vscode = require('vscode-languageserver');
 
+exports.client = (connection) => connection.client;
+
 exports.create = () => vscode.createConnection();
 
 exports.listen = (connection) => () => {
@@ -19,7 +21,14 @@ exports.onInitialize = (connection) => (callback) => () => {
   return {};
 };
 
+exports.onInitialized = (connection) => (callback) => () => {
+  connection.onInitialized(() => callback());
+  return {};
+};
+
 exports.sendDiagnostics = (connection) => (diagnostics) => () => {
   connection.sendDiagnostics(diagnostics);
   return {};
 };
+
+exports.workspace = (connection) => connection.workspace;
