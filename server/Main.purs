@@ -62,7 +62,9 @@ initializeConnection jobs diagnostics = do
 reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
 reloadGhci connection diagnostics = Job.unqueued
   { command = ":reload"
-  , onStart = Mutable.modify diagnostics (map (constant Object.empty))
+  , onStart = do
+    Mutable.modify diagnostics (map (constant Object.empty))
+    sendDiagnostics connection diagnostics
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
     Just message -> do
