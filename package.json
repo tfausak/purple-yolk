@@ -106,10 +106,10 @@
   },
   "scripts": {
     "eslint": "eslint",
-    "test": "webpack && node dist/test.js",
+    "test": "webpack -d && node dist/test.js",
     "purs": "purs",
     "vsce": "vsce",
-    "vscode:prepublish": "npm test",
+    "vscode:prepublish": "webpack -p && node dist/test.js",
     "watchy": "watchy",
     "webpack": "webpack"
   },
