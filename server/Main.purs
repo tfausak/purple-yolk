@@ -15,6 +15,7 @@ import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
 import PurpleYolk.Client as Client
 import PurpleYolk.Connection as Connection
+import PurpleYolk.Console as Console
 import PurpleYolk.Job as Job
 import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
@@ -25,7 +26,7 @@ import PurpleYolk.Writable as Writable
 
 main :: Unit
 main = IO.unsafely do
-  print (String.join " "
+  Console.info (String.join " "
     ["[purple-yolk] Starting version", Package.version, "..."])
 
   jobs <- initializeJobs
@@ -37,11 +38,6 @@ main = IO.unsafely do
   ghci <- initializeGhci stdout
 
   processJobs stdout ghci jobs
-
-print :: String -> IO Unit
-print message = do
-  now <- getCurrentDate
-  log (String.join " " [Date.format now, message])
 
 -- { url: { key: diagnostic } }
 type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
@@ -60,10 +56,10 @@ initializeConnection jobs diagnostics = do
     Workspace.getConfiguration
       (Connection.workspace connection)
       "purpleYolk"
-      \ configuration -> print (inspect configuration)
+      \ configuration -> Console.info (inspect configuration)
 
   Connection.onDidSaveTextDocument connection \ params -> do
-    print ("[purple-yolk] Saved " + inspect params.textDocument.uri)
+    Console.info ("[purple-yolk] Saved " + inspect params.textDocument.uri)
     enqueueJob jobs (reloadGhci connection diagnostics)
 
   Connection.listen connection
@@ -176,7 +172,7 @@ handleStdout stdout queue chunk = do
       Nil -> pure unit
       Cons leftover Nil -> Mutable.set stdout leftover
       Cons first rest -> do
-        print ("[ghci/stdout] " + first)
+        Console.info ("[ghci/stdout] " + first)
         Mutable.modify queue (Queue.enqueue first)
         loop rest
   Mutable.modify stdout (_ + chunk)
@@ -193,7 +189,7 @@ handleStderr stderr chunk = do
       Nil -> pure unit
       Cons leftover Nil -> Mutable.set stderr leftover
       Cons first rest -> do
-        print ("[ghci/stderr] " + first)
+        Console.info ("[ghci/stderr] " + first)
         loop rest
   Mutable.modify stderr (_ + chunk)
   buffer <- Mutable.get stderr
@@ -217,7 +213,7 @@ initializeJobs = do
 
 enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
 enqueueJob queue job = do
-  print ("[purple-yolk] Enqueueing " + inspect job.command)
+  Console.info ("[purple-yolk] Enqueueing " + inspect job.command)
   queuedJob <- Job.queue job
   Mutable.modify queue (Queue.enqueue queuedJob)
 
@@ -231,10 +227,10 @@ processJobs stdout ghci queue = do
   case Queue.dequeue jobs of
     Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
     Just (Tuple job newJobs) -> do
-      print ("[purple-yolk] Starting " + inspect job.command)
+      Console.info ("[purple-yolk] Starting " + inspect job.command)
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
-      print ("[ghci/stdin] " + job.command)
+      Console.info ("[ghci/stdin] " + job.command)
       job.onStart
       startedJob <- Job.start job
       processJob stdout ghci queue startedJob
@@ -263,7 +259,7 @@ finishJob :: Job.Finished -> IO Unit
 finishJob job = do
   job.onFinish
   let ms start end = inspect (round (1000.0 * delta start end))
-  print (String.join " "
+  Console.info (String.join " "
     [ "[purple-yolk] Finished"
     , inspect job.command
     , "(" + ms job.queuedAt job.startedAt
