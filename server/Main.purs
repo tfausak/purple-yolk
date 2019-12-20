@@ -46,7 +46,7 @@ print message = do
 -- { url: { key: diagnostic } }
 type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
 
-initializeConnection :: JobQueue -> Diagnostics -> IO Connection.Connection
+initializeConnection :: Jobs -> Diagnostics -> IO Connection.Connection
 initializeConnection jobs diagnostics = do
   connection <- Connection.create
 
@@ -205,9 +205,9 @@ handleStderr stderr chunk = do
 prompt :: String
 prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
 
-type JobQueue = Mutable (Queue Job.Queued)
+type Jobs = Mutable (Queue Job.Queued)
 
-initializeJobs :: IO JobQueue
+initializeJobs :: IO Jobs
 initializeJobs = do
   queue <- Mutable.new Queue.empty
   enqueueJob queue Job.unqueued
@@ -215,7 +215,7 @@ initializeJobs = do
   enqueueJob queue Job.unqueued { command = ":set +c" }
   pure queue
 
-enqueueJob :: JobQueue -> Job.Unqueued -> IO Unit
+enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
 enqueueJob queue job = do
   print ("[purple-yolk] Enqueueing " + inspect job.command)
   queuedJob <- Job.queue job
@@ -224,7 +224,7 @@ enqueueJob queue job = do
 processJobs
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> JobQueue
+  -> Jobs
   -> IO Unit
 processJobs stdout ghci queue = do
   jobs <- Mutable.get queue
@@ -242,7 +242,7 @@ processJobs stdout ghci queue = do
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
-  -> JobQueue
+  -> Jobs
   -> Job.Started
   -> IO Unit
 processJob stdout ghci queue job = do
