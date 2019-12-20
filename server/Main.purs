@@ -31,20 +31,8 @@ main = IO.unsafely do
 
   jobs <- initializeJobs
   diagnostics <- Mutable.new Object.empty
-  connection <- initializeConnection jobs diagnostics
-  enqueueJob jobs (reloadGhci connection diagnostics)
-
-  stdout <- Mutable.new Queue.empty
-  ghci <- initializeGhci stdout
-
-  processJobs stdout ghci jobs
-
--- { url: { key: diagnostic } }
-type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
-
-initializeConnection :: Jobs -> Diagnostics -> IO Connection.Connection
-initializeConnection jobs diagnostics = do
   connection <- Connection.create
+  enqueueJob jobs (reloadGhci connection diagnostics)
 
   Connection.onInitialize connection (pure
     { capabilities: { textDocumentSync: { save: { includeText: false } } } })
@@ -56,7 +44,13 @@ initializeConnection jobs diagnostics = do
     Workspace.getConfiguration
       (Connection.workspace connection)
       "purpleYolk"
-      \ configuration -> Console.info (inspect configuration)
+      \ configuration -> do
+        Console.info (inspect configuration)
+
+        stdout <- Mutable.new Queue.empty
+        ghci <- initializeGhci stdout
+
+        processJobs stdout ghci jobs
 
   Connection.onDidSaveTextDocument connection \ params -> do
     Console.info ("[purple-yolk] Saved " + inspect params.textDocument.uri)
@@ -64,7 +58,8 @@ initializeConnection jobs diagnostics = do
 
   Connection.listen connection
 
-  pure connection
+-- { url: { key: diagnostic } }
+type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
 
 reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
 reloadGhci connection diagnostics = Job.unqueued
