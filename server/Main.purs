@@ -45,10 +45,8 @@ main = IO.unsafely do
       (Connection.workspace connection)
       "purpleYolk"
       \ configuration -> do
-        Console.info (inspect configuration)
-
         stdout <- Mutable.new Queue.empty
-        ghci <- initializeGhci stdout
+        ghci <- initializeGhci configuration stdout
 
         processJobs stdout ghci jobs
 
@@ -123,23 +121,15 @@ messageToDiagnostic message =
   }
 
 initializeGhci
-  :: Mutable (Queue String)
+  :: Workspace.Configuration
+  -> Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
-initializeGhci queue = do
-  ghci <- ChildProcess.spawn "stack"
-    [ "ghci"
-    , "--color"
-    , "never"
-    , "--terminal-width"
-    , "80"
-    , "--ghc-options"
-    , String.join " "
-      [ "-ddump-json"
-      , "-fdefer-type-errors"
-      , "-fno-code"
-      , "-j"
-      ]
-    ]
+initializeGhci configuration queue = do
+  Tuple command arguments <- case parseCommand configuration of
+    Nothing -> throw ("invalid configuration: " + inspect configuration)
+    Just tuple -> pure tuple
+
+  ghci <- ChildProcess.spawn command arguments
 
   ChildProcess.onClose ghci \ code signal -> throw (String.join " "
     [ "GHCi closed unexpectedly with code"
@@ -155,6 +145,17 @@ initializeGhci queue = do
   Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
 
   pure ghci
+
+parseCommand :: Workspace.Configuration -> Maybe (Tuple String (Array String))
+parseCommand configuration = configuration
+  |> _.ghci
+  |> _.command
+  |> String.split " "
+  |> List.fromArray
+  |> List.filter (\ string -> String.length string > 0)
+  |> \ list -> case list of
+    Nil -> Nothing
+    Cons command arguments -> Just (Tuple command (List.toArray arguments))
 
 handleStdout
   :: Mutable String

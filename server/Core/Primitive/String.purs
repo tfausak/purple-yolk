@@ -4,6 +4,7 @@ module Core.Primitive.String
   , indexOf
   , inspect
   , join
+  , length
   , split
   ) where
 
@@ -24,6 +25,8 @@ foreign import indexOf :: String -> String -> Int
 foreign import inspect :: String -> String
 
 foreign import join :: String -> Array String -> String
+
+foreign import length :: String -> Int
 
 foreign import split :: String -> String -> Array String
 

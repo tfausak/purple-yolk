@@ -484,6 +484,11 @@ main = IO.unsafely do
           String.join "" ["ho", "me"] ==> "home"
           String.join " + " ["12", "34"] ==> "12 + 34"
 
+        describe "length" do
+          String.length "" ==> 0
+          String.length "a" ==> 1
+          String.length "ab" ==> 2
+
         describe "split" do
           String.split " " "" ==> [""]
           String.split " " "ab" ==> ["ab"]
@@ -517,6 +522,14 @@ main = IO.unsafely do
           List.drop 1 (1 : 2 : Nil) ==> 2 : Nil
           List.drop 2 (1 : 2 : Nil) ==> Nil
           List.drop 3 (1 : 2 : Nil) ==> Nil
+
+        describe "filter" do
+          List.filter (\ _ -> true) Nil ==> (Nil :: List Int)
+          List.filter (\ _ -> true) (1 : Nil) ==> 1 : Nil
+          List.filter (\ _ -> true) (1 : 2 : Nil) ==> 1 : 2 : Nil
+          List.filter (\ _ -> false) (1 : Nil) ==> Nil
+          List.filter (\ _ -> false) (1 : 2 : Nil) ==> Nil
+          List.filter (\ n -> n > 0) (1 : -1 : 0 : -2 : 2 : Nil) ==> 1 : 2 : Nil
 
         describe "fromArray" do
           List.fromArray [] ==> (Nil :: List Int)

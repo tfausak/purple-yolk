@@ -5,6 +5,7 @@ module Core.Type.List
   , bind
   , compare
   , drop
+  , filter
   , fromArray
   , inspect
   , length
@@ -67,6 +68,11 @@ drop n xs = case Int.compare n 1 of
   _ -> case xs of
     Nil -> Nil
     Cons _ ys -> drop (Int.subtract n 1) ys
+
+filter :: forall a . (a -> Boolean) -> List a -> List a
+filter f xs = case xs of
+  Nil -> Nil
+  Cons x ys -> if f x then Cons x (filter f ys) else filter f ys
 
 fromArray :: forall a . Array a -> List a
 fromArray = fromArrayWith Nil Cons

@@ -30,4 +30,6 @@ exports.inspect = (s) => {
 
 exports.join = (s) => (x) => x.join(s);
 
+exports.length = (x) => x.length;
+
 exports.split = (s) => (x) => x.split(s);
