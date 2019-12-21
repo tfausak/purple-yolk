@@ -209,8 +209,33 @@ initializeJobs = do
 
 initialCommands :: List String
 initialCommands = List.fromArray
+  -- We use the prompt to determine when a command finishes. That means setting
+  -- the prompt has to be the very first thing we do, otherwise we'd be stuck
+  -- waiting for the command to finish.
   [ ":set prompt \"" + prompt + "\\n\""
-  , ":set +c"
+
+  -- This tells GHCi to collect type and location information, which is super
+  -- useful for us. Unfortunately it makes compilation take much longer. We're
+  -- disabling it until we actually need features it provides.
+  -- , ":set +c"
+
+  -- This tells GHC to output warnings and errors as JSON, which makes them
+  -- easier for us to consume. Note that the text of the warning/error is still
+  -- human readable. This setting only affects metadata.
+  , ":set -ddump-json"
+
+  -- This tells GHC to keep going in the presence of type errors. This allows
+  -- us to get more output (warnings and errors) even when something is wrong.
+  , ":set -fdefer-type-errors"
+
+  -- This tells GHC to avoid creating any executable code. In other words,
+  -- we're only interested in type checking. This should speed things up
+  -- considerably.
+  , ":set -fno-code"
+
+  -- This tells GHC to use all available cores. Typically compiling an entire
+  -- project can easily be split among multiple cores.
+  , ":set -j"
   ]
 
 enqueueJob :: Jobs -> Job.Unqueued -> IO Unit

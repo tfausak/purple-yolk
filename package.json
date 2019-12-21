@@ -17,9 +17,8 @@
     "configuration": {
       "properties": {
         "purpleYolk.ghci.command": {
-          "default": "stack ghci --color never --terminal-width 80 --ghc-options -ddump-json --ghc-options -fdefer-type-errors --ghc-options -fno-code --ghc-options -j",
+          "default": "stack ghci",
           "description": "The command to start GHCi.",
-          "markdownDescription": "The command to start GHCi. Note that `-ddump-json`, which requires at least GHC 8.2.1, is necessary in order for Purple Yolk to work.",
           "pattern": "\\S",
           "type": "string"
         }
