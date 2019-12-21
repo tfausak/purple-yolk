@@ -4,8 +4,14 @@ language: node_js
 node_js: 12
 script: npm run -- vsce package --out purple-yolk.vsix
 deploy:
-  on:
-    tags: true
-  provider: script
-  script: npm run -- vsce publish --packagePath purple-yolk.vsix --pat "$PAT"
-  skip_cleanup: true
+  - api_key: $GITHUB_PERSONAL_ACCESS_TOKEN
+    file: purple-yolk.vsix
+    on:
+      tags: true
+    provider: releases
+    skip_cleanup: true
+  - on:
+      tags: true
+    provider: script
+    script: npm run -- vsce publish --packagePath purple-yolk.vsix --pat "$AZURE_PERSONAL_ACCESS_TOKEN"
+    skip_cleanup: true
