@@ -202,10 +202,16 @@ type Jobs = Mutable (Queue Job.Queued)
 initializeJobs :: IO Jobs
 initializeJobs = do
   queue <- Mutable.new Queue.empty
-  enqueueJob queue Job.unqueued
-    { command = String.join "" [":set prompt \"", prompt, "\\n\""] }
-  enqueueJob queue Job.unqueued { command = ":set +c" }
+  IO.mapM_
+    (\ command -> enqueueJob queue Job.unqueued { command = command })
+    initialCommands
   pure queue
+
+initialCommands :: List String
+initialCommands = List.fromArray
+  [ ":set prompt \"" + prompt + "\\n\""
+  , ":set +c"
+  ]
 
 enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
 enqueueJob queue job = do
