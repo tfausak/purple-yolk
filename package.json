@@ -71,28 +71,28 @@
     ]
   },
   "dependencies": {
-    "vscode-languageclient": "^5.2.1",
-    "vscode-languageserver": "^5.2.1"
+    "vscode-languageclient": "^6.1.1",
+    "vscode-languageserver": "^6.1.1"
   },
   "description": "A Haskell IDE.",
   "devDependencies": {
     "eslint-loader": "^3.0.3",
-    "eslint": "^6.7.1",
-    "purescript": "^0.13.5",
+    "eslint": "^6.8.0",
+    "purescript": "^0.13.6",
     "purs-loader": "^3.7.1",
-    "vsce": "^1.69.0",
+    "vsce": "^1.74.0",
     "watchy": "^0.9.7",
-    "webpack-cli": "^3.3.10",
-    "webpack": "^4.41.4"
+    "webpack-cli": "^3.3.11",
+    "webpack": "^4.42.0"
   },
   "displayName": "Purple Yolk",
   "keywords": [
     "haskell"
   ],
   "engines": {
-    "node": "^12.4.0",
-    "npm": "^6.9.0",
-    "vscode": "^1.41.0"
+    "node": "^13.11.0",
+    "npm": "^6.13.7",
+    "vscode": "^1.43.0"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "images/purple-yolk.png",
