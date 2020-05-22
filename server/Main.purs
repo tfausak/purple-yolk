@@ -30,9 +30,14 @@ main = IO.unsafely do
   Console.info (String.join " "
     ["[purple-yolk] Starting version", Package.version, "..."])
 
-  jobs <- initializeJobs
   diagnostics <- Mutable.new Object.empty
   connection <- Connection.create
+  jobs <- initializeJobs connection diagnostics
+
+  -- Assuming that everything has been set up correctly, reloading GHCi should
+  -- do nothing. But sometimes GHCi starts up weird or without certain options
+  -- that we set at runtime. In those cases we need to reload in order to get
+  -- everything working properly.
   enqueueJob jobs (reloadGhci connection diagnostics)
 
   Connection.onInitialize connection (pure
@@ -72,8 +77,11 @@ restartGhci connection diagnostics = Job.unqueued
   }
 
 reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
-reloadGhci connection diagnostics = Job.unqueued
-  { command = ":reload"
+reloadGhci = withDiagnostics ":reload"
+
+withDiagnostics :: String -> Connection.Connection -> Diagnostics -> Job.Unqueued
+withDiagnostics command connection diagnostics = Job.unqueued
+  { command = command
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
     Just message -> case Nullable.toMaybe message.span of
@@ -217,11 +225,13 @@ prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
 
 type Jobs = Mutable (Queue Job.Queued)
 
-initializeJobs :: IO Jobs
-initializeJobs = do
+initializeJobs :: Connection.Connection -> Diagnostics -> IO Jobs
+initializeJobs connection diagnostics = do
   queue <- Mutable.new Queue.empty
   IO.mapM_
-    (\ command -> enqueueJob queue Job.unqueued { command = command })
+    (\ command -> do
+      let job = withDiagnostics command connection diagnostics
+      enqueueJob queue job)
     initialCommands
   pure queue
 
@@ -240,6 +250,10 @@ initialCommands = List.fromArray
   -- This tells GHC to output warnings and errors as JSON, which makes them
   -- easier for us to consume. Note that the text of the warning/error is still
   -- human readable. This setting only affects metadata.
+  --
+  -- This should be set by the GHCi launch command. Since it's necessary for
+  -- Purple Yolk to work, we make sure that it's set here. If it's already set,
+  -- then re-setting it should be harmless.
   , ":set -ddump-json"
   ]
 
