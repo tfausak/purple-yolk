@@ -54,16 +54,21 @@ main = IO.unsafely do
         stdout <- Mutable.new Queue.empty
         ghci <- initializeGhci configuration stdout
 
-        processJobs stdout ghci jobs
+        processJobs stdout ghci jobs connection
+    updateStatusBarItem connection "Starting up ..."
 
   Connection.onDidSaveTextDocument connection \ params -> do
     Console.info ("[purple-yolk] Saved " + inspect params.textDocument.uri)
     enqueueJob jobs (reloadGhci connection diagnostics)
 
-  Connection.onNotification connection "purpleYolk/restart" do
+  Connection.onNotification connection "purpleYolk/restartGhci" do
     enqueueJob jobs (restartGhci connection diagnostics)
 
   Connection.listen connection
+
+updateStatusBarItem :: Connection.Connection -> String -> IO Unit
+updateStatusBarItem connection message = Connection.sendNotification
+  connection "purpleYolk/updateStatusBarItem" ("Purple Yolk: " + message)
 
 -- { url: { key: diagnostic } }
 type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
@@ -272,42 +277,46 @@ processJobs
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
   -> Jobs
+  -> Connection.Connection
   -> IO Unit
-processJobs stdout ghci queue = do
+processJobs stdout ghci queue connection = do
   jobs <- Mutable.get queue
   case Queue.dequeue jobs of
-    Nothing -> IO.delay 0.1 (processJobs stdout ghci queue)
+    Nothing -> IO.delay 0.1 (processJobs stdout ghci queue connection)
     Just (Tuple job newJobs) -> do
-      Console.info ("[purple-yolk] Starting " + inspect job.command)
+      let command = job.command
+      Console.info ("[purple-yolk] Starting " + inspect command)
+      updateStatusBarItem connection ("Running " + command + " ...")
       Mutable.set queue newJobs
-      Writable.write (ChildProcess.stdin ghci) (job.command + "\n")
-      Console.info ("[ghci/stdin] " + job.command)
+      Writable.write (ChildProcess.stdin ghci) (command + "\n")
+      Console.info ("[ghci/stdin] " + command)
       job.onStart
       startedJob <- Job.start job
-      processJob stdout ghci queue startedJob
+      processJob stdout ghci queue startedJob connection
 
 processJob
   :: Mutable (Queue String)
   -> ChildProcess.ChildProcess
   -> Jobs
   -> Job.Started
+  -> Connection.Connection
   -> IO Unit
-processJob stdout ghci queue job = do
+processJob stdout ghci queue job connection = do
   lines <- Mutable.get stdout
   case Queue.dequeue lines of
-    Nothing -> IO.delay 0.01 (processJob stdout ghci queue job)
+    Nothing -> IO.delay 0.01 (processJob stdout ghci queue job connection)
     Just (Tuple line rest) -> do
       Mutable.set stdout rest
       job.onOutput line
       if String.indexOf prompt line == -1
-        then processJob stdout ghci queue job
+        then processJob stdout ghci queue job connection
         else do
           finishedJob <- Job.finish job
-          finishJob finishedJob
-          processJobs stdout ghci queue
+          finishJob finishedJob connection
+          processJobs stdout ghci queue connection
 
-finishJob :: Job.Finished -> IO Unit
-finishJob job = do
+finishJob :: Job.Finished -> Connection.Connection -> IO Unit
+finishJob job connection = do
   job.onFinish
   let ms start end = inspect (round (1000.0 * delta start end))
   Console.info (String.join " "
@@ -319,6 +328,7 @@ finishJob job = do
     , "="
     , ms job.queuedAt job.finishedAt + ")"
     ])
+  updateStatusBarItem connection "Idle."
 
 delta :: Date -> Date -> Number
 delta start end = Date.toPosix end - Date.toPosix start

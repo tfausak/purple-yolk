@@ -19,6 +19,7 @@ module PurpleYolk.Connection
   , onInitialized
   , onNotification
   , sendDiagnostics
+  , sendNotification
   , workspace
   ) where
 
@@ -47,6 +48,8 @@ foreign import onInitialized :: Connection -> IO Unit -> IO Unit
 foreign import onNotification :: Connection -> String -> IO Unit -> IO Unit
 
 foreign import sendDiagnostics :: Connection -> Diagnostics -> IO Unit
+
+foreign import sendNotification :: Connection -> String -> String -> IO Unit
 
 foreign import workspace :: Connection -> Workspace.Workspace
 

@@ -26,13 +26,18 @@ exports.onInitialized = (connection) => (callback) => () => {
   return {};
 };
 
-exports.onNotification = (connection) => (notification) => (callback) => () => {
-  connection.onNotification(notification, () => callback());
+exports.onNotification = (connection) => (name) => (callback) => () => {
+  connection.onNotification(name, () => callback());
   return {};
 };
 
 exports.sendDiagnostics = (connection) => (diagnostics) => () => {
   connection.sendDiagnostics(diagnostics);
+  return {};
+};
+
+exports.sendNotification = (connection) => (name) => (payload) => () => {
+  connection.sendNotification(name, payload);
   return {};
 };
 

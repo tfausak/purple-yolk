@@ -23,7 +23,16 @@ module.exports = {
 
     context.subscriptions.push(vscode.commands.registerCommand(
       'purpleYolk.restart',
-      () => client.sendNotification('purpleYolk/restart', null)
+      () => client.sendNotification('purpleYolk/restartGhci', null)
     ));
+
+    const statusBarItem = vscode.window.createStatusBarItem();
+    statusBarItem.text = 'Purple Yolk';
+    statusBarItem.show();
+
+    client.onReady().then(() =>
+      client.onNotification('purpleYolk/updateStatusBarItem', (text) => {
+        statusBarItem.text = text;
+      }));
   },
 };
