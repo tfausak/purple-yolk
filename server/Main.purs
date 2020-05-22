@@ -78,14 +78,16 @@ reloadGhci connection diagnostics = Job.unqueued
     sendDiagnostics connection diagnostics
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
-    Just message -> do
-      let uri = Url.toString (Url.fromPath message.span.file)
-      let key = Message.key message
-      let diagnostic = messageToDiagnostic message
-      Mutable.modify diagnostics \ outer -> case Object.get uri outer of
-        Nothing -> Object.set uri (Object.singleton key diagnostic) outer
-        Just inner -> Object.set uri (Object.set key diagnostic inner) outer
-      sendDiagnostics connection diagnostics
+    Just message -> case Nullable.toMaybe message.span of
+      Nothing -> pure unit
+      Just span -> do
+        let uri = Url.toString (Url.fromPath span.file)
+        let key = Message.key message
+        let diagnostic = messageToDiagnostic message span
+        Mutable.modify diagnostics \ outer -> case Object.get uri outer of
+          Nothing -> Object.set uri (Object.singleton key diagnostic) outer
+          Just inner -> Object.set uri (Object.set key diagnostic inner) outer
+        sendDiagnostics connection diagnostics
   , onFinish = sendDiagnostics connection diagnostics
   }
 
@@ -107,18 +109,18 @@ sendDiagnosticsHelper connection list = case list of
       }
     sendDiagnosticsHelper connection rest
 
-messageToDiagnostic :: Message.Message -> Connection.Diagnostic
-messageToDiagnostic message =
+messageToDiagnostic :: Message.Message -> Message.Span -> Connection.Diagnostic
+messageToDiagnostic message span =
   { code: message.reason
   , message: message.doc
   , range:
     { end:
-      { character: message.span.endCol - 1
-      , line: message.span.endLine - 1
+      { character: span.endCol - 1
+      , line: span.endLine - 1
       }
     , start:
-      { character: message.span.startCol - 1
-      , line: message.span.startLine - 1
+      { character: span.startCol - 1
+      , line: span.startLine - 1
       }
     }
   , severity: case message.severity of

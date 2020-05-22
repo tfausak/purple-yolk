@@ -26,8 +26,10 @@ const getSeverity = (json) => {
 
 const getSpan = (json) => {
   const { span } = json;
+  if (span === null) {
+    return span;
+  }
   if (
-    span !== null &&
     typeof span.endCol === 'number' &&
     typeof span.endLine === 'number' &&
     typeof span.file === 'string' &&

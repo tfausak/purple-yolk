@@ -21,7 +21,7 @@ type Message =
   { doc :: String
   , reason :: Nullable String
   , severity :: String
-  , span :: Span
+  , span :: Nullable Span
   }
 
 type Span =
@@ -37,10 +37,14 @@ fromJson = fromJsonWith Nothing Just
 
 key :: Message -> String
 key message = String.join " "
-  [ Path.toString message.span.file
-  , inspect message.span.startLine
-  , inspect message.span.startCol
-  , inspect message.span.endLine
-  , inspect message.span.endCol
+  [ case Nullable.toMaybe message.span of
+    Nothing -> "unknown"
+    Just span -> String.join " "
+      [ Path.toString span.file
+      , inspect span.startLine
+      , inspect span.startCol
+      , inspect span.endLine
+      , inspect span.endCol
+      ]
   , withDefault "unknown" (Nullable.toMaybe message.reason)
   ]
