@@ -27,7 +27,9 @@ module.exports = {
       ['error', { allowAllPropertiesOnSameLine: true }],
     'one-var': ['error', 'never'],
     'padded-blocks': ['error', 'never'],
+    'prefer-named-capture-group': 'off',
     'quote-props': ['error', 'as-needed'],
     quotes: ['error', 'single'],
+    'require-unicode-regexp': 'off',
   },
 };

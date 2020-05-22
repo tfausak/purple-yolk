@@ -74,13 +74,15 @@ restartGhci connection diagnostics = Job.unqueued
 reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
 reloadGhci connection diagnostics = Job.unqueued
   { command = ":reload"
-  , onStart = do
-    Mutable.modify diagnostics (map (constant Object.empty))
-    sendDiagnostics connection diagnostics
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
     Just message -> case Nullable.toMaybe message.span of
-      Nothing -> pure unit
+      Nothing -> case Nullable.toMaybe (Message.getCompilingFile message) of
+        Nothing -> pure unit
+        Just path -> do
+          let uri = Url.toString (Url.fromPath path)
+          Mutable.modify diagnostics (Object.set uri Object.empty)
+          sendDiagnostics connection diagnostics
       Just span -> if Path.toString span.file == "<interactive>"
         then pure unit
         else do

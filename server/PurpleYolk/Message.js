@@ -59,3 +59,17 @@ exports.fromJsonWith = (nothing) => (just) => (string) => {
     return nothing;
   }
 };
+
+exports.getCompilingFile = (message) => {
+  if (
+    message.reason === null &&
+    message.severity === 'SevOutput' &&
+    message.span === null
+  ) {
+    const match = message.doc.match(/Compiling .+ \( (.+), /);
+    if (match) {
+      return match[1];
+    }
+  }
+  return null;
+};

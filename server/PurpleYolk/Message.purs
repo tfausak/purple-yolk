@@ -2,6 +2,7 @@ module PurpleYolk.Message
   ( Message
   , Span
   , fromJson
+  , getCompilingFile
   , key
   ) where
 
@@ -16,6 +17,8 @@ foreign import fromJsonWith
   -> (Message -> Maybe Message)
   -> String
   -> Maybe Message
+
+foreign import getCompilingFile :: Message -> Nullable Path.Path
 
 type Message =
   { doc :: String
