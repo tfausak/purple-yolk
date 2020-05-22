@@ -1,28 +1,60 @@
 'use strict';
 
-exports.fromJsonWith = (nothing) => (just) => (string) => {
-  let json = null;
+const getDoc = (json) => {
+  const { doc } = json;
+  if (typeof doc === 'string') {
+    return doc;
+  }
+  throw new Error();
+};
 
+const getReason = (json) => {
+  const { reason } = json;
+  if (reason === null || typeof reason === 'string') {
+    return reason;
+  }
+  throw new Error();
+};
+
+const getSeverity = (json) => {
+  const { severity } = json;
+  if (typeof severity === 'string') {
+    return severity;
+  }
+  throw new Error();
+};
+
+const getSpan = (json) => {
+  const { span } = json;
+  if (
+    span !== null &&
+    typeof span.endCol === 'number' &&
+    typeof span.endLine === 'number' &&
+    typeof span.file === 'string' &&
+    typeof span.startCol === 'number' &&
+    typeof span.startLine === 'number' &&
+    span.file !== '<interactive>'
+  ) {
+    return {
+      endCol: span.endCol,
+      endLine: span.endLine,
+      file: span.file,
+      startCol: span.startCol,
+      startLine: span.startLine,
+    };
+  }
+  throw new Error();
+};
+
+exports.fromJsonWith = (nothing) => (just) => (string) => {
   try {
-    json = JSON.parse(string);
+    const json = JSON.parse(string);
+    const doc = getDoc(json);
+    const reason = getReason(json);
+    const severity = getSeverity(json);
+    const span = getSpan(json);
+    return just({ doc, reason, severity, span });
   } catch (_err) {
     return nothing;
   }
-
-  if (
-    typeof json.doc !== 'string' ||
-    (typeof json.reason !== 'string' && json.reason !== null) ||
-    typeof json.severity !== 'string' ||
-    json.span === null ||
-    typeof json.span.endCol !== 'number' ||
-    typeof json.span.endLine !== 'number' ||
-    typeof json.span.file !== 'string' ||
-    typeof json.span.startCol !== 'number' ||
-    typeof json.span.startLine !== 'number' ||
-    json.span.file === '<interactive>'
-  ) {
-    return nothing;
-  }
-
-  return just(json);
 };
