@@ -234,19 +234,6 @@ initialCommands = List.fromArray
   -- easier for us to consume. Note that the text of the warning/error is still
   -- human readable. This setting only affects metadata.
   , ":set -ddump-json"
-
-  -- This tells GHC to keep going in the presence of type errors. This allows
-  -- us to get more output (warnings and errors) even when something is wrong.
-  , ":set -fdefer-type-errors"
-
-  -- This tells GHC to avoid creating any executable code. In other words,
-  -- we're only interested in type checking. This should speed things up
-  -- considerably.
-  , ":set -fno-code"
-
-  -- This tells GHC to use all available cores. Typically compiling an entire
-  -- project can easily be split among multiple cores.
-  , ":set -j"
   ]
 
 enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
