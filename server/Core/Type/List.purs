@@ -1,6 +1,7 @@
 module Core.Type.List
   ( List(Nil, Cons)
   , add
+  , any
   , apply
   , bind
   , compare
@@ -37,6 +38,11 @@ add :: forall a . List a -> List a -> List a
 add xs zs = case xs of
   Nil -> zs
   Cons x ys -> Cons x (add ys zs)
+
+any :: forall a . (a -> Boolean) -> List a -> Boolean
+any f xs = case xs of
+  Nil -> false
+  Cons x ys -> if f x then true else any f ys
 
 apply :: forall a b . List (a -> b) -> List a -> List b
 apply fs xs = case fs of

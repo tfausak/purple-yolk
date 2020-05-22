@@ -1,6 +1,7 @@
 module Core.Type.Queue
   ( Queue
   , add
+  , any
   , apply
   , bind
   , compare
@@ -25,6 +26,9 @@ data Queue a = Queue (List.List a) (List.List a)
 add :: forall a . Queue a -> Queue a -> Queue a
 add (Queue f1 r1) (Queue f2 r2) =
   Queue (List.add f1 (List.add (List.reverse r1) f2)) r2
+
+any :: forall a . (a -> Boolean) -> Queue a -> Boolean
+any f (Queue xs ys) = if List.any f xs then true else List.any f ys
 
 apply :: forall a b . Queue (a -> b) -> Queue a -> Queue b
 apply fs xs = fromList (List.apply (toList fs) (toList xs))

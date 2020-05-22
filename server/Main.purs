@@ -237,10 +237,15 @@ initialCommands = List.fromArray
   ]
 
 enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
-enqueueJob queue job = do
-  Console.info ("[purple-yolk] Enqueueing " + inspect job.command)
-  queuedJob <- Job.queue job
-  Mutable.modify queue (Queue.enqueue queuedJob)
+enqueueJob queue unqueuedJob = do
+  queuedJob <- Job.queue unqueuedJob
+  jobs <- Mutable.get queue
+  let command = unqueuedJob.command
+  if Queue.any (\ job -> job.command == command) jobs
+    then Console.info ("[purple-yolk] Ignoring " + inspect command)
+    else do
+      Console.info ("[purple-yolk] Enqueueing " + inspect command)
+      Mutable.modify queue (Queue.enqueue queuedJob)
 
 processJobs
   :: Mutable (Queue String)
