@@ -34,8 +34,7 @@ const getSpan = (json) => {
     typeof span.endLine === 'number' &&
     typeof span.file === 'string' &&
     typeof span.startCol === 'number' &&
-    typeof span.startLine === 'number' &&
-    span.file !== '<interactive>'
+    typeof span.startLine === 'number'
   ) {
     return {
       endCol: span.endCol,

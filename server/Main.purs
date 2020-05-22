@@ -19,6 +19,7 @@ import PurpleYolk.Console as Console
 import PurpleYolk.Job as Job
 import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
+import PurpleYolk.Path as Path
 import PurpleYolk.Readable as Readable
 import PurpleYolk.Url as Url
 import PurpleYolk.Workspace as Workspace
@@ -80,14 +81,16 @@ reloadGhci connection diagnostics = Job.unqueued
     Nothing -> pure unit
     Just message -> case Nullable.toMaybe message.span of
       Nothing -> pure unit
-      Just span -> do
-        let uri = Url.toString (Url.fromPath span.file)
-        let key = Message.key message
-        let diagnostic = messageToDiagnostic message span
-        Mutable.modify diagnostics \ outer -> case Object.get uri outer of
-          Nothing -> Object.set uri (Object.singleton key diagnostic) outer
-          Just inner -> Object.set uri (Object.set key diagnostic inner) outer
-        sendDiagnostics connection diagnostics
+      Just span -> if Path.toString span.file == "<interactive>"
+        then pure unit
+        else do
+          let uri = Url.toString (Url.fromPath span.file)
+          let key = Message.key message
+          let diagnostic = messageToDiagnostic message span
+          Mutable.modify diagnostics \ outer -> case Object.get uri outer of
+            Nothing -> Object.set uri (Object.singleton key diagnostic) outer
+            Just inner -> Object.set uri (Object.set key diagnostic inner) outer
+          sendDiagnostics connection diagnostics
   , onFinish = sendDiagnostics connection diagnostics
   }
 
