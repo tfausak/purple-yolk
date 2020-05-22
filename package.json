@@ -1,6 +1,7 @@
 {
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
+    "onCommand:purpleYolk.restart",
     "onLanguage:haskell"
   ],
   "badges": [
@@ -14,6 +15,13 @@
     "Programming Languages"
   ],
   "contributes": {
+    "commands": [
+      {
+        "command": "purpleYolk.restart",
+        "title": "Restart",
+        "category": "Purple Yolk"
+      }
+    ],
     "configuration": {
       "properties": {
         "purpleYolk.ghci.command": {

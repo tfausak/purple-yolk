@@ -17,6 +17,7 @@ module PurpleYolk.Connection
   , onDidSaveTextDocument
   , onInitialize
   , onInitialized
+  , onNotification
   , sendDiagnostics
   , workspace
   ) where
@@ -42,6 +43,8 @@ foreign import onDidSaveTextDocument
 foreign import onInitialize :: Connection -> IO InitializeParams -> IO Unit
 
 foreign import onInitialized :: Connection -> IO Unit -> IO Unit
+
+foreign import onNotification :: Connection -> String -> IO Unit -> IO Unit
 
 foreign import sendDiagnostics :: Connection -> Diagnostics -> IO Unit
 

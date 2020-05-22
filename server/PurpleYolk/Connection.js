@@ -1,10 +1,10 @@
 'use strict';
 
-const vscode = require('vscode-languageserver');
+const lsp = require('vscode-languageserver');
 
 exports.client = (connection) => connection.client;
 
-exports.create = () => vscode.createConnection();
+exports.create = () => lsp.createConnection();
 
 exports.listen = (connection) => () => {
   connection.listen();
@@ -23,6 +23,11 @@ exports.onInitialize = (connection) => (callback) => () => {
 
 exports.onInitialized = (connection) => (callback) => () => {
   connection.onInitialized(() => callback());
+  return {};
+};
+
+exports.onNotification = (connection) => (notification) => (callback) => () => {
+  connection.onNotification(notification, () => callback());
   return {};
 };
 

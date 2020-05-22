@@ -54,10 +54,21 @@ main = IO.unsafely do
     Console.info ("[purple-yolk] Saved " + inspect params.textDocument.uri)
     enqueueJob jobs (reloadGhci connection diagnostics)
 
+  Connection.onNotification connection "purpleYolk/restart" do
+    enqueueJob jobs (restartGhci connection diagnostics)
+
   Connection.listen connection
 
 -- { url: { key: diagnostic } }
 type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
+
+restartGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
+restartGhci connection diagnostics = Job.unqueued
+  { command = ":quit"
+  , onStart = do
+    Mutable.modify diagnostics (map (constant Object.empty))
+    sendDiagnostics connection diagnostics
+  }
 
 reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
 reloadGhci connection diagnostics = Job.unqueued
