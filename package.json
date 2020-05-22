@@ -25,9 +25,8 @@
     "configuration": {
       "properties": {
         "purpleYolk.ghci.command": {
-          "default": "stack ghci --ghc-options -ddump-json",
+          "default": "stack ghci --bench --ghc-options '-ddump-json -fobject-code -j4 -O0' --main-is ghc --test",
           "description": "The command to start GHCi.",
-          "pattern": "\\S",
           "type": "string"
         }
       },

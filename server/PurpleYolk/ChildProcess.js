@@ -5,7 +5,7 @@ const childProcess = require('child_process');
 exports.onClose = (child) => (callback) => () =>
   child.on('close', (code, signal) => callback(code)(signal)());
 
-exports.spawn = (command) => (args) => () => childProcess.spawn(command, args);
+exports.exec = (command) => () => childProcess.exec(command);
 
 exports.stdin = (child) => child.stdin;
 
