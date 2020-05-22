@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-05-22: 0.0.7
+
+- Added a status bar item to show progress. This allows you to see what Purple Yolk is working on without checking the output panel. <https://github.com/tfausak/purple-yolk/issues/3>
+
 ## 2020-05-22: 0.0.6
 
 - Added the "Purple Yolk: Restart" command to restart GHCi. This is useful when you change something, like a `*.cabal` file, that Purple Yolk doesn't notice. <https://github.com/tfausak/purple-yolk/issues/2>
