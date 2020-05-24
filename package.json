@@ -84,8 +84,8 @@
   "description": "A Haskell IDE.",
   "devDependencies": {
     "eslint-loader": "^4.0.2",
-    "eslint": "^7.0.0",
-    "purescript": "^0.13.6",
+    "eslint": "^7.1.0",
+    "purescript": "^0.13.8",
     "purs-loader": "^3.7.1",
     "vsce": "^1.75.0",
     "watchy": "^0.9.7",
