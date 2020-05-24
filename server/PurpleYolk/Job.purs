@@ -1,9 +1,5 @@
 module PurpleYolk.Job
-  ( Finished
-  , Job
-  , Queued
-  , Started
-  , Unqueued
+  ( Job
   , finish
   , queue
   , start
@@ -12,46 +8,43 @@ module PurpleYolk.Job
 
 import Core
 
-type Job queuedAt startedAt finishedAt =
+type Job =
   { command :: String
-  , finishedAt :: finishedAt
+  , finishedAt :: Maybe Date
   , onFinish :: IO Unit
   , onOutput :: String -> IO Unit
+  , onQueue :: IO Unit
   , onStart :: IO Unit
-  , queuedAt :: queuedAt
-  , startedAt :: startedAt
+  , queuedAt :: Maybe Date
+  , startedAt :: Maybe Date
   }
 
-type Unqueued = Job Unit Unit Unit
-
-type Queued = Job Date Unit Unit
-
-type Started = Job Date Date Unit
-
-type Finished = Job Date Date Date
-
-unqueued :: Unqueued
+unqueued :: Job
 unqueued =
   { command: ""
-  , finishedAt: unit
+  , finishedAt: Nothing
   , onFinish: pure unit
   , onOutput: \ _ -> pure unit
+  , onQueue: pure unit
   , onStart: pure unit
-  , queuedAt: unit
-  , startedAt: unit
+  , queuedAt: Nothing
+  , startedAt: Nothing
   }
 
-queue :: Unqueued -> IO Queued
+queue :: Job -> IO Job
 queue job = do
   now <- getCurrentDate
-  pure job { queuedAt = now }
+  job.onQueue
+  pure job { queuedAt = Just now }
 
-start :: Queued -> IO Started
+start :: Job -> IO Job
 start job = do
   now <- getCurrentDate
-  pure job { startedAt = now }
+  job.onStart
+  pure job { startedAt = Just now }
 
-finish :: Started -> IO Finished
+finish :: Job -> IO Job
 finish job = do
   now <- getCurrentDate
-  pure job { finishedAt = now }
+  job.onFinish
+  pure job { finishedAt = Just now }

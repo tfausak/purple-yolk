@@ -2,8 +2,6 @@
 
 const lsp = require('vscode-languageserver');
 
-exports.client = (connection) => connection.client;
-
 exports.create = () => lsp.createConnection();
 
 exports.listen = (connection) => () => {

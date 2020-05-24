@@ -11,7 +11,6 @@ module PurpleYolk.Connection
   , SaveOptions
   , TextDocumentIdentifier
   , TextDocumentSyncOptions
-  , client
   , create
   , listen
   , onDidSaveTextDocument
@@ -25,12 +24,9 @@ module PurpleYolk.Connection
 
 import Core
 
-import PurpleYolk.Client as Client
 import PurpleYolk.Workspace as Workspace
 
 foreign import data Connection :: Type
-
-foreign import client :: Connection -> Client.Client
 
 foreign import create :: IO Connection
 

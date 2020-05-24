@@ -13,9 +13,7 @@ import Core.Type.Nullable as Nullable
 import Core.Type.Object as Object
 import Core.Type.Queue as Queue
 import PurpleYolk.ChildProcess as ChildProcess
-import PurpleYolk.Client as Client
 import PurpleYolk.Connection as Connection
-import PurpleYolk.Console as Console
 import PurpleYolk.Job as Job
 import PurpleYolk.Message as Message
 import PurpleYolk.Package as Package
@@ -26,44 +24,36 @@ import PurpleYolk.Workspace as Workspace
 import PurpleYolk.Writable as Writable
 
 main :: Unit
-main = IO.unsafely do
-  output PurpleYolk ("Starting Purple Yolk " + Package.version)
+main = unsafely runServer
 
+runServer :: IO Unit
+runServer = do
+  output PurpleYolk ("Starting vesion " + Package.version)
+
+  events <- Mutable.new Queue.empty
   diagnostics <- Mutable.new Object.empty
-  connection <- Connection.create
-  jobs <- initializeJobs connection diagnostics
 
-  -- Assuming that everything has been set up correctly, reloading GHCi should
-  -- do nothing. But sometimes GHCi starts up weird or without certain options
-  -- that we set at runtime. In those cases we need to reload in order to get
-  -- everything working properly.
-  enqueueJob jobs (reloadGhci connection diagnostics)
+  initializeConnection events \ connection ->
+    withConfiguration connection \ configuration -> do
+      ghci <- startGhci events diagnostics connection configuration
+      updateStatusBarItem connection "Idle"
+      processEvents Queue.empty events diagnostics connection ghci
 
-  Connection.onInitialize connection (pure
-    { capabilities: { textDocumentSync: { save: { includeText: false } } } })
-
-  Connection.onInitialized connection do
-    Client.register
-      (Connection.client connection)
-      "workspace/didChangeConfiguration"
-    Workspace.getConfiguration
-      (Connection.workspace connection)
-      "purpleYolk"
-      \ configuration -> do
-        stdout <- Mutable.new Queue.empty
-        ghci <- initializeGhci configuration stdout
-
-        processJobs stdout ghci jobs connection
-    updateStatusBarItem connection "Starting up ..."
-
-  Connection.onDidSaveTextDocument connection \ params -> do
-    output PurpleYolk ("Saved " + inspect params.textDocument.uri)
-    enqueueJob jobs (reloadGhci connection diagnostics)
-
-  Connection.onNotification connection "purpleYolk/restartGhci" do
-    enqueueJob jobs (restartGhci connection diagnostics)
-
-  Connection.listen connection
+output :: Source -> String -> IO Unit
+output source message = do
+  now <- getCurrentDate
+  log (String.join ""
+    [ Date.format now
+    , " ["
+    , case source of
+      Ghci stream -> "ghci/" + case stream of
+        Stderr -> "stderr"
+        Stdin -> "stdin"
+        Stdout -> "stdout"
+      PurpleYolk -> namespace
+    , "] "
+    , message
+    ])
 
 data Source
   = Ghci Stream
@@ -74,58 +64,166 @@ data Stream
   | Stdin
   | Stdout
 
-output :: Source -> String -> IO Unit
-output source message = do
-  let
-    tag = case source of
-      Ghci Stderr -> "ghci/stderr"
-      Ghci Stdin -> "ghci/stdin"
-      Ghci Stdout -> "ghci/stdout"
-      PurpleYolk -> "purple-yolk"
-  Console.info ("[" + tag + "] " + message)
+namespace :: String
+namespace = "purpleYolk"
 
-updateStatusBarItem :: Connection.Connection -> String -> IO Unit
-updateStatusBarItem connection message = Connection.sendNotification
-  connection "purpleYolk/updateStatusBarItem" ("Purple Yolk: " + message)
+type Events = Mutable (Queue Event)
+
+data Event
+  = HandleLine String
+  | NoOp
+  | QueueJob Job.Job
+  | RestartGhci
+  | SavedFile Connection.DocumentUri
 
 -- { url: { key: diagnostic } }
 type Diagnostics = Mutable (Object (Object Connection.Diagnostic))
 
-restartGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
-restartGhci connection diagnostics = Job.unqueued
-  { command = ":quit"
-  , onStart = do
-    Mutable.modify diagnostics (map (constant Object.empty))
-    sendDiagnostics connection diagnostics
+initializeConnection :: Events -> (Connection.Connection -> IO Unit) -> IO Unit
+initializeConnection events callback = do
+  connection <- Connection.create
+
+  Connection.onInitialize connection do
+    output PurpleYolk "Initializing"
+    pure initializeParams
+
+  Connection.onInitialized connection do
+    output PurpleYolk "Initialized"
+    callback connection
+
+  Connection.onDidSaveTextDocument connection \ params -> do
+    let uri = params.textDocument.uri
+    output PurpleYolk ("Saved " + inspect uri)
+    enqueueEvent events (SavedFile uri)
+
+  flip IO.mapM_ notifications \ (Tuple notification event) ->
+    Connection.onNotification connection (namespaced notification) do
+      output PurpleYolk ("Received " + notification + " notification")
+      enqueueEvent events event
+
+  Connection.listen connection
+
+initializeParams :: Connection.InitializeParams
+initializeParams =
+  { capabilities:
+    { textDocumentSync:
+      { save:
+        { includeText: false
+        }
+      }
+    }
   }
 
-reloadGhci :: Connection.Connection -> Diagnostics -> Job.Unqueued
-reloadGhci = withDiagnostics ":reload"
+enqueueEvent :: Events -> Event -> IO Unit
+enqueueEvent events event = Mutable.modify events (Queue.enqueue event)
 
-withDiagnostics :: String -> Connection.Connection -> Diagnostics -> Job.Unqueued
+notifications :: List (Tuple String Event)
+notifications = List.fromArray
+  [ Tuple "restartGhci" RestartGhci
+  ]
+
+namespaced :: String -> String
+namespaced string = namespace + "/" + string
+
+withConfiguration
+  :: Connection.Connection -> (Workspace.Configuration -> IO Unit) -> IO Unit
+withConfiguration connection =
+  Workspace.getConfiguration (Connection.workspace connection) namespace
+
+startGhci
+  :: Events
+  -> Diagnostics
+  -> Connection.Connection
+  -> Workspace.Configuration
+  -> IO ChildProcess.ChildProcess
+startGhci events diagnostics connection configuration = do
+  let command = configuration.ghci.command
+  output PurpleYolk ("Starting GHCi with " + inspect command)
+  ghci <- ChildProcess.exec command
+
+  ChildProcess.onClose ghci \ code signal -> if code == 0
+    then output PurpleYolk "GHCi exited successfully"
+    else throw (String.join " "
+      [ "GHCi closed unexpectedly with code"
+      , inspect code
+      , "and signal"
+      , inspect signal
+      ])
+
+  stderr <- Mutable.new ""
+  Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
+
+  stdout <- Mutable.new ""
+  Readable.onData (ChildProcess.stdout ghci) (handleStdout events stdout)
+
+  flip IO.mapM_ commands \ cmd -> do
+    job <- Job.queue (withDiagnostics cmd connection diagnostics)
+    enqueueEvent events (QueueJob job)
+
+  pure ghci
+
+handleStderr :: Mutable String -> String -> IO Unit
+handleStderr buffer = handleStream buffer (output (Ghci Stderr))
+
+handleStdout :: Events -> Mutable String -> String -> IO Unit
+handleStdout events buffer = handleStream buffer \ line -> do
+  output (Ghci Stdout) line
+  enqueueEvent events (HandleLine line)
+
+handleStream :: Mutable String -> (String -> IO Unit) -> String -> IO Unit
+handleStream buffer callback chunk = do
+  Mutable.modify buffer (_ + chunk)
+  contents <- Mutable.get buffer
+  case List.fromArray (String.split "\n" contents) of
+    Nil -> pure unit
+    Cons _ Nil -> pure unit
+    lines -> do
+      let
+        loop xs = case xs of
+          Nil -> pure unit
+          Cons x Nil -> Mutable.set buffer x
+          Cons x ys -> do
+            callback x
+            loop ys
+      loop lines
+
+commands :: List String
+commands = List.fromArray
+  [ ":set prompt \"" + prompt + "\\n\""
+  , ":set -ddump-json"
+  , ":reload"
+  ]
+
+withDiagnostics :: String -> Connection.Connection -> Diagnostics -> Job.Job
 withDiagnostics command connection diagnostics = Job.unqueued
   { command = command
   , onOutput = \ line -> case Message.fromJson line of
     Nothing -> pure unit
-    Just message -> case Nullable.toMaybe message.span of
-      Nothing -> case Nullable.toMaybe (Message.getCompilingFile message) of
-        Nothing -> pure unit
-        Just path -> do
-          let uri = Url.toString (Url.fromPath path)
-          Mutable.modify diagnostics (Object.set uri Object.empty)
-          sendDiagnostics connection diagnostics
-      Just span -> if Path.toString span.file == "<interactive>"
-        then pure unit
-        else do
-          let uri = Url.toString (Url.fromPath span.file)
-          let key = Message.key message
-          let diagnostic = messageToDiagnostic message span
-          Mutable.modify diagnostics \ outer -> case Object.get uri outer of
-            Nothing -> Object.set uri (Object.singleton key diagnostic) outer
-            Just inner -> Object.set uri (Object.set key diagnostic inner) outer
-          sendDiagnostics connection diagnostics
+    Just message -> processMessage connection diagnostics message
   , onFinish = sendDiagnostics connection diagnostics
   }
+
+processMessage
+  :: Connection.Connection -> Diagnostics -> Message.Message -> IO Unit
+processMessage connection diagnostics message =
+  case Nullable.toMaybe message.span of
+    Nothing -> case Nullable.toMaybe (Message.getCompilingFile message) of
+      Nothing -> pure unit
+      Just path -> do
+        let uri = Url.toString (Url.fromPath path)
+        Mutable.modify diagnostics (Object.set uri Object.empty)
+        sendDiagnostics connection diagnostics
+    Just span -> if Path.toString span.file == "<interactive>"
+      then pure unit
+      else do
+        let uri = Url.toString (Url.fromPath span.file)
+        let key = Message.key message
+        let diagnostic = messageToDiagnostic message span
+        Mutable.modify diagnostics \ outer -> case Object.get uri outer of
+          Nothing -> Object.set uri (Object.singleton key diagnostic) outer
+          Just inner ->
+            Object.set uri (Object.set key diagnostic inner) outer
+        sendDiagnostics connection diagnostics
 
 sendDiagnostics :: Connection.Connection -> Diagnostics -> IO Unit
 sendDiagnostics connection mutable = do
@@ -169,173 +267,126 @@ messageToDiagnostic message span =
   , source: "ghc"
   }
 
-initializeGhci
-  :: Workspace.Configuration
-  -> Mutable (Queue String)
-  -> IO ChildProcess.ChildProcess
-initializeGhci configuration queue = do
-  let command = configuration.ghci.command
-  output PurpleYolk ("Starting GHCi with " + inspect command)
-  ghci <- ChildProcess.exec command
-
-  ChildProcess.onClose ghci \ code signal -> throw (String.join " "
-    [ "GHCi closed unexpectedly with code"
-    , inspect code
-    , "and signal"
-    , inspect signal
-    ])
-
-  stdout <- Mutable.new ""
-  Readable.onData (ChildProcess.stdout ghci) (handleStdout stdout queue)
-
-  stderr <- Mutable.new ""
-  Readable.onData (ChildProcess.stderr ghci) (handleStderr stderr)
-
-  pure ghci
-
-handleStdout
-  :: Mutable String
-  -> Mutable (Queue String)
-  -> String
-  -> IO Unit
-handleStdout stdout queue chunk = do
-  let
-    loop lines = case lines of
-      Nil -> pure unit
-      Cons leftover Nil -> Mutable.set stdout leftover
-      Cons first rest -> do
-        output (Ghci Stdout) first
-        Mutable.modify queue (Queue.enqueue first)
-        loop rest
-  Mutable.modify stdout (_ + chunk)
-  buffer <- Mutable.get stdout
-  case List.fromArray (String.split "\n" buffer) of
-    Nil -> pure unit
-    Cons _ Nil -> pure unit
-    lines -> loop lines
-
-handleStderr :: Mutable String -> String -> IO Unit
-handleStderr stderr chunk = do
-  let
-    loop lines = case lines of
-      Nil -> pure unit
-      Cons leftover Nil -> Mutable.set stderr leftover
-      Cons first rest -> do
-        output (Ghci Stderr) first
-        loop rest
-  Mutable.modify stderr (_ + chunk)
-  buffer <- Mutable.get stderr
-  case List.fromArray (String.split "\n" buffer) of
-    Nil -> pure unit
-    Cons _ Nil -> pure unit
-    lines -> loop lines
-
 prompt :: String
-prompt = String.join " " ["{- purple-yolk", Package.version, "-}"]
+prompt = "{- " + namespaced Package.version + " -}"
 
-type Jobs = Mutable (Queue Job.Queued)
+updateStatusBarItem :: Connection.Connection -> String -> IO Unit
+updateStatusBarItem connection message = Connection.sendNotification
+  connection (namespaced "updateStatusBarItem") ("Purple Yolk: " + message)
 
-initializeJobs :: Connection.Connection -> Diagnostics -> IO Jobs
-initializeJobs connection diagnostics = do
-  queue <- Mutable.new Queue.empty
-  IO.mapM_
-    (\ command -> do
-      let job = withDiagnostics command connection diagnostics
-      enqueueJob queue job)
-    initialCommands
-  pure queue
-
-initialCommands :: List String
-initialCommands = List.fromArray
-  -- We use the prompt to determine when a command finishes. That means setting
-  -- the prompt has to be the very first thing we do, otherwise we'd be stuck
-  -- waiting for the command to finish.
-  [ ":set prompt \"" + prompt + "\\n\""
-
-  -- This tells GHCi to collect type and location information, which is super
-  -- useful for us. Unfortunately it makes compilation take much longer. We're
-  -- disabling it until we actually need features it provides.
-  -- , ":set +c"
-
-  -- This tells GHC to output warnings and errors as JSON, which makes them
-  -- easier for us to consume. Note that the text of the warning/error is still
-  -- human readable. This setting only affects metadata.
-  --
-  -- This should be set by the GHCi launch command. Since it's necessary for
-  -- Purple Yolk to work, we make sure that it's set here. If it's already set,
-  -- then re-setting it should be harmless.
-  , ":set -ddump-json"
-  ]
-
-enqueueJob :: Jobs -> Job.Unqueued -> IO Unit
-enqueueJob queue unqueuedJob = do
-  queuedJob <- Job.queue unqueuedJob
-  jobs <- Mutable.get queue
-  let command = unqueuedJob.command
-  if Queue.any (\ job -> job.command == command) jobs
-    then output PurpleYolk ("Ignoring " + inspect command)
-    else do
-      output PurpleYolk ("Enqueueing " + inspect command)
-      Mutable.modify queue (Queue.enqueue queuedJob)
-
-processJobs
-  :: Mutable (Queue String)
-  -> ChildProcess.ChildProcess
-  -> Jobs
+processEvents
+  :: Queue Job.Job
+  -> Events
+  -> Diagnostics
   -> Connection.Connection
+  -> ChildProcess.ChildProcess
   -> IO Unit
-processJobs stdout ghci queue connection = do
-  jobs <- Mutable.get queue
-  case Queue.dequeue jobs of
-    Nothing -> IO.delay 0.1 (processJobs stdout ghci queue connection)
-    Just (Tuple job newJobs) -> do
+processEvents jobs queue diagnostics connection ghci = do
+  events <- Mutable.get queue
+  case Queue.dequeue events of
+    Nothing ->
+      IO.delay 0.01 (processEvents jobs queue diagnostics connection ghci)
+    Just (Tuple event newEvents) -> do
+      Mutable.set queue newEvents
+      newJobs <- startNextJob connection ghci jobs
+      processEvent newJobs queue diagnostics connection ghci event
+
+startNextJob
+  :: Connection.Connection
+  -> ChildProcess.ChildProcess
+  -> Queue Job.Job
+  -> IO (Queue Job.Job)
+startNextJob connection ghci jobs = case Queue.toList jobs of
+  Nil -> pure jobs
+  Cons job rest -> case job.startedAt of
+    Just _ -> pure jobs
+    Nothing -> do
       let command = job.command
       output PurpleYolk ("Starting " + inspect command)
-      updateStatusBarItem connection ("Running " + command + " ...")
-      Mutable.set queue newJobs
-      Writable.write (ChildProcess.stdin ghci) (command + "\n")
-      output (Ghci Stdin) command
-      job.onStart
-      startedJob <- Job.start job
-      processJob stdout ghci queue startedJob connection
+      updateStatusBarItem connection ("Running " + command)
+      started <- Job.start job
+      tellGhci ghci command
+      pure (Queue.fromList (started : rest))
 
-processJob
-  :: Mutable (Queue String)
-  -> ChildProcess.ChildProcess
-  -> Jobs
-  -> Job.Started
+tellGhci :: ChildProcess.ChildProcess -> String -> IO Unit
+tellGhci ghci command = do
+  Writable.write (ChildProcess.stdin ghci) (command + "\n")
+  output (Ghci Stdin) command
+
+processEvent
+  :: Queue Job.Job
+  -> Events
+  -> Diagnostics
   -> Connection.Connection
+  -> ChildProcess.ChildProcess
+  -> Event
   -> IO Unit
-processJob stdout ghci queue job connection = do
-  lines <- Mutable.get stdout
-  case Queue.dequeue lines of
-    Nothing -> IO.delay 0.01 (processJob stdout ghci queue job connection)
-    Just (Tuple line rest) -> do
-      Mutable.set stdout rest
+processEvent jobs queue diagnostics connection ghci event = case event of
+
+  HandleLine line -> case Queue.dequeue jobs of
+    Nothing -> processEvents jobs queue diagnostics connection ghci
+    Just (Tuple job rest) -> do
       job.onOutput line
       if String.indexOf prompt line == -1
-        then processJob stdout ghci queue job connection
+        then processEvents jobs queue diagnostics connection ghci
         else do
-          finishedJob <- Job.finish job
-          finishJob finishedJob connection
-          processJobs stdout ghci queue connection
+          finished <- Job.finish job
+          let
+            ms maybeStart maybeEnd = case maybeStart, maybeEnd of
+              Just start, Just end -> inspect (round (1000.0 * delta start end))
+              _, _ -> "unknown"
+          output PurpleYolk (String.join ""
+            [ "Finished "
+            , inspect finished.command
+            , " ("
+            , ms finished.queuedAt finished.startedAt
+            , " + "
+            , ms finished.startedAt finished.finishedAt
+            , " = "
+            , ms finished.queuedAt finished.finishedAt
+            , ")"
+            ])
+          updateStatusBarItem connection "Idle"
+          newJobs <- startNextJob connection ghci rest
+          processEvents newJobs queue diagnostics connection ghci
 
-finishJob :: Job.Finished -> Connection.Connection -> IO Unit
-finishJob job connection = do
-  job.onFinish
-  let ms start end = inspect (round (1000.0 * delta start end))
-  output PurpleYolk (String.join ""
-    [ "Finished "
-    , inspect job.command
-    , " ("
-    , ms job.queuedAt job.startedAt
-    , " + "
-    , ms job.startedAt job.finishedAt
-    , " = "
-    , ms job.queuedAt job.finishedAt
-    , ")"
-    ])
-  updateStatusBarItem connection "Idle."
+  NoOp -> processEvents jobs queue diagnostics connection ghci
+
+  QueueJob job -> do
+    let command = job.command
+    newJobs <- if Queue.any (\ other -> other.command == command) jobs
+      then do
+        output PurpleYolk ("Ignoring " + inspect command)
+        pure jobs
+      else do
+        output PurpleYolk ("Queueing " + inspect command)
+        pure (Queue.enqueue job jobs)
+    processEvents newJobs queue diagnostics connection ghci
+
+  RestartGhci -> do
+    output PurpleYolk "Restarting GHCi"
+    updateStatusBarItem connection "Restarting"
+    ChildProcess.onClose ghci \ _ _ -> do
+      clearDiagnostics diagnostics connection
+      withConfiguration connection \ configuration -> do
+        Mutable.set queue Queue.empty
+        newGhci <- startGhci queue diagnostics connection configuration
+        updateStatusBarItem connection "Idle"
+        processEvents Queue.empty queue diagnostics connection newGhci
+    killed <- ChildProcess.kill ghci
+    if killed then pure unit else throw "Failed to kill GHCi!"
+
+  SavedFile _ -> do
+    queued <- Job.queue (withDiagnostics ":reload" connection diagnostics)
+    enqueueEvent queue (QueueJob queued)
+    enqueueEvent queue NoOp
+    processEvents jobs queue diagnostics connection ghci
+
+clearDiagnostics :: Diagnostics -> Connection.Connection -> IO Unit
+clearDiagnostics diagnostics connection = do
+  Mutable.modify diagnostics (map (constant Object.empty))
+  sendDiagnostics connection diagnostics
+  Mutable.set diagnostics Object.empty
 
 delta :: Date -> Date -> Number
 delta start end = Date.toPosix end - Date.toPosix start
