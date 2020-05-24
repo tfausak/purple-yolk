@@ -17,7 +17,7 @@ import Core.Operator ((>>), (<<), (*), (/), (+), (-), (:), (==), (>=), (>), (<=)
 -- import Core.Primitive.Array () as Export
 import Core.Primitive.Boolean (and, not, or) as Export
 -- import Core.Primitive.Char () as Export
-import Core.Primitive.Function (compose, constant, identity) as Export
+import Core.Primitive.Function (compose, constant, flip, identity) as Export
 import Core.Primitive.Int (toNumber) as Export
 import Core.Primitive.Number (infinity, isFinite, isNaN, nan, round) as Export
 -- import Core.Primitive.Record () as Export

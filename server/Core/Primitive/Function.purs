@@ -3,6 +3,7 @@ module Core.Primitive.Function
   , compose
   , constant
   , esopmoc
+  , flip
   , identity
   , ylppa
   ) where
@@ -15,6 +16,9 @@ compose f g x = g (f x)
 
 constant :: forall a b . a -> b -> a
 constant x _ = x
+
+flip :: forall a b c . (a -> b -> c) -> b -> a -> c
+flip f x y = f y x
 
 esopmoc :: forall a b c . (b -> c) -> (a -> b) -> a -> c
 esopmoc g f x = g (f x)

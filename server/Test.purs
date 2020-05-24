@@ -447,6 +447,9 @@ main = IO.unsafely do
         describe "constant" do
           constant 1 2.3 ==> 1
 
+        describe "flip" do
+          flip (+) "a" "b" ==> "ba"
+
         describe "identity" do
           identity 1 ==> 1
 
