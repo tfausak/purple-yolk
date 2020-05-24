@@ -27,8 +27,7 @@ import PurpleYolk.Writable as Writable
 
 main :: Unit
 main = IO.unsafely do
-  Console.info (String.join " "
-    ["[purple-yolk] Starting version", Package.version, "..."])
+  output PurpleYolk ("Starting Purple Yolk " + Package.version)
 
   diagnostics <- Mutable.new Object.empty
   connection <- Connection.create
@@ -58,13 +57,32 @@ main = IO.unsafely do
     updateStatusBarItem connection "Starting up ..."
 
   Connection.onDidSaveTextDocument connection \ params -> do
-    Console.info ("[purple-yolk] Saved " + inspect params.textDocument.uri)
+    output PurpleYolk ("Saved " + inspect params.textDocument.uri)
     enqueueJob jobs (reloadGhci connection diagnostics)
 
   Connection.onNotification connection "purpleYolk/restartGhci" do
     enqueueJob jobs (restartGhci connection diagnostics)
 
   Connection.listen connection
+
+data Source
+  = Ghci Stream
+  | PurpleYolk
+
+data Stream
+  = Stderr
+  | Stdin
+  | Stdout
+
+output :: Source -> String -> IO Unit
+output source message = do
+  let
+    tag = case source of
+      Ghci Stderr -> "ghci/stderr"
+      Ghci Stdin -> "ghci/stdin"
+      Ghci Stdout -> "ghci/stdout"
+      PurpleYolk -> "purple-yolk"
+  Console.info ("[" + tag + "] " + message)
 
 updateStatusBarItem :: Connection.Connection -> String -> IO Unit
 updateStatusBarItem connection message = Connection.sendNotification
@@ -157,7 +175,7 @@ initializeGhci
   -> IO ChildProcess.ChildProcess
 initializeGhci configuration queue = do
   let command = configuration.ghci.command
-  Console.info ("[purple-yolk] Starting GHCi: " + inspect command)
+  output PurpleYolk ("Starting GHCi with " + inspect command)
   ghci <- ChildProcess.exec command
 
   ChildProcess.onClose ghci \ code signal -> throw (String.join " "
@@ -186,7 +204,7 @@ handleStdout stdout queue chunk = do
       Nil -> pure unit
       Cons leftover Nil -> Mutable.set stdout leftover
       Cons first rest -> do
-        Console.info ("[ghci/stdout] " + first)
+        output (Ghci Stdout) first
         Mutable.modify queue (Queue.enqueue first)
         loop rest
   Mutable.modify stdout (_ + chunk)
@@ -203,7 +221,7 @@ handleStderr stderr chunk = do
       Nil -> pure unit
       Cons leftover Nil -> Mutable.set stderr leftover
       Cons first rest -> do
-        Console.info ("[ghci/stderr] " + first)
+        output (Ghci Stderr) first
         loop rest
   Mutable.modify stderr (_ + chunk)
   buffer <- Mutable.get stderr
@@ -255,9 +273,9 @@ enqueueJob queue unqueuedJob = do
   jobs <- Mutable.get queue
   let command = unqueuedJob.command
   if Queue.any (\ job -> job.command == command) jobs
-    then Console.info ("[purple-yolk] Ignoring " + inspect command)
+    then output PurpleYolk ("Ignoring " + inspect command)
     else do
-      Console.info ("[purple-yolk] Enqueueing " + inspect command)
+      output PurpleYolk ("Enqueueing " + inspect command)
       Mutable.modify queue (Queue.enqueue queuedJob)
 
 processJobs
@@ -272,11 +290,11 @@ processJobs stdout ghci queue connection = do
     Nothing -> IO.delay 0.1 (processJobs stdout ghci queue connection)
     Just (Tuple job newJobs) -> do
       let command = job.command
-      Console.info ("[purple-yolk] Starting " + inspect command)
+      output PurpleYolk ("Starting " + inspect command)
       updateStatusBarItem connection ("Running " + command + " ...")
       Mutable.set queue newJobs
       Writable.write (ChildProcess.stdin ghci) (command + "\n")
-      Console.info ("[ghci/stdin] " + command)
+      output (Ghci Stdin) command
       job.onStart
       startedJob <- Job.start job
       processJob stdout ghci queue startedJob connection
@@ -306,14 +324,16 @@ finishJob :: Job.Finished -> Connection.Connection -> IO Unit
 finishJob job connection = do
   job.onFinish
   let ms start end = inspect (round (1000.0 * delta start end))
-  Console.info (String.join " "
-    [ "[purple-yolk] Finished"
+  output PurpleYolk (String.join ""
+    [ "Finished "
     , inspect job.command
-    , "(" + ms job.queuedAt job.startedAt
-    , "+"
+    , " ("
+    , ms job.queuedAt job.startedAt
+    , " + "
     , ms job.startedAt job.finishedAt
-    , "="
-    , ms job.queuedAt job.finishedAt + ")"
+    , " = "
+    , ms job.queuedAt job.finishedAt
+    , ")"
     ])
   updateStatusBarItem connection "Idle."
 
