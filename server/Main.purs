@@ -156,7 +156,9 @@ initializeGhci
   -> Mutable (Queue String)
   -> IO ChildProcess.ChildProcess
 initializeGhci configuration queue = do
-  ghci <- ChildProcess.exec configuration.ghci.command
+  let command = configuration.ghci.command
+  Console.info ("[purple-yolk] Starting GHCi: " + inspect command)
+  ghci <- ChildProcess.exec command
 
   ChildProcess.onClose ghci \ code signal -> throw (String.join " "
     [ "GHCi closed unexpectedly with code"
