@@ -27,7 +27,7 @@ module.exports = {
     ));
 
     const statusBarItem = vscode.window.createStatusBarItem();
-    statusBarItem.text = 'Purple Yolk';
+    statusBarItem.text = 'Purple Yolk: Initializing';
     statusBarItem.show();
 
     client.onReady().then(() =>
