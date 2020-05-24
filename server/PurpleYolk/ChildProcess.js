@@ -7,6 +7,8 @@ exports.onClose = (child) => (callback) => () =>
 
 exports.exec = (command) => () => childProcess.exec(command);
 
+exports.kill = (child) => () => child.kill();
+
 exports.stdin = (child) => child.stdin;
 
 exports.stderr = (child) => child.stderr;
