@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-05-26: 0.0.10
+
+- Fixed how GHCi is managed to avoid crashing when a buffer fills up. <https://github.com/tfausak/purple-yolk/issues/13>
+
 ## 2020-05-24: 0.0.9
 
 - Changed how GHCi restarts to make it more reliable. <https://github.com/tfausak/purple-yolk/issues/12>
