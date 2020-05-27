@@ -2,6 +2,7 @@
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
     "onCommand:purpleYolk.restart",
+    "onCommand:purpleYolk:showOutput",
     "onLanguage:haskell"
   ],
   "badges": [
@@ -19,6 +20,11 @@
       {
         "command": "purpleYolk.restart",
         "title": "Restart",
+        "category": "Purple Yolk"
+      },
+      {
+        "command": "purpleYolk.showOutput",
+        "title": "Show output",
         "category": "Purple Yolk"
       }
     ],

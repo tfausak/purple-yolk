@@ -5,7 +5,9 @@ const path = require('path');
 const vscode = require('vscode');
 
 module.exports = {
+  /* eslint-disable max-statements */
   activate: (context) => {
+    const outputChannel = vscode.window.createOutputChannel('Purple Yolk');
     const server = context.asAbsolutePath(path.join('dist', 'server.js'));
     const client = new lsp.LanguageClient(
       'Purple Yolk',
@@ -17,7 +19,10 @@ module.exports = {
         },
         run: { module: server, transport: lsp.TransportKind.ipc },
       },
-      { documentSelector: [{ language: 'haskell', scheme: 'file' }] }
+      {
+        documentSelector: [{ language: 'haskell', scheme: 'file' }],
+        outputChannel,
+      }
     );
     client.start();
 
@@ -26,7 +31,13 @@ module.exports = {
       () => client.sendNotification('purpleYolk/restartGhci', null)
     ));
 
+    context.subscriptions.push(vscode.commands.registerCommand(
+      'purpleYolk.showOutput',
+      () => outputChannel.show(true)
+    ));
+
     const statusBarItem = vscode.window.createStatusBarItem();
+    statusBarItem.command = 'purpleYolk.showOutput';
     statusBarItem.text = 'Purple Yolk: Initializing';
     statusBarItem.show();
 
