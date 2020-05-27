@@ -5,7 +5,7 @@ const childProcess = require('child_process');
 exports.onClose = (child) => (callback) => () =>
   child.on('close', (code, signal) => callback(code)(signal)());
 
-exports.exec = (command) => () => childProcess.exec(command);
+exports.spawn = (command) => () => childProcess.spawn(command, { shell: true });
 
 exports.kill = (child) => () => child.kill();
 

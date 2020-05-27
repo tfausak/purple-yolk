@@ -1,8 +1,8 @@
 module PurpleYolk.ChildProcess
   ( ChildProcess
-  , onClose
-  , exec
   , kill
+  , onClose
+  , spawn
   , stderr
   , stdin
   , stdout
@@ -21,9 +21,9 @@ foreign import onClose
   -> (Int -> Nullable.Nullable String -> IO Unit)
   -> IO Unit
 
-foreign import exec :: String -> IO ChildProcess
-
 foreign import kill :: ChildProcess -> IO Boolean
+
+foreign import spawn :: String -> IO ChildProcess
 
 foreign import stderr :: ChildProcess -> Readable.Readable
 

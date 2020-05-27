@@ -139,7 +139,7 @@ startGhci
 startGhci events diagnostics connection configuration = do
   let command = configuration.ghci.command
   output PurpleYolk ("Starting GHCi with " + inspect command)
-  ghci <- ChildProcess.exec command
+  ghci <- ChildProcess.spawn command
 
   ChildProcess.onClose ghci \ code signal -> if code == 0
     then output PurpleYolk "GHCi exited successfully"
