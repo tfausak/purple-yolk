@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-05-26: 0.0.11
+
+- Made it so the status bar item takes you to Purple Yolk's output when you click on it. <https://github.com/tfausak/purple-yolk/issues/14>
+
 ## 2020-05-26: 0.0.10
 
 - Fixed how GHCi is managed to avoid crashing when a buffer fills up. <https://github.com/tfausak/purple-yolk/issues/13>
