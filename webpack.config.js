@@ -6,8 +6,7 @@ const path = require('path');
 module.exports = {
   entry: {
     client: './client/index.js',
-    server: './server/Main.purs',
-    test: './server/Test.purs',
+    server: './server/index.js',
   },
   externals: {
     vscode: 'commonjs vscode',
@@ -18,15 +17,6 @@ module.exports = {
       {
         loader: 'eslint-loader',
         test: /[.]js$/u,
-      },
-      {
-        loader: 'purs-loader',
-        options: {
-          src: [
-            path.join(__dirname, 'server', '**', '*.purs'),
-          ],
-        },
-        test: /[.]purs$/u,
       },
     ],
   },
