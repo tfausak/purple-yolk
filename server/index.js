@@ -64,6 +64,11 @@ const sendDiagnostics = (file) => {
   }
 };
 
+const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
+  diagnostics[key] = {};
+  sendDiagnostics(key);
+});
+
 const getSeverity = (json) => {
   if (json.severity === 'SevError') {
     return 1;
@@ -179,10 +184,7 @@ connection.onNotification(`${purpleYolk.name}/restartGhci`, () => {
   updateStatus('Stopping GHCi');
   ghci.on('exit', () => {
     ghci = null;
-    Object.keys(diagnostics).forEach((key) => {
-      diagnostics[key] = {};
-      sendDiagnostics(key);
-    });
+    clearDiagnostics();
     startGhci();
   });
   ghci.kill();
