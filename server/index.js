@@ -2,11 +2,6 @@
 
 // The onStdout function needs to be split up.
 
-// Also there needs to be a more efficient way to send diagnostics. It should
-// be possible to know what we sent last and only send things that changed. As
-// it is currently sending diagnostics is roughly O(n^2). Usually the number of
-// diagnostics is low so it doesn't matter.
-
 // Also the severity needs to check for type errors that were deferred. And
 // maybe <interactive> stuff can be sent at a severity below warnings?
 
@@ -55,17 +50,19 @@ const parseJson = (string) => {
 
 const onStderr = (line) => say(`[stderr] ${line}`);
 
-const sendDiagnostics = () => {
-  Object.keys(diagnostics).forEach((key) => {
-    const values = Object.values(diagnostics[key]);
-    connection.sendDiagnostics({
-      diagnostics: values,
-      uri: key,
-    });
-    if (values.length === 0) {
-      delete diagnostics[key];
-    }
+const sendDiagnostics = (file) => {
+  const value = diagnostics[file];
+  if (!value) {
+    return;
+  }
+  const values = Object.values(value);
+  connection.sendDiagnostics({
+    diagnostics: values,
+    uri: file,
   });
+  if (values.length === 0) {
+    delete diagnostics[file];
+  }
 };
 
 const getSeverity = (json) => {
@@ -110,14 +107,15 @@ const onStdout = (line) => {
           severity: getSeverity(json),
           source: purpleYolk.name,
         };
-        sendDiagnostics();
+        sendDiagnostics(file);
       }
     } else if (json.reason === null && json.severity === 'SevOutput') {
       const pattern = /^\[ *(\d+) of (\d+)\] Compiling (\S+) *\( ([^,]+), /;
       const match = json.doc.match(pattern);
       if (match) {
-        diagnostics[url.pathToFileURL(match[4])] = {};
-        sendDiagnostics();
+        const file = url.pathToFileURL(match[4]);
+        diagnostics[file] = {};
+        sendDiagnostics(file);
       } else {
         say(`[stdout] ${line}`);
       }
@@ -173,6 +171,10 @@ connection.onNotification(`${purpleYolk.name}/restartGhci`, () => {
   updateStatus('Stopping GHCi');
   ghci.on('exit', () => {
     ghci = null;
+    Object.keys(diagnostics).forEach((key) => {
+      diagnostics[key] = {};
+      sendDiagnostics(key);
+    });
     startGhci();
   });
   ghci.kill();
