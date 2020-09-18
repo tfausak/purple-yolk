@@ -1,8 +1,8 @@
 {
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
-    "onCommand:purpleYolk.restart",
-    "onCommand:purpleYolk:showOutput",
+    "onCommand:purple-yolk.restart",
+    "onCommand:purple-yolk:showOutput",
     "onLanguage:haskell"
   ],
   "badges": [
@@ -18,19 +18,19 @@
   "contributes": {
     "commands": [
       {
-        "command": "purpleYolk.restart",
+        "command": "purple-yolk.restart",
         "title": "Restart",
         "category": "Purple Yolk"
       },
       {
-        "command": "purpleYolk.showOutput",
+        "command": "purple-yolk.showOutput",
         "title": "Show output",
         "category": "Purple Yolk"
       }
     ],
     "configuration": {
       "properties": {
-        "purpleYolk.ghci.command": {
+        "purple-yolk.ghci.command": {
           "default": "stack ghci --bench --color never --ghc-options \"-ddump-json -fobject-code -j4 -O0\" --main-is ghc --test",
           "description": "The command to start GHCi.",
           "type": "string"
@@ -92,7 +92,6 @@
     "eslint-loader": "^4.0.2",
     "eslint": "^7.9.0",
     "vsce": "^1.79.5",
-    "watchy": "^0.9.7",
     "webpack-cli": "^3.3.12",
     "webpack": "^4.44.1"
   },
@@ -117,11 +116,9 @@
   },
   "scripts": {
     "eslint": "eslint",
-    "test": "webpack -d",
     "vsce": "vsce",
     "vscode:prepublish": "webpack -p",
-    "watchy": "watchy",
     "webpack": "webpack"
   },
-  "version": "0.0.11"
+  "version": "0.1.0"
 }

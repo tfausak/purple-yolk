@@ -2,6 +2,7 @@
 
 const lsp = require('vscode-languageclient');
 const path = require('path');
+const purpleYolk = require('../package.json');
 const vscode = require('vscode');
 
 module.exports = {
@@ -27,22 +28,22 @@ module.exports = {
     client.start();
 
     context.subscriptions.push(vscode.commands.registerCommand(
-      'purpleYolk.restart',
-      () => client.sendNotification('purpleYolk/restartGhci', null)
+      `${purpleYolk.name}.restart`,
+      () => client.sendNotification(`${purpleYolk.name}/restartGhci`, null)
     ));
 
     context.subscriptions.push(vscode.commands.registerCommand(
-      'purpleYolk.showOutput',
+      `${purpleYolk.name}.showOutput`,
       () => outputChannel.show(true)
     ));
 
     const statusBarItem = vscode.window.createStatusBarItem();
-    statusBarItem.command = 'purpleYolk.showOutput';
+    statusBarItem.command = `${purpleYolk.name}.showOutput`;
     statusBarItem.text = 'Purple Yolk: Initializing';
     statusBarItem.show();
 
-    client.onReady().then(() =>
-      client.onNotification('purpleYolk/updateStatusBarItem', (text) => {
+    client.onReady().then(() => client
+      .onNotification(`${purpleYolk.name}/updateStatusBarItem`, (text) => {
         statusBarItem.text = text;
       }));
   },
