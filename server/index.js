@@ -180,6 +180,8 @@ const onStdout = (line) => {
 const onExit = (code, signal) => {
   if (code === 0) {
     say('GHCi exited successfully.');
+  } else if (ghci.killed) {
+    say(`GHCi killed with ${code} (${signal}).`);
   } else {
     throw new Error(`GHCi exited with ${code} (${signal})!`);
   }
