@@ -1,11 +1,7 @@
 'use strict';
 
-// The onStdout function needs to be split up.
-
-// Also maybe <interactive> stuff can be sent at a severity below warnings?
-
-// Also there needs to be some way to avoid queueing up a bunch of reload
-// commands when the user saves a bunch of files.
+// There needs to be some way to avoid queueing up a bunch of reload commands
+// when the user saves a bunch of files.
 
 const childProcess = require('child_process');
 const languageServer = require('vscode-languageserver');
@@ -69,76 +65,115 @@ const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
   sendDiagnostics(key);
 });
 
-const getSeverity = (json) => {
-  if (json.severity === 'SevError') {
-    return 1;
-  }
-  if (json.severity === 'SevWarning') {
-    if (json.reason === 'Opt_WarnDeferredTypeErrors') {
-      return 1;
-    }
-    if (json.reason === 'Opt_WarnDeferredOutOfScopeVariables') {
-      return 1;
-    }
-    return 2;
-  }
-  return 3;
-};
-
-/* eslint-disable max-lines-per-function, max-statements */
-const onStdout = (line) => {
-  const json = parseJson(line);
-  if (json) {
-    if (json.span) {
-      if (json.span.file === '<interactive>') {
-        say(`[stdout] ${line}`);
-      } else {
-        const file = url.pathToFileURL(json.span.file);
-        const key = [
-          json.span.startLine,
-          json.span.startCol,
-          json.span.endLine,
-          json.span.endCol,
-          json.reason,
-        ].join(' ');
-        if (!diagnostics[file]) {
-          diagnostics[file] = {};
-        }
-        diagnostics[file][key] = {
-          code: json.reason,
-          message: json.doc,
-          range: {
-            end: {
-              character: json.span.endCol - 1,
-              line: json.span.endLine - 1,
-            },
-            start: {
-              character: json.span.startCol - 1,
-              line: json.span.startLine - 1,
-            },
-          },
-          severity: getSeverity(json),
-          source: purpleYolk.name,
-        };
-        sendDiagnostics(file);
-      }
-    } else if (json.reason === null && json.severity === 'SevOutput') {
-      const pattern = /^\[ *(\d+) of (\d+)\] Compiling (\S+) *\( ([^,]+), /;
-      const match = json.doc.match(pattern);
-      if (match) {
-        const file = url.pathToFileURL(match[4]);
-        diagnostics[file] = {};
-        sendDiagnostics(file);
-      } else {
-        say(`[stdout] ${line}`);
-      }
-    } else {
-      say(`[stdout] ${line}`);
-    }
-  } else if (line.indexOf(prompt) === -1) {
+const onStdoutLine = (line) => {
+  if (line.indexOf(prompt) === -1) {
     say(`[stdout] ${line}`);
   } else {
     updateStatus('Idle');
+  }
+};
+
+const getSeverity = (json) => {
+  switch (json.severity) {
+    case 'SevError': return languageServer.DiagnosticSeverity.Error;
+    case 'SevWarning': switch (json.reason) {
+      case 'Opt_WarnDeferredOutOfScopeVariables':
+        return languageServer.DiagnosticSeverity.Error;
+      case 'Opt_WarnDeferredTypeErrors':
+        return languageServer.DiagnosticSeverity.Error;
+      default: switch (json.span && json.span.file) {
+        case '<interactive>':
+          return languageServer.DiagnosticSeverity.Information;
+        default: return languageServer.DiagnosticSeverity.Warning;
+      }
+    }
+    default: return languageServer.DiagnosticSeverity.Information;
+  }
+};
+
+const getRange = (json) => {
+  const range = {
+    end: {
+      character: 0,
+      line: 0,
+    },
+    start: {
+      character: 0,
+      line: 0,
+    },
+  };
+
+  if (json.span) {
+    range.start.line = json.span.startLine - 1;
+    range.start.character = json.span.startCol - 1;
+    range.end.line = json.span.endLine - 1;
+    range.end.character = json.span.endCol - 1;
+  }
+
+  return range;
+};
+
+const getFile = (json) => {
+  if (json.span && json.span.file !== '<interactive>') {
+    return url.pathToFileURL(json.span.file);
+  }
+
+  return url.pathToFileURL('.');
+};
+
+const onOutput = (line, json) => {
+  const pattern = /^\[ *(\d+) of (\d+)\] Compiling (\S+) *\( ([^,]+), /;
+  const match = json.doc.match(pattern);
+  if (!match) {
+    return onStdoutLine(line);
+  }
+
+  const file = url.pathToFileURL(match[4]);
+  diagnostics[file] = {};
+  return sendDiagnostics(file);
+};
+
+const onStdoutJson = (line, json) => {
+  if (
+    json.span === null &&
+    json.span === null &&
+    json.severity === 'SevOutput'
+  ) {
+    return onOutput(line, json);
+  }
+
+  const file = getFile(json);
+  const range = getRange(json);
+
+  const key = [
+    range.start.line,
+    range.start.character,
+    range.end.line,
+    range.end.character,
+    json.reason,
+  ].join(' ');
+
+  if (!diagnostics[file]) {
+    diagnostics[file] = {};
+  }
+
+  diagnostics[file][key] = {
+    code: json.reason,
+    message: json.doc,
+    range,
+    severity: getSeverity(json),
+    source: purpleYolk.name,
+  };
+
+  return sendDiagnostics(file);
+};
+
+const onStdout = (line) => {
+  const json = parseJson(line);
+  if (json) {
+    onStdoutJson(line, json);
+  } else {
+    onStdoutLine(line);
   }
 };
 
