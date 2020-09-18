@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-09-18: 0.1.2
+
+- No changes.
+
 ## 2020-09-18: 0.1.1
 
 - No changes.
