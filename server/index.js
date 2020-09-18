@@ -2,8 +2,7 @@
 
 // The onStdout function needs to be split up.
 
-// Also the severity needs to check for type errors that were deferred. And
-// maybe <interactive> stuff can be sent at a severity below warnings?
+// Also maybe <interactive> stuff can be sent at a severity below warnings?
 
 // Also there needs to be some way to avoid queueing up a bunch of reload
 // commands when the user saves a bunch of files.
@@ -66,10 +65,19 @@ const sendDiagnostics = (file) => {
 };
 
 const getSeverity = (json) => {
+  if (json.severity === 'SevError') {
+    return 1;
+  }
   if (json.severity === 'SevWarning') {
+    if (json.reason === 'Opt_WarnDeferredTypeErrors') {
+      return 1;
+    }
+    if (json.reason === 'Opt_WarnDeferredOutOfScopeVariables') {
+      return 1;
+    }
     return 2;
   }
-  return 1;
+  return 3;
 };
 
 /* eslint-disable max-lines-per-function, max-statements */
