@@ -107,12 +107,14 @@ const getRange = (json) => {
   return range;
 };
 
+const defaultFile = url.pathToFileURL('.');
+
 const getFile = (json) => {
   if (json.span && json.span.file !== '<interactive>') {
     return url.pathToFileURL(json.span.file);
   }
 
-  return url.pathToFileURL('.');
+  return defaultFile;
 };
 
 const onOutput = (line, json) => {
@@ -138,6 +140,7 @@ const onOutput = (line, json) => {
   return sendDiagnostics(file);
 };
 
+/* eslint-disable max-statements */
 const onStdoutJson = (line, json) => {
   if (
     json.span === null &&
@@ -157,6 +160,15 @@ const onStdoutJson = (line, json) => {
     range.end.character,
     json.reason,
   ].join(' ');
+
+  if (file === defaultFile) {
+    switch (json.reason) {
+      case 'Opt_WarnMissingHomeModules': return null;
+      case 'Opt_WarnMissingImportList': return null;
+      case 'Opt_WarnMissingLocalSignatures': return null;
+      default: break;
+    }
+  }
 
   if (!diagnostics[file]) {
     diagnostics[file] = {};
