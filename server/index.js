@@ -2,16 +2,16 @@
 
 const childProcess = require('child_process');
 const lsp = require('vscode-languageserver');
+const { performance } = require('perf_hooks');
 const py = require('../package.json');
 const readline = require('readline');
 
 const connection = lsp.createConnection();
-const epoch = Date.now();
 let ghci = null;
-const prompt = `{- ${py.name} ${py.version} ${epoch} -}`;
+const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
 
 const say = (message) => {
-  const timestamp = ((Date.now() - epoch) / 1000).toFixed(3);
+  const timestamp = (performance.now() / 1000).toFixed(3);
   connection.console.info(`${timestamp} ${message}`);
 };
 
