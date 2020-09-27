@@ -46,15 +46,21 @@ const activate = (context) => {
       vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: `${py.displayName}: ${title}`,
-      }, (it) => {
-        progress = { it };
+      }, (handle) => {
+        progress = { handle, percent: 0 };
         return new Promise((resolve) => {
           progress.resolve = resolve;
         });
       }));
 
-    client.onNotification(`${py.name}/updateProgress`, (message) =>
-      progress.it.report({ message }));
+    client.onNotification(
+      `${py.name}/updateProgress`,
+      ({ message, percent }) => {
+        const increment = 100 * (percent - progress.percent);
+        progress.percent = percent;
+        progress.handle.report({ increment, message });
+      }
+    );
 
     client.onNotification(`${py.name}/hideProgress`, () => {
       progress.resolve();

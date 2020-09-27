@@ -127,7 +127,10 @@ const onOutput = (line, json) => {
 
   connection.sendNotification(
     `${py.name}/updateProgress`,
-    `${match[1]} of ${match[2]}: ${match[3]}`
+    {
+      message: `${match[1]} of ${match[2]}: ${match[3]}`,
+      percent: match[1] / match[2],
+    }
   );
 
   const file = url.pathToFileURL(match[4]);
