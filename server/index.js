@@ -39,14 +39,18 @@ const makeJob = (command) => ({
   onFinish: (job) => {
     const elapsed = format(job.finishedAt - job.startedAt);
     say(`Finished ${job.command} in ${elapsed}`);
+    connection.sendNotification(`${py.name}/hideProgress`);
   },
   onQueue: (job) => say(`Queueing ${job.command}`),
   onStart: (job) => {
     const elapsed = format(job.startedAt - job.queuedAt);
     say(`Starting ${job.command} after ${elapsed}`);
     ghci.stdin.write(`${job.command}\n`);
+    connection.sendNotification(`${py.name}/showProgress`, job.command);
   },
-  onStdout: () => {},
+  onStdout: (line) => {
+    connection.sendNotification(`${py.name}/updateProgress`, line);
+  },
   queuedAt: null,
   startedAt: null,
 });

@@ -5,6 +5,9 @@ const path = require('path');
 const py = require('../package.json');
 const vscode = require('vscode');
 
+let progress = null;
+
+/* eslint-disable max-lines-per-function, max-statements */
 const activate = (context) => {
   const outputChannel = vscode.window.createOutputChannel(py.displayName);
 
@@ -37,6 +40,27 @@ const activate = (context) => {
   statusBarItem.text = py.displayName;
   statusBarItem.tooltip = 'Click to show output.';
   statusBarItem.show();
+
+  client.onReady().then(() => {
+    client.onNotification(`${py.name}/showProgress`, (title) =>
+      vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: `${py.displayName}: ${title}`,
+      }, (it) => {
+        progress = { it };
+        return new Promise((resolve) => {
+          progress.resolve = resolve;
+        });
+      }));
+
+    client.onNotification(`${py.name}/updateProgress`, (message) =>
+      progress.it.report({ message }));
+
+    client.onNotification(`${py.name}/hideProgress`, () => {
+      progress.resolve();
+      progress = null;
+    });
+  });
 
   client.start();
 };
