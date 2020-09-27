@@ -179,7 +179,7 @@ const onStdout = (line) => {
   }
 };
 
-const makeJob = (command) => ({
+const makeJob = (title, command) => ({
   command,
   finishedAt: null,
   onFinish: (job) => {
@@ -192,15 +192,16 @@ const makeJob = (command) => ({
     const elapsed = format(job.startedAt - job.queuedAt);
     say(`Starting ${job.command} after ${elapsed}`);
     ghci.stdin.write(`${job.command}\n`);
-    connection.sendNotification(`${py.name}/showProgress`, job.command);
+    connection.sendNotification(`${py.name}/showProgress`, job.title);
   },
   onStdout,
   queuedAt: null,
   startedAt: null,
+  title,
 });
 
-const queueCommand = (command) => {
-  const job = makeJob(command);
+const queueCommand = (title, command) => {
+  const job = makeJob(title, command);
   job.queuedAt = performance.now();
   job.onQueue(job);
   jobs.push(job);
@@ -239,9 +240,9 @@ const startGhciWith = (command) => {
     }
   });
 
-  queueCommand(`:set prompt "${prompt}\\n"`);
-  queueCommand(':set -ddump-json');
-  queueCommand(':reload');
+  queueCommand('Loading', `:set prompt "${prompt}\\n"`);
+  queueCommand('Loading', ':set -ddump-json');
+  queueCommand('Reloading', ':reload');
 };
 
 const startGhci = () => {
@@ -273,7 +274,7 @@ connection.onInitialized(() => {
 
 connection.onDidSaveTextDocument((params) => {
   say(`Saved ${params.textDocument.uri}`);
-  queueCommand(':reload');
+  queueCommand('Reloading', ':reload');
 });
 
 connection.onNotification(`${py.name}/restart`, () => {
