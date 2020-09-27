@@ -16,3 +16,12 @@ built-in workspace configurations.
 - [Haskell Syntax Highlighting](https://marketplace.visualstudio.com/items?itemName=justusadam.language-haskell)
 - [haskell-ghcid](https://marketplace.visualstudio.com/items?itemName=ndmitchell.haskell-ghcid)
 - [Simple GHC (Haskell) Integration](https://marketplace.visualstudio.com/items?itemName=dramforever.vscode-ghc-simple)
+
+## Development
+
+``` sh
+$ npm install
+$ rm -f purple-yolk-*.vsix
+$ npm run vsce package
+$ code --install-extension purple-yolk-*.vsix
+```

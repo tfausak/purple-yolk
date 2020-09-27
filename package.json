@@ -18,20 +18,20 @@
   "contributes": {
     "commands": [
       {
+        "category": "Purple Yolk",
         "command": "purple-yolk.restart",
-        "title": "Restart",
-        "category": "Purple Yolk"
+        "title": "Restart"
       },
       {
+        "category": "Purple Yolk",
         "command": "purple-yolk.showOutput",
-        "title": "Show output",
-        "category": "Purple Yolk"
+        "title": "Show output"
       }
     ],
     "configuration": {
       "properties": {
         "purple-yolk.ghci.command": {
-          "default": "stack ghci --bench --color never --ghc-options \"-ddump-json -fobject-code -j4 -O0\" --main-is ghc --test",
+          "default": "stack --color never --no-terminal ghci --ghc-options '-ddump-json -j -O0' --main-is base --test",
           "description": "The command to start GHCi.",
           "type": "string"
         }
@@ -90,8 +90,8 @@
   "description": "A Haskell IDE.",
   "devDependencies": {
     "eslint-loader": "^4.0.2",
-    "eslint": "^7.9.0",
-    "vsce": "^1.79.5",
+    "eslint": "^7.10.0",
+    "vsce": "^1.80.0",
     "webpack-cli": "^3.3.12",
     "webpack": "^4.44.1"
   },
@@ -102,7 +102,7 @@
   "engines": {
     "node": "^14.11.0",
     "npm": "^6.14.8",
-    "vscode": "^1.49.0"
+    "vscode": "^1.49.2"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "images/purple-yolk.png",
@@ -120,5 +120,5 @@
     "vscode:prepublish": "webpack -p",
     "webpack": "webpack"
   },
-  "version": "0.1.2"
+  "version": "0.2.0"
 }

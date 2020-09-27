@@ -1,36 +1,41 @@
 'use strict';
 
-// There needs to be some way to avoid queueing up a bunch of reload commands
-// when the user saves a bunch of files.
-
 const childProcess = require('child_process');
-const languageServer = require('vscode-languageserver');
-const purpleYolk = require('../package.json');
+const lsp = require('vscode-languageserver');
+const { performance } = require('perf_hooks');
+const py = require('../package.json');
 const readline = require('readline');
+const stream = require('stream');
 const url = require('url');
 
-const connection = languageServer.createConnection();
+let activeJob = null;
+const connection = lsp.createConnection();
 const diagnostics = {};
-const epoch = Date.now();
 let ghci = null;
-const prompt = `{- ${purpleYolk.name} ${purpleYolk.version} ${epoch} -}`;
+const jobs = new stream.Readable({ objectMode: true, read: () => {} });
+const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
+let stderr = null;
+let stdout = null;
 
-const say = (message) => {
-  const timestamp = ((Date.now() - epoch) / 1000).toFixed(3);
-  connection.console.info(`${timestamp} ${message}`);
-};
+const format = (ms) => (ms / 1000).toFixed(3);
 
-const updateStatus = (message) =>
-  connection.sendNotification(
-    `${purpleYolk.name}/updateStatusBarItem`,
-    `Purple Yolk: ${message}`
-  );
+const say = (message) =>
+  connection.console.info(`${format(performance.now())} ${message}`);
 
-const writeStdin = (message) => {
-  say(`[stdin] ${message}`);
-  updateStatus(`Running ${message}`);
-  ghci.stdin.write(`${message}\n`);
-};
+jobs.on('error', (error) => {
+  throw error;
+});
+
+jobs.on('data', (job) => {
+  if (activeJob) {
+    throw new Error('Attempted to activate job but one is already active!');
+  }
+
+  jobs.pause();
+  activeJob = job;
+  activeJob.startedAt = performance.now();
+  activeJob.onStart(activeJob);
+});
 
 const parseJson = (string) => {
   try {
@@ -42,8 +47,6 @@ const parseJson = (string) => {
     throw error;
   }
 };
-
-const onStderr = (line) => say(`[stderr] ${line}`);
 
 const sendDiagnostics = (file) => {
   const value = diagnostics[file];
@@ -60,34 +63,29 @@ const sendDiagnostics = (file) => {
   }
 };
 
-const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
-  diagnostics[key] = {};
-  sendDiagnostics(key);
-});
-
 const onStdoutLine = (line) => {
   if (line.indexOf(prompt) === -1) {
     say(`[stdout] ${line}`);
-  } else {
-    updateStatus('Idle');
   }
 };
 
 const getSeverity = (json) => {
   switch (json.severity) {
-    case 'SevError': return languageServer.DiagnosticSeverity.Error;
+    case 'SevError': return lsp.DiagnosticSeverity.Error;
     case 'SevWarning': switch (json.reason) {
       case 'Opt_WarnDeferredOutOfScopeVariables':
-        return languageServer.DiagnosticSeverity.Error;
-      case 'Opt_WarnDeferredTypeErrors':
-        return languageServer.DiagnosticSeverity.Error;
+        return lsp.DiagnosticSeverity.Error;
+      case 'Opt_WarnDeferredTypeErrors': return lsp.DiagnosticSeverity.Error;
       default: switch (json.span && json.span.file) {
-        case '<interactive>':
-          return languageServer.DiagnosticSeverity.Information;
-        default: return languageServer.DiagnosticSeverity.Warning;
+        case '<interactive>': return lsp.DiagnosticSeverity.Information;
+        default: return lsp.DiagnosticSeverity.Warning;
       }
     }
-    default: return languageServer.DiagnosticSeverity.Information;
+    default:
+      if (json.doc.indexOf('Module imports form a cycle:') === -1) {
+        return lsp.DiagnosticSeverity.Information;
+      }
+      return lsp.DiagnosticSeverity.Error;
   }
 };
 
@@ -113,12 +111,14 @@ const getRange = (json) => {
   return range;
 };
 
+const defaultFile = url.pathToFileURL('.');
+
 const getFile = (json) => {
   if (json.span && json.span.file !== '<interactive>') {
     return url.pathToFileURL(json.span.file);
   }
 
-  return url.pathToFileURL('.');
+  return defaultFile;
 };
 
 const onOutput = (line, json) => {
@@ -128,11 +128,23 @@ const onOutput = (line, json) => {
     return onStdoutLine(line);
   }
 
+  if (activeJob) {
+    connection.sendNotification(
+      `${py.name}/updateProgress`,
+      {
+        key: activeJob.key,
+        message: `${match[1]} of ${match[2]}: ${match[3]}`,
+        percent: match[1] / match[2],
+      }
+    );
+  }
+
   const file = url.pathToFileURL(match[4]);
   diagnostics[file] = {};
   return sendDiagnostics(file);
 };
 
+/* eslint-disable max-statements */
 const onStdoutJson = (line, json) => {
   if (
     json.span === null &&
@@ -153,6 +165,15 @@ const onStdoutJson = (line, json) => {
     json.reason,
   ].join(' ');
 
+  if (file === defaultFile) {
+    switch (json.reason) {
+      case 'Opt_WarnMissingHomeModules': return null;
+      case 'Opt_WarnMissingImportList': return null;
+      case 'Opt_WarnMissingLocalSignatures': return null;
+      default: break;
+    }
+  }
+
   if (!diagnostics[file]) {
     diagnostics[file] = {};
   }
@@ -162,7 +183,7 @@ const onStdoutJson = (line, json) => {
     message: json.doc,
     range,
     severity: getSeverity(json),
-    source: purpleYolk.name,
+    source: py.name,
   };
 
   return sendDiagnostics(file);
@@ -177,54 +198,164 @@ const onStdout = (line) => {
   }
 };
 
-const onExit = (code, signal) => {
-  if (code === 0) {
-    say('GHCi exited successfully.');
-  } else if (ghci.killed) {
-    say(`GHCi killed with ${code} (${signal}).`);
-  } else {
-    throw new Error(`GHCi exited with ${code} (${signal})!`);
-  }
+const makeJob = (title, command) => {
+  const key = Math.random();
+  return {
+    command,
+    finishedAt: null,
+    key,
+    onFinish: (job) => {
+      const elapsed = format(job.finishedAt - job.startedAt);
+      say(`Finished ${job.command} in ${elapsed}`);
+      connection.sendNotification(`${py.name}/hideProgress`, { key });
+    },
+    onQueue: (job) => say(`Queueing ${job.command}`),
+    onStart: (job) => {
+      if (ghci) {
+        const elapsed = format(job.startedAt - job.queuedAt);
+        say(`Starting ${job.command} after ${elapsed}`);
+        ghci.stdin.write(`${job.command}\n`);
+        connection.sendNotification(
+          `${py.name}/showProgress`,
+          { key, title: job.title }
+        );
+      } else {
+        say(`Ignoring ${job.command}`);
+      }
+    },
+    onStdout,
+    queuedAt: null,
+    startedAt: null,
+    title,
+  };
 };
 
-const startGhci = () => {
-  say('Starting GHCi ...');
-  updateStatus('Starting GHCi');
-  connection.workspace.getConfiguration(purpleYolk.name).then((config) => {
-    const { command } = config.ghci;
-    say(`Spawning GHCi with: ${command}`);
-    ghci = childProcess.spawn(command, { shell: true });
-    ghci.on('exit', onExit);
-    readline.createInterface({ input: ghci.stderr }).on('line', onStderr);
-    readline.createInterface({ input: ghci.stdout }).on('line', onStdout);
-    writeStdin(`:set prompt "${prompt}\\n"`);
+const queueCommand = (title, command) => {
+  const job = makeJob(title, command);
+  job.queuedAt = performance.now();
+  job.onQueue(job);
+  jobs.push(job);
+};
+
+const setUpStreams = () => {
+  stderr = readline.createInterface({ input: ghci.stderr });
+  stderr.on('line', (line) => say(`[stderr] ${line}`));
+
+  stdout = readline.createInterface({ input: ghci.stdout });
+  stdout.on('line', (line) => {
+    if (activeJob) {
+      activeJob.onStdout(line);
+      if (line.indexOf(prompt) !== -1) {
+        activeJob.finishedAt = performance.now();
+        activeJob.onFinish(activeJob);
+        activeJob = null;
+        jobs.resume();
+      }
+    } else {
+      say(`[stdout] ${line}`);
+    }
   });
 };
 
-say(`Starting ${purpleYolk.name} version ${purpleYolk.version} ...`);
+const startGhciWith = (command) => {
+  say(`Starting GHCi: ${command}`);
 
-connection.onInitialize(() =>
-  ({ capabilities: { textDocumentSync: { save: {} } } }));
+  ghci = childProcess.spawn(command, { shell: true });
+
+  ghci.on('error', (error) => {
+    throw error;
+  });
+
+  ghci.on('exit', (code, signal) => {
+    if (!ghci.killed) {
+      throw new Error(`GHCi exited with code ${code} and signal ${signal}!`);
+    }
+    say(`Killed GHCi (${signal})`);
+  });
+
+  setUpStreams();
+
+  queueCommand('Starting', `:set prompt "${prompt}\\n"`);
+  queueCommand('Configuring', ':set -ddump-json');
+  queueCommand('Loading', ':reload');
+};
+
+const startGhci = () => {
+  if (ghci) {
+    throw new Error('Attempted to start GHCi but it is already running!');
+  }
+
+  connection.workspace.getConfiguration(py.name)
+    .then((config) => startGhciWith(config.ghci.command));
+};
+
+const clearStreams = () => {
+  stderr.close();
+  stdout.close();
+
+  stderr = null;
+  stdout = null;
+};
+
+const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
+  diagnostics[key] = {};
+  sendDiagnostics(key);
+});
+
+const clearProgress = () => {
+  if (activeJob) {
+    connection.sendNotification(
+      `${py.name}/hideProgress`,
+      { key: activeJob.key }
+    );
+  }
+};
+
+const clearJobs = () => {
+  jobs.pause();
+  for (;;) {
+    activeJob = null;
+    if (!jobs.read()) {
+      break;
+    }
+  }
+  jobs.resume();
+};
+
+const restartGhci = () => {
+  say('Restarting GHCi');
+
+  ghci.on('exit', () => {
+    ghci = null;
+    clearStreams();
+    clearDiagnostics();
+    clearProgress();
+    clearJobs();
+    startGhci();
+  });
+
+  const killed = ghci.kill();
+  if (!killed) {
+    throw new Error('Failed to kill GHCi!');
+  }
+};
+
+connection.onInitialize(() => {
+  say(`Initializing ${py.name} ${py.version}`);
+  return { capabilities: { textDocumentSync: { save: true } } };
+});
 
 connection.onInitialized(() => {
-  say('Initialized.');
   startGhci();
 });
 
 connection.onDidSaveTextDocument((params) => {
-  say(`Saved ${params.textDocument.uri}.`);
-  writeStdin(':reload');
+  say(`Saved ${params.textDocument.uri}`);
+  diagnostics[defaultFile] = {};
+  sendDiagnostics(defaultFile);
+  queueCommand('Reloading', ':reload');
 });
 
-connection.onNotification(`${purpleYolk.name}/restartGhci`, () => {
-  say('Stopping GHCi ...');
-  updateStatus('Stopping GHCi');
-  ghci.on('exit', () => {
-    ghci = null;
-    clearDiagnostics();
-    startGhci();
-  });
-  ghci.kill();
-});
+connection.onNotification(`${py.name}/restart`, () => restartGhci());
 
 connection.listen();
