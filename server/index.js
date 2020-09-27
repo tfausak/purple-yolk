@@ -351,6 +351,8 @@ connection.onInitialized(() => {
 
 connection.onDidSaveTextDocument((params) => {
   say(`Saved ${params.textDocument.uri}`);
+  diagnostics[defaultFile] = {};
+  sendDiagnostics(defaultFile);
   queueCommand('Reloading', ':reload');
 });
 
