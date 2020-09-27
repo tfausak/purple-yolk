@@ -14,6 +14,8 @@ const diagnostics = {};
 let ghci = null;
 const jobs = new stream.Readable({ objectMode: true, read: () => {} });
 const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
+let stderr = null;
+let stdout = null;
 
 const format = (ms) => (ms / 1000).toFixed(3);
 
@@ -120,13 +122,16 @@ const onOutput = (line, json) => {
     return onStdoutLine(line);
   }
 
-  connection.sendNotification(
-    `${py.name}/updateProgress`,
-    {
-      message: `${match[1]} of ${match[2]}: ${match[3]}`,
-      percent: match[1] / match[2],
-    }
-  );
+  if (activeJob) {
+    connection.sendNotification(
+      `${py.name}/updateProgress`,
+      {
+        key: activeJob.key,
+        message: `${match[1]} of ${match[2]}: ${match[3]}`,
+        percent: match[1] / match[2],
+      }
+    );
+  }
 
   const file = url.pathToFileURL(match[4]);
   diagnostics[file] = {};
@@ -177,36 +182,63 @@ const onStdout = (line) => {
   }
 };
 
-const makeJob = (title, command) => ({
-  command,
-  finishedAt: null,
-  onFinish: (job) => {
-    const elapsed = format(job.finishedAt - job.startedAt);
-    say(`Finished ${job.command} in ${elapsed}`);
-    connection.sendNotification(`${py.name}/hideProgress`);
-  },
-  onQueue: (job) => say(`Queueing ${job.command}`),
-  onStart: (job) => {
-    if (ghci) {
-      const elapsed = format(job.startedAt - job.queuedAt);
-      say(`Starting ${job.command} after ${elapsed}`);
-      ghci.stdin.write(`${job.command}\n`);
-      connection.sendNotification(`${py.name}/showProgress`, job.title);
-    } else {
-      say(`Ignoring ${job.command}`);
-    }
-  },
-  onStdout,
-  queuedAt: null,
-  startedAt: null,
-  title,
-});
+const makeJob = (title, command) => {
+  const key = Math.random();
+  return {
+    command,
+    finishedAt: null,
+    key,
+    onFinish: (job) => {
+      const elapsed = format(job.finishedAt - job.startedAt);
+      say(`Finished ${job.command} in ${elapsed}`);
+      connection.sendNotification(`${py.name}/hideProgress`, { key });
+    },
+    onQueue: (job) => say(`Queueing ${job.command}`),
+    onStart: (job) => {
+      if (ghci) {
+        const elapsed = format(job.startedAt - job.queuedAt);
+        say(`Starting ${job.command} after ${elapsed}`);
+        ghci.stdin.write(`${job.command}\n`);
+        connection.sendNotification(
+          `${py.name}/showProgress`,
+          { key, title: job.title }
+        );
+      } else {
+        say(`Ignoring ${job.command}`);
+      }
+    },
+    onStdout,
+    queuedAt: null,
+    startedAt: null,
+    title,
+  };
+};
 
 const queueCommand = (title, command) => {
   const job = makeJob(title, command);
   job.queuedAt = performance.now();
   job.onQueue(job);
   jobs.push(job);
+};
+
+const setUpStreams = () => {
+  stderr = readline.createInterface({ input: ghci.stderr });
+  stderr.on('line', (line) => say(`[stderr] ${line}`));
+
+  stdout = readline.createInterface({ input: ghci.stdout });
+  stdout.on('line', (line) => {
+    if (activeJob) {
+      activeJob.onStdout(line);
+      if (line.indexOf(prompt) !== -1) {
+        activeJob.finishedAt = performance.now();
+        activeJob.onFinish(activeJob);
+        activeJob = null;
+        jobs.resume();
+      }
+    } else {
+      say(`[stdout] ${line}`);
+    }
+  });
 };
 
 const startGhciWith = (command) => {
@@ -225,26 +257,11 @@ const startGhciWith = (command) => {
     say(`Killed GHCi (${signal})`);
   });
 
-  readline.createInterface({ input: ghci.stderr })
-    .on('line', (line) => say(`[stderr] ${line}`));
-
-  readline.createInterface({ input: ghci.stdout }).on('line', (line) => {
-    if (activeJob) {
-      activeJob.onStdout(line);
-      if (line.indexOf(prompt) !== -1) {
-        activeJob.finishedAt = performance.now();
-        activeJob.onFinish(activeJob);
-        activeJob = null;
-        jobs.resume();
-      }
-    } else {
-      say(`[stdout] ${line}`);
-    }
-  });
+  setUpStreams();
 
   queueCommand('Starting', `:set prompt "${prompt}\\n"`);
   queueCommand('Configuring', ':set -ddump-json');
-  queueCommand('Reloading', ':reload');
+  queueCommand('Loading', ':reload');
 };
 
 const startGhci = () => {
@@ -256,21 +273,37 @@ const startGhci = () => {
     .then((config) => startGhciWith(config.ghci.command));
 };
 
+const clearStreams = () => {
+  stderr.close();
+  stdout.close();
+
+  stderr = null;
+  stdout = null;
+};
+
 const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
   diagnostics[key] = {};
   sendDiagnostics(key);
 });
 
-const clearProgress = () =>
-  connection.sendNotification(`${py.name}/hideProgress`);
+const clearProgress = () => {
+  if (activeJob) {
+    connection.sendNotification(
+      `${py.name}/hideProgress`,
+      { key: activeJob.key }
+    );
+  }
+};
 
 const clearJobs = () => {
+  jobs.pause();
   for (;;) {
     activeJob = null;
     if (!jobs.read()) {
       break;
     }
   }
+  jobs.resume();
 };
 
 const restartGhci = () => {
@@ -278,6 +311,7 @@ const restartGhci = () => {
 
   ghci.on('exit', () => {
     ghci = null;
+    clearStreams();
     clearDiagnostics();
     clearProgress();
     clearJobs();

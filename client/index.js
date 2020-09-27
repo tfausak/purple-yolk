@@ -5,7 +5,7 @@ const path = require('path');
 const py = require('../package.json');
 const vscode = require('vscode');
 
-let progress = null;
+const progresses = {};
 
 /* eslint-disable max-lines-per-function, max-statements */
 const activate = (context) => {
@@ -42,32 +42,33 @@ const activate = (context) => {
   statusBarItem.show();
 
   client.onReady().then(() => {
-    client.onNotification(`${py.name}/showProgress`, (title) =>
+    client.onNotification(`${py.name}/showProgress`, ({ key, title }) =>
       vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: `${py.displayName}: ${title}`,
-      }, (handle) => {
-        progress = { handle, percent: 0 };
+      }, (progress) => {
+        progresses[key] = { percent: 0, progress };
         return new Promise((resolve) => {
-          progress.resolve = resolve;
+          progresses[key].resolve = resolve;
         });
       }));
 
     client.onNotification(
       `${py.name}/updateProgress`,
-      ({ message, percent }) => {
+      ({ key, message, percent }) => {
+        const progress = progresses[key];
         if (progress) {
-        const increment = 100 * (percent - progress.percent);
-        progress.percent = percent;
-        progress.handle.report({ increment, message });
-      }
+          const increment = 100 * (percent - progress.percent);
+          progress.percent = percent;
+          progress.progress.report({ increment, message });
+        }
       }
     );
 
-    client.onNotification(`${py.name}/hideProgress`, () => {
-      if (progress) {
-      progress.resolve();
-      progress = null;
+    client.onNotification(`${py.name}/hideProgress`, ({ key }) => {
+      if (progresses[key]) {
+        progresses[key].resolve();
+        delete progresses[key];
       }
     });
   });
