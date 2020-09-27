@@ -5,19 +5,57 @@ const lsp = require('vscode-languageserver');
 const { performance } = require('perf_hooks');
 const py = require('../package.json');
 const readline = require('readline');
+const stream = require('stream');
 
+let activeJob = null;
 const connection = lsp.createConnection();
 let ghci = null;
+const jobs = new stream.Readable({ objectMode: true, read: () => {} });
 const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
 
-const say = (message) => {
-  const timestamp = (performance.now() / 1000).toFixed(3);
-  connection.console.info(`${timestamp} ${message}`);
-};
+const format = (ms) => (ms / 1000).toFixed(3);
 
-const tellGhci = (command) => {
-  say(`[stdin] ${command}`);
-  ghci.stdin.write(`${command}\n`);
+const say = (message) =>
+  connection.console.info(`${format(performance.now())} ${message}`);
+
+jobs.on('error', (err) => {
+  throw err;
+});
+
+jobs.on('data', (job) => {
+  if (activeJob) {
+    throw new Error('Attempted to activate job but one is already active!');
+  }
+
+  jobs.pause();
+  activeJob = job;
+  activeJob.startedAt = performance.now();
+  activeJob.onStart(activeJob);
+});
+
+const makeJob = (command) => ({
+  command,
+  finishedAt: null,
+  onFinish: (job) => {
+    const elapsed = format(job.finishedAt - job.startedAt);
+    say(`Finished ${job.command} in ${elapsed}`);
+  },
+  onQueue: (job) => say(`Queueing ${job.command}`),
+  onStart: (job) => {
+    const elapsed = format(job.startedAt - job.queuedAt);
+    say(`Starting ${job.command} after ${elapsed}`);
+    ghci.stdin.write(`${job.command}\n`);
+  },
+  onStdout: () => {},
+  queuedAt: null,
+  startedAt: null,
+});
+
+const queueCommand = (command) => {
+  const job = makeJob(command);
+  job.queuedAt = performance.now();
+  job.onQueue(job);
+  jobs.push(job);
 };
 
 const startGhciWith = (command) => {
@@ -36,15 +74,26 @@ const startGhciWith = (command) => {
     say(`Killed GHCi (${signal})`);
   });
 
-  readline.createInterface({ input: ghci.stderr }).on('line', (line) => {
-    say(`[stderr] ${line}`);
-  });
+  readline.createInterface({ input: ghci.stderr })
+    .on('line', (line) => say(`[stderr] ${line}`));
 
   readline.createInterface({ input: ghci.stdout }).on('line', (line) => {
-    say(`[stdout] ${line}`);
+    if (activeJob) {
+      activeJob.onStdout(line);
+      if (line.indexOf(prompt) !== -1) {
+        activeJob.finishedAt = performance.now();
+        activeJob.onFinish(activeJob);
+        activeJob = null;
+        jobs.resume();
+      }
+    } else {
+      say(`[stdout] ${line}`);
+    }
   });
 
-  tellGhci(`:set prompt "${prompt}\\n"`);
+  queueCommand(`:set prompt "${prompt}\\n"`);
+  queueCommand(':set -ddump-json');
+  queueCommand(':reload');
 };
 
 const startGhci = () => {
@@ -76,7 +125,7 @@ connection.onInitialized(() => {
 
 connection.onDidSaveTextDocument((params) => {
   say(`Saved ${params.textDocument.uri}`);
-  tellGhci(':reload');
+  queueCommand(':reload');
 });
 
 connection.onNotification(`${py.name}/restart`, () => {
