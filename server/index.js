@@ -23,8 +23,11 @@ const say = (message) => {
 const updateStatus = (message) =>
   connection.sendNotification(
     `${purpleYolk.name}/updateStatusBarItem`,
-    `Purple Yolk: ${message}`
+    `${purpleYolk.displayName}: ${message}`
   );
+
+const updateProgress = (message) =>
+  connection.sendNotification(`${purpleYolk.name}/updateProgress`, message);
 
 const writeStdin = (message) => {
   say(`[stdin] ${message}`);
@@ -127,6 +130,8 @@ const onOutput = (line, json) => {
   if (!match) {
     return onStdoutLine(line);
   }
+
+  updateProgress(`${match[1]} of ${match[2]}: ${match[3]}`);
 
   const file = url.pathToFileURL(match[4]);
   diagnostics[file] = {};

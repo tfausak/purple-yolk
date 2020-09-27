@@ -4,6 +4,7 @@
 module.exports = {
   env: { node: true },
   extends: 'eslint:all',
+  globals: { Promise: 'readonly' },
   ignorePatterns: ['dist/', 'output/', '!.eslintrc.js'],
   parserOptions: { ecmaVersion: 6 },
   rules: {
@@ -18,6 +19,7 @@ module.exports = {
     'linebreak-style': 'off',
     'multiline-comment-style': ['error', 'separate-lines'],
     'no-console': 'off',
+    'no-empty-function': 'off',
     'no-extra-parens': ['error', 'all', { nestedBinaryExpressions: false }],
     'no-magic-numbers': 'off',
     'no-unused-vars':

@@ -1,8 +1,6 @@
 // https://webpack.js.org/configuration/
 'use strict';
 
-const path = require('path');
-
 module.exports = {
   entry: {
     client: './client/index.js',
