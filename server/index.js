@@ -81,7 +81,11 @@ const getSeverity = (json) => {
         default: return lsp.DiagnosticSeverity.Warning;
       }
     }
-    default: return lsp.DiagnosticSeverity.Information;
+    default:
+      if (json.doc.indexOf('Module imports form a cycle:') === -1) {
+        return lsp.DiagnosticSeverity.Information;
+      }
+      return lsp.DiagnosticSeverity.Error;
   }
 };
 
