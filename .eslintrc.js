@@ -17,6 +17,7 @@ module.exports = {
     'implicit-arrow-linebreak': 'off',
     indent: ['error', 2, { SwitchCase: 1 }],
     'linebreak-style': 'off',
+    'max-lines': 'off',
     'multiline-comment-style': ['error', 'separate-lines'],
     'no-console': 'off',
     'no-empty-function': 'off',

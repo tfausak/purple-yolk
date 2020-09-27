@@ -20,8 +20,8 @@ const format = (ms) => (ms / 1000).toFixed(3);
 const say = (message) =>
   connection.console.info(`${format(performance.now())} ${message}`);
 
-jobs.on('error', (err) => {
-  throw err;
+jobs.on('error', (error) => {
+  throw error;
 });
 
 jobs.on('data', (job) => {
@@ -60,11 +60,6 @@ const sendDiagnostics = (file) => {
     delete diagnostics[file];
   }
 };
-
-const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
-  diagnostics[key] = {};
-  sendDiagnostics(key);
-});
 
 const onStdoutLine = (line) => {
   if (line.indexOf(prompt) === -1) {
@@ -192,10 +187,14 @@ const makeJob = (title, command) => ({
   },
   onQueue: (job) => say(`Queueing ${job.command}`),
   onStart: (job) => {
-    const elapsed = format(job.startedAt - job.queuedAt);
-    say(`Starting ${job.command} after ${elapsed}`);
-    ghci.stdin.write(`${job.command}\n`);
-    connection.sendNotification(`${py.name}/showProgress`, job.title);
+    if (ghci) {
+      const elapsed = format(job.startedAt - job.queuedAt);
+      say(`Starting ${job.command} after ${elapsed}`);
+      ghci.stdin.write(`${job.command}\n`);
+      connection.sendNotification(`${py.name}/showProgress`, job.title);
+    } else {
+      say(`Ignoring ${job.command}`);
+    }
   },
   onStdout,
   queuedAt: null,
@@ -215,8 +214,8 @@ const startGhciWith = (command) => {
 
   ghci = childProcess.spawn(command, { shell: true });
 
-  ghci.on('error', (err) => {
-    throw err;
+  ghci.on('error', (error) => {
+    throw error;
   });
 
   ghci.on('exit', (code, signal) => {
@@ -243,8 +242,8 @@ const startGhciWith = (command) => {
     }
   });
 
-  queueCommand('Loading', `:set prompt "${prompt}\\n"`);
-  queueCommand('Loading', ':set -ddump-json');
+  queueCommand('Starting', `:set prompt "${prompt}\\n"`);
+  queueCommand('Configuring', ':set -ddump-json');
   queueCommand('Reloading', ':reload');
 };
 
@@ -257,13 +256,38 @@ const startGhci = () => {
     .then((config) => startGhciWith(config.ghci.command));
 };
 
+const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
+  diagnostics[key] = {};
+  sendDiagnostics(key);
+});
+
+const clearProgress = () =>
+  connection.sendNotification(`${py.name}/hideProgress`);
+
+const clearJobs = () => {
+  for (;;) {
+    activeJob = null;
+    if (!jobs.read()) {
+      break;
+    }
+  }
+};
+
 const restartGhci = () => {
+  say('Restarting GHCi');
+
   ghci.on('exit', () => {
     ghci = null;
+    clearDiagnostics();
+    clearProgress();
+    clearJobs();
     startGhci();
   });
 
-  ghci.kill();
+  const killed = ghci.kill();
+  if (!killed) {
+    throw new Error('Failed to kill GHCi!');
+  }
 };
 
 connection.onInitialize(() => {
@@ -280,9 +304,6 @@ connection.onDidSaveTextDocument((params) => {
   queueCommand('Reloading', ':reload');
 });
 
-connection.onNotification(`${py.name}/restart`, () => {
-  clearDiagnostics();
-  restartGhci();
-});
+connection.onNotification(`${py.name}/restart`, () => restartGhci());
 
 connection.listen();

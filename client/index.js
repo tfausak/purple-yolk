@@ -56,15 +56,19 @@ const activate = (context) => {
     client.onNotification(
       `${py.name}/updateProgress`,
       ({ message, percent }) => {
+        if (progress) {
         const increment = 100 * (percent - progress.percent);
         progress.percent = percent;
         progress.handle.report({ increment, message });
       }
+      }
     );
 
     client.onNotification(`${py.name}/hideProgress`, () => {
+      if (progress) {
       progress.resolve();
       progress = null;
+      }
     });
   });
 
