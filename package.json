@@ -18,20 +18,20 @@
   "contributes": {
     "commands": [
       {
+        "category": "Purple Yolk",
         "command": "purple-yolk.restart",
-        "title": "Restart",
-        "category": "Purple Yolk"
+        "title": "Restart"
       },
       {
+        "category": "Purple Yolk",
         "command": "purple-yolk.showOutput",
-        "title": "Show output",
-        "category": "Purple Yolk"
+        "title": "Show output"
       }
     ],
     "configuration": {
       "properties": {
         "purple-yolk.ghci.command": {
-          "default": "stack ghci --bench --color never --ghc-options \"-ddump-json -fobject-code -j4 -O0\" --main-is ghc --test",
+          "default": "stack --color never --no-terminal ghci --bench --ghc-options '-ddump-json -j -O0' --test",
           "description": "The command to start GHCi.",
           "type": "string"
         }
