@@ -2,6 +2,11 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-09-27: 0.2.0
+
+- Started displaying progress notifications. <https://github.com/tfausak/purple-yolk/issues/17>
+- Started reporting import cycles as errors. <https://github.com/tfausak/purple-yolk/issues/15>
+
 ## 2020-09-18: 0.1.2
 
 - No changes.
