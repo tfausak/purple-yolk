@@ -6,9 +6,11 @@ const { performance } = require('perf_hooks');
 const py = require('../package.json');
 const readline = require('readline');
 const stream = require('stream');
+const url = require('url');
 
 let activeJob = null;
 const connection = lsp.createConnection();
+const diagnostics = {};
 let ghci = null;
 const jobs = new stream.Readable({ objectMode: true, read: () => {} });
 const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
@@ -33,6 +35,150 @@ jobs.on('data', (job) => {
   activeJob.onStart(activeJob);
 });
 
+const parseJson = (string) => {
+  try {
+    return JSON.parse(string);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+const sendDiagnostics = (file) => {
+  const value = diagnostics[file];
+  if (!value) {
+    return;
+  }
+  const values = Object.values(value);
+  connection.sendDiagnostics({
+    diagnostics: values,
+    uri: file,
+  });
+  if (values.length === 0) {
+    delete diagnostics[file];
+  }
+};
+
+const clearDiagnostics = () => Object.keys(diagnostics).forEach((key) => {
+  diagnostics[key] = {};
+  sendDiagnostics(key);
+});
+
+const onStdoutLine = (line) => {
+  if (line.indexOf(prompt) === -1) {
+    say(`[stdout] ${line}`);
+  }
+};
+
+const getSeverity = (json) => {
+  switch (json.severity) {
+    case 'SevError': return lsp.DiagnosticSeverity.Error;
+    case 'SevWarning': switch (json.reason) {
+      case 'Opt_WarnDeferredOutOfScopeVariables':
+        return lsp.DiagnosticSeverity.Error;
+      case 'Opt_WarnDeferredTypeErrors': return lsp.DiagnosticSeverity.Error;
+      default: switch (json.span && json.span.file) {
+        case '<interactive>': return lsp.DiagnosticSeverity.Information;
+        default: return lsp.DiagnosticSeverity.Warning;
+      }
+    }
+    default: return lsp.DiagnosticSeverity.Information;
+  }
+};
+
+const getRange = (json) => {
+  const range = {
+    end: {
+      character: 0,
+      line: 0,
+    },
+    start: {
+      character: 0,
+      line: 0,
+    },
+  };
+
+  if (json.span) {
+    range.start.line = json.span.startLine - 1;
+    range.start.character = json.span.startCol - 1;
+    range.end.line = json.span.endLine - 1;
+    range.end.character = json.span.endCol - 1;
+  }
+
+  return range;
+};
+
+const getFile = (json) => {
+  if (json.span && json.span.file !== '<interactive>') {
+    return url.pathToFileURL(json.span.file);
+  }
+
+  return url.pathToFileURL('.');
+};
+
+const onOutput = (line, json) => {
+  const pattern = /^\[ *(\d+) of (\d+)\] Compiling (\S+) *\( ([^,]+), /;
+  const match = json.doc.match(pattern);
+  if (!match) {
+    return onStdoutLine(line);
+  }
+
+  connection.sendNotification(
+    `${py.name}/updateProgress`,
+    `${match[1]} of ${match[2]}: ${match[3]}`
+  );
+
+  const file = url.pathToFileURL(match[4]);
+  diagnostics[file] = {};
+  return sendDiagnostics(file);
+};
+
+const onStdoutJson = (line, json) => {
+  if (
+    json.span === null &&
+    json.span === null &&
+    json.severity === 'SevOutput'
+  ) {
+    return onOutput(line, json);
+  }
+
+  const file = getFile(json);
+  const range = getRange(json);
+
+  const key = [
+    range.start.line,
+    range.start.character,
+    range.end.line,
+    range.end.character,
+    json.reason,
+  ].join(' ');
+
+  if (!diagnostics[file]) {
+    diagnostics[file] = {};
+  }
+
+  diagnostics[file][key] = {
+    code: json.reason,
+    message: json.doc,
+    range,
+    severity: getSeverity(json),
+    source: py.name,
+  };
+
+  return sendDiagnostics(file);
+};
+
+const onStdout = (line) => {
+  const json = parseJson(line);
+  if (json) {
+    onStdoutJson(line, json);
+  } else {
+    onStdoutLine(line);
+  }
+};
+
 const makeJob = (command) => ({
   command,
   finishedAt: null,
@@ -48,9 +194,7 @@ const makeJob = (command) => ({
     ghci.stdin.write(`${job.command}\n`);
     connection.sendNotification(`${py.name}/showProgress`, job.command);
   },
-  onStdout: (line) => {
-    connection.sendNotification(`${py.name}/updateProgress`, line);
-  },
+  onStdout,
   queuedAt: null,
   startedAt: null,
 });
@@ -133,6 +277,7 @@ connection.onDidSaveTextDocument((params) => {
 });
 
 connection.onNotification(`${py.name}/restart`, () => {
+  clearDiagnostics();
   restartGhci();
 });
 
