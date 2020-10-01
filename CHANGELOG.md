@@ -39,8 +39,8 @@ Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 2020-05-22: 0.0.8
 
-- Changed the GHCi command to allow quoted arguments. This lets you pass multiple arguments through to GHCi, for example with `stack ghci --ghc-options '-O0 -j4'. <https://github.com/tfausak/purple-yolk/issues/11>
-- Changed the default GHCi command to build benchmarks and test suites, as well as passing `-fobject-code -j4 -O0` to GHC.
+- Changed the GHCi command to allow quoted arguments. This lets you pass multiple arguments through to GHCi, for example with `stack ghci --ghc-options '-00 -j4'. <https://github.com/tfausak/purple-yolk/issues/11>
+- Changed the default GHCi command to build benchmarks and test suites, as well as passing `-fobject-code -j4 -00` to GHC.
 
 ## 2020-05-22: 0.0.7
 
