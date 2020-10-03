@@ -120,5 +120,5 @@
     "vscode:prepublish": "webpack -p",
     "webpack": "webpack"
   },
-  "version": "0.2.1"
+  "version": "0.2.2"
 }
