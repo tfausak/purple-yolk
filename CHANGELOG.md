@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2020-10-03: 0.2.2
+
+- Fixed a bug with the default GHCi command. <https://github.com/tfausak/purple-yolk/pull/21>
+
 ## 2020-09-27: 0.2.1
 
 - Fixed a bug with the default GHCi command on Windows.
