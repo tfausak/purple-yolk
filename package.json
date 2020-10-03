@@ -31,7 +31,7 @@
     "configuration": {
       "properties": {
         "purple-yolk.ghci.command": {
-          "default": "stack --color never --no-terminal ghci --ghc-options \"-ddump-json -j -O0\" --main-is base --test",
+          "default": "stack --color never --no-terminal ghci --ghc-options -ddump-json --ghc-options -j --ghc-options -O0 --main-is base --test",
           "description": "The command to start GHCi.",
           "type": "string"
         }
@@ -91,7 +91,7 @@
   "devDependencies": {
     "eslint-loader": "^4.0.2",
     "eslint": "^7.10.0",
-    "vsce": "^1.80.0",
+    "vsce": "^1.81.0",
     "webpack-cli": "^3.3.12",
     "webpack": "^4.44.1"
   },
@@ -100,9 +100,9 @@
     "haskell"
   ],
   "engines": {
-    "node": "^14.11.0",
+    "node": "^14.12.0",
     "npm": "^6.14.8",
-    "vscode": "^1.49.2"
+    "vscode": "^1.49.3"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "images/purple-yolk.png",
