@@ -42,22 +42,25 @@ const activate = (context) => {
   statusBarItem.show();
 
   client.onReady().then(() => {
-    client.onNotification(`${py.name}/showProgress`, ({ key, title }) =>
-      vscode.window.withProgress({
-        location: vscode.ProgressLocation.Notification,
-        title: `${py.displayName}: ${title}`,
-      }, (progress) => {
-        progresses[key] = { percent: 0, progress };
-        return new Promise((resolve) => {
-          progresses[key].resolve = resolve;
-        });
-      }));
+    client.onNotification(`${py.name}/showProgress`, ({ key, title }) => {
+      const timeout = setTimeout(() =>
+        vscode.window.withProgress({
+          location: vscode.ProgressLocation.Notification,
+          title: `${py.displayName}: ${title}`,
+        }, (progress) => {
+          progresses[key].progress = progress;
+          return new Promise((resolve) => {
+            progresses[key].resolve = resolve;
+          });
+        }), 1000);
+      progresses[key] = { percent: 0, progress: null, resolve: null, timeout };
+    });
 
     client.onNotification(
       `${py.name}/updateProgress`,
       ({ key, message, percent }) => {
         const progress = progresses[key];
-        if (progress) {
+        if (progress && progress.progress) {
           const increment = 100 * (percent - progress.percent);
           progress.percent = percent;
           progress.progress.report({ increment, message });
@@ -66,8 +69,14 @@ const activate = (context) => {
     );
 
     client.onNotification(`${py.name}/hideProgress`, ({ key }) => {
-      if (progresses[key]) {
-        progresses[key].resolve();
+      const progress = progresses[key];
+      if (progress) {
+        if (progress.timeout) {
+          clearTimeout(progress.timeout);
+        }
+        if (progress.resolve) {
+          progress.resolve();
+        }
         delete progresses[key];
       }
     });
