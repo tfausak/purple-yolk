@@ -1,7 +1,7 @@
 # https://docs.travis-ci.com/user/customizing-the-build
 dist: bionic
 language: node_js
-node_js: 14
+node_js: 12
 script: npm run -- vsce package --out purple-yolk.vsix
 deploy:
   - api_key: $GITHUB_PERSONAL_ACCESS_TOKEN
