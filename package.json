@@ -31,7 +31,7 @@
     "configuration": {
       "properties": {
         "purple-yolk.ghci.command": {
-          "default": "stack --color never --no-terminal ghci --ghc-options -ddump-json --ghc-options -j --ghc-options -O0 --main-is base --test",
+          "default": "stack ghci --ghc-options -ddump-json",
           "description": "The command to start GHCi.",
           "type": "string"
         }
