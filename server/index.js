@@ -16,6 +16,7 @@ const jobs = new stream.Readable({ objectMode: true, read: () => {} });
 const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
 let stderr = null;
 let stdout = null;
+const queuedCommands = new Set();
 
 const format = (ms) => (ms / 1000).toFixed(3);
 
@@ -32,6 +33,7 @@ jobs.on('data', (job) => {
   }
 
   jobs.pause();
+  queuedCommands.delete(job.command);
   activeJob = job;
   activeJob.startedAt = performance.now();
   activeJob.onStart(activeJob);
@@ -231,10 +233,15 @@ const makeJob = (title, command) => {
 };
 
 const queueCommand = (title, command) => {
-  const job = makeJob(title, command);
-  job.queuedAt = performance.now();
-  job.onQueue(job);
-  jobs.push(job);
+  if (queuedCommands.has(command)) {
+    say(`Ignoring ${command}`);
+  } else {
+    queuedCommands.add(command);
+    const job = makeJob(title, command);
+    job.queuedAt = performance.now();
+    job.onQueue(job);
+    jobs.push(job);
+  }
 };
 
 const setUpStreams = () => {
@@ -319,6 +326,7 @@ const clearJobs = () => {
       break;
     }
   }
+  queuedCommands.clear();
   jobs.resume();
 };
 

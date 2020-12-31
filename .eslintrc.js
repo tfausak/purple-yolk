@@ -2,9 +2,8 @@
 'use strict';
 
 module.exports = {
-  env: { node: true },
+  env: { es6: true, node: true },
   extends: 'eslint:all',
-  globals: { Promise: 'readonly' },
   ignorePatterns: ['dist/', 'output/', '!.eslintrc.js'],
   parserOptions: { ecmaVersion: 6 },
   rules: {
