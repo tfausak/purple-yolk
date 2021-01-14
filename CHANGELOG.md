@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2021-01-14: 0.3.0
+
+- Added basic linting through the `purple-yolk.lintFile` command. <https://github.com/tfausak/purple-yolk/issues/5>
+
 ## 2020-12-31: 0.2.3
 
 - Changed the progress notification to only show after one second. <https://github.com/tfausak/purple-yolk/issues/22>
