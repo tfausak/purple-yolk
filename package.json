@@ -90,10 +90,10 @@
   "description": "A Haskell IDE.",
   "devDependencies": {
     "eslint-loader": "^4.0.2",
-    "eslint": "^7.16.0",
-    "vsce": "^1.81.0",
-    "webpack-cli": "^4.3.0",
-    "webpack": "^5.11.1"
+    "eslint": "^7.17.0",
+    "vsce": "^1.83.0",
+    "webpack-cli": "^4.3.1",
+    "webpack": "^5.14.0"
   },
   "displayName": "Purple Yolk",
   "keywords": [
