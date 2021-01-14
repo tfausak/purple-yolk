@@ -364,6 +364,71 @@ connection.onDidSaveTextDocument((params) => {
   queueCommand('Reloading', ':reload');
 });
 
+/* eslint-disable max-lines-per-function */
+connection.onNotification(`${py.name}/lintFile`, (file) => {
+  if (diagnostics[file]) {
+    Object.keys(diagnostics[file]).forEach((key) => {
+      const diagnostic = diagnostics[file][key];
+      if (diagnostic.data && diagnostic.data.source === 'lint') {
+        delete diagnostics[file][key];
+      }
+    });
+    sendDiagnostics(file);
+  }
+
+  connection.workspace.getConfiguration(py.name).then((config) => {
+    const startedAt = performance.now();
+    say(`Linting ${file}`);
+    childProcess.exec(
+      `${config.hlint.command} ${file}`,
+      (error, output) => {
+        if (error) {
+          throw error;
+        }
+        const finishedAt = performance.now();
+        say(`Linted ${file} in ${finishedAt - startedAt}`);
+        JSON.parse(output).forEach((hint) => {
+          const key = [
+            hint.startLine,
+            hint.startColumn,
+            hint.endLine,
+            hint.endColumn,
+            hint.hint,
+          ].join(' ');
+
+          if (!diagnostics[file]) {
+            diagnostics[file] = {};
+          }
+
+          diagnostics[file][key] = {
+            code: hint.hint,
+            data: { source: 'lint' },
+            message: [
+              `${hint.severity}: ${hint.hint}`,
+              `Found: ${hint.from}`,
+              `Perhaps: ${hint.to}`,
+            ].join('\n'),
+            range: {
+              end: {
+                character: hint.endColumn - 1,
+                line: hint.endLine - 1,
+              },
+              start: {
+                character: hint.startColumn - 1,
+                line: hint.startLine - 1,
+              },
+            },
+            severity: lsp.DiagnosticSeverity.Information,
+            source: py.name,
+          };
+
+          sendDiagnostics(file);
+        });
+      }
+    );
+  });
+});
+
 connection.onNotification(`${py.name}/restart`, () => restartGhci());
 
 connection.listen();

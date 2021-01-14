@@ -26,6 +26,19 @@ const activate = (context) => {
   );
 
   context.subscriptions.push(vscode.commands.registerCommand(
+    `${py.name}.lintFile`,
+    () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        client.sendNotification(
+          `${py.name}/lintFile`,
+          editor.document.fileName
+        );
+      }
+    }
+  ));
+
+  context.subscriptions.push(vscode.commands.registerCommand(
     `${py.name}.restart`,
     () => client.sendNotification(`${py.name}/restart`, null)
   ));

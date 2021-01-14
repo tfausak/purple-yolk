@@ -1,6 +1,7 @@
 {
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
+    "onCommand:purple-yolk.lintFile",
     "onCommand:purple-yolk.restart",
     "onCommand:purple-yolk:showOutput",
     "onLanguage:haskell"
@@ -19,6 +20,12 @@
     "commands": [
       {
         "category": "Purple Yolk",
+        "command": "purple-yolk.lintFile",
+        "title": "Lint file",
+        "when": "editorLangId == haskell"
+      },
+      {
+        "category": "Purple Yolk",
         "command": "purple-yolk.restart",
         "title": "Restart"
       },
@@ -33,6 +40,11 @@
         "purple-yolk.ghci.command": {
           "default": "stack ghci --ghc-options -ddump-json",
           "description": "The command to start GHCi.",
+          "type": "string"
+        },
+        "purple-yolk.hlint.command": {
+          "default": "stack exec --package hlint -- hlint --json --no-exit-code",
+          "description": "The command to run HLint.",
           "type": "string"
         }
       },
