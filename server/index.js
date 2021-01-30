@@ -364,7 +364,9 @@ connection.onInitialized(() => {
 });
 
 connection.onDidSaveTextDocument((params) => {
-  say(`Saved ${params.textDocument.uri}`);
+  const file = url.fileURLToPath(params.textDocument.uri);
+  const uri = url.pathToFileURL(file);
+  say(`Saved ${uri}`);
   diagnostics[defaultFile] = {};
   sendDiagnostics(defaultFile);
   queueCommand('Reloading', ':reload');
