@@ -102,10 +102,10 @@
   "description": "A Haskell IDE.",
   "devDependencies": {
     "eslint-webpack-plugin": "^2.4.3",
-    "eslint": "^7.17.0",
-    "vsce": "^1.83.0",
-    "webpack-cli": "^4.3.1",
-    "webpack": "^5.14.0"
+    "eslint": "^7.18.0",
+    "vsce": "^1.84.0",
+    "webpack-cli": "^4.4.0",
+    "webpack": "^5.19.0"
   },
   "displayName": "Purple Yolk",
   "keywords": [
@@ -113,7 +113,6 @@
   ],
   "engines": {
     "node": "^12.14.1",
-    "npm": "^6.13.4",
     "vscode": "^1.52.1"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
