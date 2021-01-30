@@ -366,19 +366,21 @@ connection.onDidSaveTextDocument((params) => {
 
 /* eslint-disable max-lines-per-function */
 connection.onNotification(`${py.name}/lintFile`, (file) => {
-  if (diagnostics[file]) {
-    Object.keys(diagnostics[file]).forEach((key) => {
-      const diagnostic = diagnostics[file][key];
+  const uri = url.pathToFileURL(file);
+
+  if (diagnostics[uri]) {
+    Object.keys(diagnostics[uri]).forEach((key) => {
+      const diagnostic = diagnostics[uri][key];
       if (diagnostic.data && diagnostic.data.source === 'lint') {
-        delete diagnostics[file][key];
+        delete diagnostics[uri][key];
       }
     });
-    sendDiagnostics(file);
+    sendDiagnostics(uri);
   }
 
   connection.workspace.getConfiguration(py.name).then((config) => {
     const startedAt = performance.now();
-    say(`Linting ${file}`);
+    say(`Linting ${uri}`);
     childProcess.exec(
       `${config.hlint.command} ${file}`,
       (error, output) => {
@@ -386,7 +388,7 @@ connection.onNotification(`${py.name}/lintFile`, (file) => {
           throw error;
         }
         const finishedAt = performance.now();
-        say(`Linted ${file} in ${finishedAt - startedAt}`);
+        say(`Linted ${uri} in ${finishedAt - startedAt}`);
         JSON.parse(output).forEach((hint) => {
           const key = [
             hint.startLine,
@@ -396,11 +398,11 @@ connection.onNotification(`${py.name}/lintFile`, (file) => {
             hint.hint,
           ].join(' ');
 
-          if (!diagnostics[file]) {
-            diagnostics[file] = {};
+          if (!diagnostics[uri]) {
+            diagnostics[uri] = {};
           }
 
-          diagnostics[file][key] = {
+          diagnostics[uri][key] = {
             code: hint.hint,
             data: { source: 'lint' },
             message: [
@@ -422,7 +424,7 @@ connection.onNotification(`${py.name}/lintFile`, (file) => {
             source: py.name,
           };
 
-          sendDiagnostics(file);
+          sendDiagnostics(uri);
         });
       }
     );
