@@ -46,6 +46,11 @@
           "default": "stack exec --package hlint -- hlint --json --no-exit-code",
           "description": "The command to run HLint.",
           "type": "string"
+        },
+        "purple-yolk.hlint.onSave": {
+          "default": true,
+          "description": "Should HLint run on save?",
+          "type": "boolean"
         }
       },
       "title": "Purple Yolk"

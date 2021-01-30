@@ -363,15 +363,6 @@ connection.onInitialized(() => {
   startGhci();
 });
 
-connection.onDidSaveTextDocument((params) => {
-  const file = url.fileURLToPath(params.textDocument.uri);
-  const uri = url.pathToFileURL(file);
-  say(`Saved ${uri}`);
-  diagnostics[defaultFile] = {};
-  sendDiagnostics(defaultFile);
-  queueCommand('Reloading', ':reload');
-});
-
 const getLintRange = (hint) => ({
   end: {
     character: hint.endColumn - 1,
@@ -438,6 +429,21 @@ const lintFile = (file, uri) => {
   connection.workspace.getConfiguration(py.name)
     .then((config) => lintFileWith(file, uri, config));
 };
+
+connection.onDidSaveTextDocument((params) => {
+  const file = url.fileURLToPath(params.textDocument.uri);
+  const uri = url.pathToFileURL(file);
+  say(`Saved ${uri}`);
+  diagnostics[defaultFile] = {};
+  sendDiagnostics(defaultFile);
+  queueCommand('Reloading', ':reload');
+
+  connection.workspace.getConfiguration(py.name).then((config) => {
+    if (config.hlint.onSave) {
+      lintFileWith(file, uri, config);
+    }
+  });
+});
 
 connection.onNotification(`${py.name}/lintFile`, (file) => {
   const uri = url.pathToFileURL(file);
