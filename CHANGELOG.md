@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2021-01-30: 0.4.1
+
+- No changes.
+
 ## 2021-01-30: 0.4.0
 
 - Added the ability to lint on save and enabled it by default. <https://github.com/tfausak/purple-yolk/issues/24>
