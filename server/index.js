@@ -146,20 +146,7 @@ const onOutput = (line, json) => {
   return sendDiagnostics(file);
 };
 
-/* eslint-disable max-statements */
-const onStdoutJson = (line, json) => {
-  if (
-    json.span === null &&
-    json.span === null &&
-    json.severity === 'SevOutput'
-  ) {
-    return onOutput(line, json);
-  }
-
-  const file = getFile(json);
-  const range = getRange(json);
-
-  const key = [
+const getKey = (range, json) => [
     range.start.line,
     range.start.character,
     range.end.line,
@@ -167,20 +154,39 @@ const onStdoutJson = (line, json) => {
     json.reason,
   ].join(' ');
 
-  if (file === defaultFile) {
-    switch (json.reason) {
-      case 'Opt_WarnMissingHomeModules': return null;
-      case 'Opt_WarnMissingImportList': return null;
-      case 'Opt_WarnMissingLocalSignatures': return null;
-      default: break;
+const shouldIgnore = (reason) => {
+  switch (reason) {
+    case 'Opt_WarnMissingHomeModules': return true;
+    case 'Opt_WarnMissingImportList': return true;
+    case 'Opt_WarnMissingLocalSignatures': return true;
+    default: return false;
     }
-  }
+};
 
+const sendDiagnostic = (file, key, diagnostic) => {
   if (!diagnostics[file]) {
     diagnostics[file] = {};
   }
 
-  diagnostics[file][key] = {
+  diagnostics[file][key] = diagnostic;
+
+  return sendDiagnostics(file);
+};
+
+const onStdoutJson = (line, json) => {
+  if (json.span === null && json.severity === 'SevOutput') {
+    return onOutput(line, json);
+  }
+
+  const file = getFile(json);
+  const range = getRange(json);
+  const key = getKey(range, json);
+
+  if (file === defaultFile && shouldIgnore(json.reason)) {
+    return null;
+  }
+
+  const diagnostic = {
     code: json.reason,
     message: json.doc,
     range,
@@ -188,7 +194,7 @@ const onStdoutJson = (line, json) => {
     source: py.name,
   };
 
-  return sendDiagnostics(file);
+  return sendDiagnostic(file, key, diagnostic);
 };
 
 const onStdout = (line) => {
