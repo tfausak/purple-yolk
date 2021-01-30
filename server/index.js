@@ -147,12 +147,12 @@ const onOutput = (line, json) => {
 };
 
 const getKey = (range, json) => [
-    range.start.line,
-    range.start.character,
-    range.end.line,
-    range.end.character,
-    json.reason,
-  ].join(' ');
+  range.start.line,
+  range.start.character,
+  range.end.line,
+  range.end.character,
+  json.reason,
+].join(' ');
 
 const shouldIgnore = (reason) => {
   switch (reason) {
@@ -160,7 +160,7 @@ const shouldIgnore = (reason) => {
     case 'Opt_WarnMissingImportList': return true;
     case 'Opt_WarnMissingLocalSignatures': return true;
     default: return false;
-    }
+  }
 };
 
 const sendDiagnostic = (file, key, diagnostic) => {
@@ -370,10 +370,59 @@ connection.onDidSaveTextDocument((params) => {
   queueCommand('Reloading', ':reload');
 });
 
-/* eslint-disable max-lines-per-function */
-connection.onNotification(`${py.name}/lintFile`, (file) => {
-  const uri = url.pathToFileURL(file);
+const getLintRange = (hint) => ({
+  end: {
+    character: hint.endColumn - 1,
+    line: hint.endLine - 1,
+  },
+  start: {
+    character: hint.startColumn - 1,
+    line: hint.startLine - 1,
+  },
+});
 
+const getLintKey = (hint) => [
+  hint.startLine,
+  hint.startColumn,
+  hint.endLine,
+  hint.endColumn,
+  hint.hint,
+].join(' ');
+
+const lintFileWith = (file, uri, config) => {
+  const startedAt = performance.now();
+  say(`Linting ${uri}`);
+  childProcess.exec(
+    `${config.hlint.command} ${file}`,
+    (error, output) => {
+      if (error) {
+        throw error;
+      }
+      const finishedAt = performance.now();
+      say(`Linted ${uri} in ${finishedAt - startedAt}`);
+      JSON.parse(output).forEach((hint) => {
+        const range = getLintRange(hint);
+        const key = getLintKey(hint);
+        const diagnostic = {
+          code: hint.hint,
+          data: { source: 'lint' },
+          message: [
+            `${hint.severity}: ${hint.hint}`,
+            `Found: ${hint.from}`,
+            `Perhaps: ${hint.to}`,
+          ].join('\n'),
+          range,
+          severity: lsp.DiagnosticSeverity.Information,
+          source: py.name,
+        };
+
+        sendDiagnostic(uri, key, diagnostic);
+      });
+    }
+  );
+};
+
+const lintFile = (file, uri) => {
   if (diagnostics[uri]) {
     Object.keys(diagnostics[uri]).forEach((key) => {
       const diagnostic = diagnostics[uri][key];
@@ -384,57 +433,13 @@ connection.onNotification(`${py.name}/lintFile`, (file) => {
     sendDiagnostics(uri);
   }
 
-  connection.workspace.getConfiguration(py.name).then((config) => {
-    const startedAt = performance.now();
-    say(`Linting ${uri}`);
-    childProcess.exec(
-      `${config.hlint.command} ${file}`,
-      (error, output) => {
-        if (error) {
-          throw error;
-        }
-        const finishedAt = performance.now();
-        say(`Linted ${uri} in ${finishedAt - startedAt}`);
-        JSON.parse(output).forEach((hint) => {
-          const key = [
-            hint.startLine,
-            hint.startColumn,
-            hint.endLine,
-            hint.endColumn,
-            hint.hint,
-          ].join(' ');
+  connection.workspace.getConfiguration(py.name)
+    .then((config) => lintFileWith(file, uri, config));
+};
 
-          if (!diagnostics[uri]) {
-            diagnostics[uri] = {};
-          }
-
-          diagnostics[uri][key] = {
-            code: hint.hint,
-            data: { source: 'lint' },
-            message: [
-              `${hint.severity}: ${hint.hint}`,
-              `Found: ${hint.from}`,
-              `Perhaps: ${hint.to}`,
-            ].join('\n'),
-            range: {
-              end: {
-                character: hint.endColumn - 1,
-                line: hint.endLine - 1,
-              },
-              start: {
-                character: hint.startColumn - 1,
-                line: hint.startLine - 1,
-              },
-            },
-            severity: lsp.DiagnosticSeverity.Information,
-            source: py.name,
-          };
-
-          sendDiagnostics(uri);
-        });
-      }
-    );
-  });
+connection.onNotification(`${py.name}/lintFile`, (file) => {
+  const uri = url.pathToFileURL(file);
+  lintFile(file, uri);
 });
 
 connection.onNotification(`${py.name}/restart`, () => restartGhci());
