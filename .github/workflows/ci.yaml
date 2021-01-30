@@ -4,6 +4,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  release:
+    types: [ created ]
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -17,3 +19,14 @@ jobs:
         with:
           name: purple-yolk-${{ github.sha }}.vsix
           path: purple-yolk.vsix
+      - if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_content_type: application/vsix
+          asset_name: purple-yolk-${{ github.event.release.tag_name }}.vsix
+          asset_path: purple-yolk.vsix
+          upload_url: ${{ github.event.release.upload_url }}
+      - if: github.event_name == 'release'
+        run: npm run -- vsce publish --packagePath purple-yolk.vsix --pat "${{ secrets.AZURE_PERSONAL_ACCESS_TOKEN }}"
