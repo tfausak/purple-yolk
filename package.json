@@ -15,7 +15,8 @@
   ],
   "categories": [
     "Linters",
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
   ],
   "contributes": {
     "commands": [
