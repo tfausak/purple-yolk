@@ -173,6 +173,27 @@ const sendDiagnostic = (file, key, diagnostic) => {
   return sendDiagnostics(file);
 };
 
+const getTags = (reason) => {
+  const unnecessary = [lsp.DiagnosticTag.Unnecessary];
+  const deprecated = [lsp.DiagnosticTag.Deprecated];
+  switch (reason) {
+    case 'Opt_WarnDuplicateConstraints': return unnecessary;
+    case 'Opt_WarnDuplicateExports': return unnecessary;
+    case 'Opt_WarnRedundantConstraints': return unnecessary;
+    case 'Opt_WarnRedundantRecordWildcards': return unnecessary;
+    case 'Opt_WarnUnusedForalls': return unnecessary;
+    case 'Opt_WarnUnusedImports': return unnecessary;
+    case 'Opt_WarnUnusedLocalBinds': return unnecessary;
+    case 'Opt_WarnUnusedMatches': return unnecessary;
+    case 'Opt_WarnUnusedPatternBinds': return unnecessary;
+    case 'Opt_WarnUnusedRecordWildcards': return unnecessary;
+    case 'Opt_WarnUnusedTopBinds': return unnecessary;
+    case 'Opt_WarnUnusedTypePatterns': return unnecessary;
+    case 'Opt_WarnWarningsDeprecations': return deprecated;
+    default: return null;
+  }
+};
+
 const onStdoutJson = (line, json) => {
   if (json.span === null && json.severity === 'SevOutput') {
     return onOutput(line, json);
@@ -192,6 +213,7 @@ const onStdoutJson = (line, json) => {
     range,
     severity: getSeverity(json),
     source: py.name,
+    tags: getTags(json.reason),
   };
 
   return sendDiagnostic(file, key, diagnostic);
