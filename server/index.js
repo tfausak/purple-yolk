@@ -378,7 +378,10 @@ const restartGhci = () => {
 
 connection.onInitialize(() => {
   say(`Initializing ${py.name} ${py.version}`);
-  return { capabilities: { textDocumentSync: { save: true } } };
+  return { capabilities: {
+    documentFormattingProvider: true,
+    textDocumentSync: { save: true },
+  } };
 });
 
 connection.onInitialized(() => {
