@@ -1,9 +1,6 @@
 {
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
-    "onCommand:purple-yolk.lintFile",
-    "onCommand:purple-yolk.restart",
-    "onCommand:purple-yolk:showOutput",
     "onLanguage:haskell"
   ],
   "badges": [
