@@ -140,5 +140,5 @@
     "vscode:prepublish": "webpack --mode production",
     "webpack": "webpack"
   },
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2021-02-02: 0.6.0
+
+- Added rudimentary formatting support. <https://github.com/tfausak/purple-yolk/pull/28>
+
 ## 2021-02-01: 0.5.0
 
 - Added tags to diagnostics, which label unnecessary and deprecated things. <https://github.com/tfausak/purple-yolk/issues/27>
