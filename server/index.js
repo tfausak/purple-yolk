@@ -378,7 +378,10 @@ const restartGhci = () => {
 
 connection.onInitialize(() => {
   say(`Initializing ${py.name} ${py.version}`);
-  return { capabilities: { textDocumentSync: { save: true } } };
+  return { capabilities: {
+    documentFormattingProvider: true,
+    textDocumentSync: { save: true },
+  } };
 });
 
 connection.onInitialized(() => {
@@ -473,5 +476,25 @@ connection.onNotification(`${py.name}/lintFile`, (file) => {
 });
 
 connection.onNotification(`${py.name}/restart`, () => restartGhci());
+
+connection.onDocumentFormatting((params) => {
+  const { uri } = params.textDocument;
+  const file = url.fileURLToPath(uri);
+  connection.workspace.getConfiguration(py.name).then((config) => {
+    const startedAt = performance.now();
+    say(`Formatting ${uri}`);
+    childProcess.exec(
+      `${config.brittany.command} ${file}`,
+      (error) => {
+        if (error) {
+          throw error;
+        }
+        const finishedAt = performance.now();
+        say(`Formatted ${uri} in ${finishedAt - startedAt}`);
+        return null;
+      }
+    );
+  });
+});
 
 connection.listen();

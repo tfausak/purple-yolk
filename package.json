@@ -36,6 +36,11 @@
     ],
     "configuration": {
       "properties": {
+        "purple-yolk.brittany.command": {
+          "default": "stack exec --package brittany -- brittany --output-on-errors --write-mode inplace",
+          "description": "The command to run Brittany.",
+          "type": "string"
+        },
         "purple-yolk.ghci.command": {
           "default": "stack ghci --ghc-options -ddump-json",
           "description": "The command to start GHCi.",
