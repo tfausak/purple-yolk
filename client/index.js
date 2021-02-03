@@ -11,13 +11,6 @@ const progresses = {};
 const activate = (context) => {
   const outputChannel = vscode.window.createOutputChannel(py.displayName);
 
-  vscode.languages.registerDocumentFormattingEditProvider('haskell', {
-    provideDocumentFormattingEdits: (document) => {
-      console.dir(document);
-      return [];
-    },
-  });
-
   const client = new lsp.LanguageClient(
     py.displayName,
     {
