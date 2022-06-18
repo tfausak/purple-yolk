@@ -414,11 +414,11 @@ const lintFileWith = (file, uri, config) => {
     `${config.hlint.command} ${file}`,
     (error, output) => {
       if (error) {
-        throw error;
+        return say(`Failed to lint ${uri}: ${error}`);
       }
       const finishedAt = performance.now();
       say(`Linted ${uri} in ${finishedAt - startedAt}`);
-      JSON.parse(output).forEach((hint) => {
+      return JSON.parse(output).forEach((hint) => {
         const range = getLintRange(hint);
         const key = getLintKey(hint);
         const diagnostic = {
@@ -487,7 +487,7 @@ connection.onDocumentFormatting((params) => {
       `${config.brittany.command} ${file}`,
       (error) => {
         if (error) {
-          throw error;
+          return say(`Failed to format ${uri}: ${error}`);
         }
         const finishedAt = performance.now();
         say(`Formatted ${uri} in ${finishedAt - startedAt}`);
