@@ -2,6 +2,11 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-06-18: 0.7.0
+
+- Switched license from ISC to MIT.
+- Prevented Brittany and HLint from crashing the language server.
+
 ## 2021-02-25: 0.6.1
 
 - Added syntax highlighting for operators. Thanks Daniel Sokil! <https://github.com/tfausak/purple-yolk/pull/30>
