@@ -105,28 +105,28 @@
     ]
   },
   "dependencies": {
-    "vscode-languageclient": "^7.0.0",
-    "vscode-languageserver": "^7.0.0"
+    "vscode-languageclient": "^8.0.1",
+    "vscode-languageserver": "^8.0.1"
   },
   "description": "A Haskell IDE.",
   "devDependencies": {
-    "eslint-webpack-plugin": "^2.4.3",
-    "eslint": "^7.19.0",
-    "vsce": "^1.85.0",
-    "webpack-cli": "^4.4.0",
-    "webpack": "^5.19.0"
+    "eslint-webpack-plugin": "^3.1.1",
+    "eslint": "^8.18.0",
+    "vsce": "^2.9.1",
+    "webpack-cli": "^4.10.0",
+    "webpack": "^5.73.0"
   },
   "displayName": "Purple Yolk",
   "keywords": [
     "haskell"
   ],
   "engines": {
-    "node": "^12.14.1",
-    "vscode": "^1.52.1"
+    "node": "^16.13.0",
+    "vscode": "^1.68.1"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "images/purple-yolk.png",
-  "license": "ISC",
+  "license": "MIT",
   "main": "dist/client.js",
   "name": "purple-yolk",
   "publisher": "taylorfausak",
@@ -135,10 +135,7 @@
     "url": "https://github.com/tfausak/purple-yolk.git"
   },
   "scripts": {
-    "eslint": "eslint",
-    "vsce": "vsce",
-    "vscode:prepublish": "webpack --mode production",
-    "webpack": "webpack"
+    "vscode:prepublish": "webpack --mode production"
   },
   "version": "0.6.1"
 }
