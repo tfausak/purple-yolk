@@ -54,7 +54,7 @@ const activate = (context) => {
   statusBarItem.tooltip = 'Click to show output.';
   statusBarItem.show();
 
-  client.onReady().then(() => {
+  client.start().then(() => {
     client.onNotification(`${py.name}/showProgress`, ({ key, title }) => {
       const timeout = setTimeout(() =>
         vscode.window.withProgress({
@@ -94,8 +94,6 @@ const activate = (context) => {
       }
     });
   });
-
-  client.start();
 };
 
 module.exports = { activate };
