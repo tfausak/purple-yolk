@@ -137,5 +137,5 @@
   "scripts": {
     "vscode:prepublish": "webpack --mode production"
   },
-  "version": "0.7.0"
+  "version": "0.7.1"
 }

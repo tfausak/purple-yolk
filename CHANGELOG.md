@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-06-19: 0.7.1
+
+- Fixed a bug that prevented the client from starting.
+
 ## 2022-06-18: 0.7.0
 
 - Switched license from ISC to MIT.
