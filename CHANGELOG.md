@@ -2,6 +2,13 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-07-27: 0.7.2
+
+- Added syntax highlighting for `cabal.project`, `cabal.project.local`, and
+  `cabal.project.freeze` files.
+- Improved how elapsed times are logged.
+- Updated dependencies.
+
 ## 2022-06-19: 0.7.1
 
 - Fixed a bug that prevented the client from starting.
