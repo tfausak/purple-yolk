@@ -80,6 +80,11 @@
         "extensions": [
           ".cabal"
         ],
+        "filenames": [
+          "cabal.project.freeze",
+          "cabal.project.local",
+          "cabal.project"
+        ],
         "id": "cabal"
       },
       {
