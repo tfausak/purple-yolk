@@ -12,7 +12,7 @@ let activeJob = null;
 const connection = lsp.createConnection();
 const diagnostics = {};
 let ghci = null;
-const jobs = new stream.Readable({ objectMode: true, read: () => {} });
+const jobs = new stream.Readable({ objectMode: true, read: () => { } });
 const prompt = `{- ${py.name} ${py.version} ${performance.timeOrigin} -}`;
 let stderr = null;
 let stdout = null;
@@ -348,7 +348,7 @@ const clearProgress = () => {
 
 const clearJobs = () => {
   jobs.pause();
-  for (;;) {
+  for (; ;) {
     activeJob = null;
     if (!jobs.read()) {
       break;
@@ -378,10 +378,12 @@ const restartGhci = () => {
 
 connection.onInitialize(() => {
   say(`Initializing ${py.name} ${py.version}`);
-  return { capabilities: {
-    documentFormattingProvider: true,
-    textDocumentSync: { save: true },
-  } };
+  return {
+    capabilities: {
+      documentFormattingProvider: true,
+      textDocumentSync: { save: true },
+    },
+  };
 });
 
 connection.onInitialized(() => {
