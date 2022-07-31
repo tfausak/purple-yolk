@@ -7,7 +7,7 @@
     {
       "description": "Build status",
       "href": "https://github.com/tfausak/purple-yolk/actions",
-      "url": "https://github.com/tfausak/purple-yolk/workflows/CI/badge.svg"
+      "url": "https://github.com/tfausak/purple-yolk/workflows/Workflow/badge.svg"
     }
   ],
   "categories": [

@@ -1,4 +1,4 @@
-name: CI
+name: Workflow
 on:
   push: null
   release:
