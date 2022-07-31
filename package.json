@@ -62,12 +62,12 @@
     "grammars": [
       {
         "language": "cabal",
-        "path": "grammars/cabal-grammar.json",
+        "path": "data/grammar/cabal.json",
         "scopeName": "source.cabal"
       },
       {
         "language": "haskell",
-        "path": "grammars/haskell-grammar.json",
+        "path": "data/grammar/haskell.json",
         "scopeName": "source.haskell"
       }
     ],
@@ -76,7 +76,7 @@
         "aliases": [
           "Cabal"
         ],
-        "configuration": "languages/cabal-language.json",
+        "configuration": "data/language/cabal.json",
         "extensions": [
           ".cabal"
         ],
@@ -91,7 +91,7 @@
         "aliases": [
           "Haskell"
         ],
-        "configuration": "languages/haskell-language.json",
+        "configuration": "data/language/haskell.json",
         "extensions": [
           ".hs"
         ],
@@ -101,11 +101,11 @@
     "snippets": [
       {
         "language": "cabal",
-        "path": "snippets/cabal-snippets.json"
+        "path": "data/snippet/cabal.json"
       },
       {
         "language": "haskell",
-        "path": "snippets/haskell-snippets.json"
+        "path": "data/snippet/haskell.json"
       }
     ]
   },
@@ -130,7 +130,7 @@
     "vscode": "^1.69.2"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
-  "icon": "images/purple-yolk.png",
+  "icon": "data/image/icon.png",
   "license": "MIT",
   "main": "dist/client.js",
   "name": "purple-yolk",
