@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 16.13.2
 
-      - run: npm install
+      - run: npm ci
 
       - run: npx vsce package --out purple-yolk.vsix
 
