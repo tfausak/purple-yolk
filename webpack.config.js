@@ -1,8 +1,6 @@
 // https://webpack.js.org/configuration/
 'use strict';
 
-const ESLintPlugin = require('eslint-webpack-plugin');
-
 module.exports = {
   entry: {
     client: './client/index.js',
@@ -15,8 +13,5 @@ module.exports = {
   output: {
     libraryTarget: 'commonjs2',
   },
-  plugins: [
-    new ESLintPlugin(),
-  ],
   target: 'node',
 };

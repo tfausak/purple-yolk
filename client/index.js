@@ -7,7 +7,6 @@ const vscode = require('vscode');
 
 const progresses = {};
 
-/* eslint-disable max-lines-per-function, max-statements */
 const activate = (context) => {
   const outputChannel = vscode.window.createOutputChannel(py.displayName);
 
