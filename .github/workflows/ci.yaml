@@ -1,9 +1,6 @@
 name: CI
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  push: null
   release:
     types: [ created ]
 jobs:
