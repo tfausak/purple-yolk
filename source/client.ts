@@ -410,7 +410,7 @@ async function reloadInterpreter(
   INTERPRETER.key = key
 
   status.busy = true
-  status.detail = undefined
+  delete status.detail
   status.text = 'Loading'
 
   const document = vscode.window.activeTextEditor?.document
@@ -459,7 +459,7 @@ async function startInterpreter(
   }
 
   status.busy = true
-  status.detail = undefined
+  delete status.detail
   status.severity = vscode.LanguageStatusSeverity.Information
   status.text = 'Starting'
 
@@ -482,7 +482,7 @@ async function startInterpreter(
     log(channel, key, `Error: Interpreter exited with ${code}!`)
     if (code !== null) {
       status.busy = false
-      status.detail = undefined
+      delete status.detail
       status.text = 'Exited'
       status.severity = vscode.LanguageStatusSeverity.Error
     }
@@ -507,7 +507,7 @@ async function startInterpreter(
         if (INTERPRETER?.key) { INTERPRETER.key = null }
         resolve()
         status.busy = false
-        status.detail = undefined
+        delete status.detail
         status.text = 'Idle'
         shouldLog = false
       }
@@ -527,6 +527,7 @@ async function startInterpreter(
       if (match) {
         status.detail = `${match[1]} of ${match[2]}: ${match[3]}`;
 
+        assert.ok(match[4])
         const uri = vscode.Uri.joinPath(folder.uri, match[4])
         collection.delete(uri)
 

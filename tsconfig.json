@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "resolveJsonModule": true
+  },
+  "extends": "@tsconfig/node16-strictest/tsconfig.json"
+}
