@@ -522,14 +522,22 @@ async function startInterpreter(
         collection.delete(uri)
 
         shouldLog = false
+      } else if (message) {
+        let uri: vscode.Uri | null = null
+        if (message.span) {
+          if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
+            uri = vscode.Uri.joinPath(folder.uri, message.span.file)
+          }
+        } else {
+          uri = folder.uri
       }
 
-      if (message?.span && message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-        const uri = vscode.Uri.joinPath(folder.uri, message.span.file)
+        if (uri) {
         const diagnostic = messageToDiagnostic(message)
         collection.set(uri, (collection.get(uri) || []).concat(diagnostic))
 
         shouldLog = false
+        }
       }
 
       if (shouldLog) {
