@@ -458,6 +458,7 @@ async function startInterpreter(
     log(channel, key, `Stopping interpreter ${INTERPRETER.task.pid} ...`)
     INTERPRETER.task.kill()
     INTERPRETER = null
+    collection.clear()
   }
 
   const cwd = folder.uri.path
