@@ -403,7 +403,8 @@ async function reloadInterpreter(
   }
 
   if (INTERPRETER.key) {
-    log(channel, key, `Waiting for [${INTERPRETER.key}] ...`)
+    log(channel, key, 'Wating ...')
+    INTERPRETER.task.kill('SIGINT')
     while (INTERPRETER.key !== null) {
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
@@ -426,13 +427,13 @@ async function reloadInterpreter(
   log(channel, key, `[stdin] ${input}`)
   INTERPRETER.task.stdin?.write(`${input}\n`)
 
-  while (INTERPRETER.key !== null) {
+  while (INTERPRETER.key === key) {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
 
   const end = perfHooks.performance.now()
   const elapsed = ((end - start) / 1000).toFixed(3)
-  log(channel, key, `Successfully reloaded in ${elapsed} seconds.`)
+  log(channel, key, `Finished reloading in ${elapsed} seconds.`)
 }
 
 async function startInterpreter(
@@ -461,6 +462,7 @@ async function startInterpreter(
 
   status.busy = true
   status.detail = undefined
+  status.severity = vscode.LanguageStatusSeverity.Information
   status.text = 'Starting'
 
   if (INTERPRETER) {
@@ -504,7 +506,7 @@ async function startInterpreter(
       let shouldLog: boolean = true
 
       if (line.includes(prompt)) {
-        if (INTERPRETER) { INTERPRETER.key = null }
+        if (INTERPRETER?.key) { INTERPRETER.key = null }
         resolve()
         status.busy = false
         status.detail = undefined
