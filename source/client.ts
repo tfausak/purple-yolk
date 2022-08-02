@@ -254,9 +254,7 @@ async function formatHaskellRange(
 function ideaSeverityToDiagnostic(severity: IdeaSeverity): vscode.DiagnosticSeverity {
   switch (severity) {
     case IdeaSeverity.Ignore: return vscode.DiagnosticSeverity.Hint
-    case IdeaSeverity.Suggestion: return vscode.DiagnosticSeverity.Information
-    case IdeaSeverity.Warning: return vscode.DiagnosticSeverity.Warning
-    case IdeaSeverity.Error: return vscode.DiagnosticSeverity.Error
+    default: return vscode.DiagnosticSeverity.Information
   }
 }
 
