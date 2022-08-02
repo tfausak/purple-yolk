@@ -472,10 +472,12 @@ async function startInterpreter(
 
   task.on('close', (code) => {
     log(channel, key, `Error: Interpreter exited with ${code}!`)
-    status.busy = false
-    status.detail = undefined
-    status.severity = vscode.LanguageStatusSeverity.Error
-    status.text = 'Exited'
+    if (code !== null) {
+      status.busy = false
+      status.detail = undefined
+      status.text = 'Exited'
+      status.severity = vscode.LanguageStatusSeverity.Error
+    }
   })
 
   assert.ok(task.stderr)
