@@ -22,6 +22,6 @@ built-in workspace configurations.
 ``` sh
 $ npm install
 $ rm -f purple-yolk-*.vsix
-$ npx vsce package
+$ npx vsce package --pre-release
 $ code --install-extension purple-yolk-*.vsix
 ```
