@@ -403,12 +403,10 @@ async function reloadInterpreter(
   }
 
   if (INTERPRETER.key) {
-    log(channel, key, 'Wating ...')
-    INTERPRETER.task.kill('SIGINT')
-    while (INTERPRETER.key !== null) {
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
+    log(channel, key, `Ignoring because ${INTERPRETER.key} is running.`)
+    return
   }
+
   INTERPRETER.key = key
 
   status.busy = true
