@@ -1,6 +1,6 @@
 # https://git-scm.com/docs/gitignore
+/.vscode/
 /dist/
 /node_modules/
-/output/
 /package-lock.json
 /purple-yolk-*.vsix

@@ -1,6 +1,4 @@
 {
-  "extensions": [
-    "dbaeumer.vscode-eslint"
-  ],
+  "containerUser": "node",
   "image": "node:16.13.2"
 }

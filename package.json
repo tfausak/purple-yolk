@@ -1,16 +1,20 @@
 {
   "//": "https://code.visualstudio.com/api/references/extension-manifest",
   "activationEvents": [
+    "onCommand:purple-yolk.haskell.interpret",
+    "onCommand:purple-yolk.haskell.lint",
+    "onCommand:purple-yolk.output.show",
     "onLanguage:haskell"
   ],
   "badges": [
     {
       "description": "Build status",
       "href": "https://github.com/tfausak/purple-yolk/actions",
-      "url": "https://github.com/tfausak/purple-yolk/workflows/CI/badge.svg"
+      "url": "https://github.com/tfausak/purple-yolk/workflows/Workflow/badge.svg"
     }
   ],
   "categories": [
+    "Formatters",
     "Linters",
     "Programming Languages",
     "Snippets"
@@ -19,41 +23,42 @@
     "commands": [
       {
         "category": "Purple Yolk",
-        "command": "purple-yolk.lintFile",
-        "title": "Lint file",
+        "command": "purple-yolk.haskell.interpret",
+        "title": "Start Interpreter",
         "when": "editorLangId == haskell"
       },
       {
         "category": "Purple Yolk",
-        "command": "purple-yolk.restart",
-        "title": "Restart"
+        "command": "purple-yolk.haskell.lint",
+        "title": "Lint Document",
+        "when": "editorLangId == haskell"
       },
       {
         "category": "Purple Yolk",
-        "command": "purple-yolk.showOutput",
-        "title": "Show output"
+        "command": "purple-yolk.output.show",
+        "title": "Show Output"
       }
     ],
     "configuration": {
       "properties": {
-        "purple-yolk.brittany.command": {
-          "default": "stack exec --package brittany -- brittany --output-on-errors --write-mode inplace",
-          "description": "The command to run Brittany.",
+        "purple-yolk.haskell.formatter.command": {
+          "default": "ormolu --no-cabal",
+          "description": "The command to run when formatting Haskell files. This should accept an unformatted Haskell file as input on STDIN. It should emit a formatted Haskell file to STDOUT. STDERR will be ignored.",
           "type": "string"
         },
-        "purple-yolk.ghci.command": {
-          "default": "stack ghci --ghc-options -ddump-json",
-          "description": "The command to start GHCi.",
+        "purple-yolk.haskell.interpreter.command": {
+          "default": "cabal repl --repl-options -ddump-json",
+          "description": "The command to launch a Haskell interpreter. This should be something like `cabal repl` or `stack ghci`. It should also pass `-ddump-json` to GHCi.",
           "type": "string"
         },
-        "purple-yolk.hlint.command": {
-          "default": "stack exec --package hlint -- hlint --json --no-exit-code",
-          "description": "The command to run HLint.",
+        "purple-yolk.haskell.linter.command": {
+          "default": "hlint --json --no-exit-code -",
+          "description": "The command to run when linting Haskell files. This should accept a Haskell file as input on STDIN. It should emit HLint ideas formatted as JSON to STDOUT. STDERR will be ignored.",
           "type": "string"
         },
-        "purple-yolk.hlint.onSave": {
+        "purple-yolk.haskell.linter.onSave": {
           "default": true,
-          "description": "Should HLint run on save?",
+          "description": "Should the linter be run automatically on save?",
           "type": "boolean"
         }
       },
@@ -62,12 +67,12 @@
     "grammars": [
       {
         "language": "cabal",
-        "path": "grammars/cabal-grammar.json",
+        "path": "data/grammar/cabal.json",
         "scopeName": "source.cabal"
       },
       {
         "language": "haskell",
-        "path": "grammars/haskell-grammar.json",
+        "path": "data/grammar/haskell.json",
         "scopeName": "source.haskell"
       }
     ],
@@ -76,7 +81,7 @@
         "aliases": [
           "Cabal"
         ],
-        "configuration": "languages/cabal-language.json",
+        "configuration": "data/language/cabal.json",
         "extensions": [
           ".cabal"
         ],
@@ -91,7 +96,7 @@
         "aliases": [
           "Haskell"
         ],
-        "configuration": "languages/haskell-language.json",
+        "configuration": "data/language/haskell.json",
         "extensions": [
           ".hs"
         ],
@@ -101,25 +106,20 @@
     "snippets": [
       {
         "language": "cabal",
-        "path": "snippets/cabal-snippets.json"
+        "path": "data/snippet/cabal.json"
       },
       {
         "language": "haskell",
-        "path": "snippets/haskell-snippets.json"
+        "path": "data/snippet/haskell.json"
       }
     ]
   },
-  "dependencies": {
-    "vscode-languageclient": "^8.0.2",
-    "vscode-languageserver": "^8.0.2"
-  },
   "description": "A Haskell IDE.",
   "devDependencies": {
-    "eslint-webpack-plugin": "^3.2.0",
-    "eslint": "^8.20.0",
-    "vsce": "^2.10.0",
-    "webpack-cli": "^4.10.0",
-    "webpack": "^5.74.0"
+    "@types/node": "^18.6.3",
+    "@types/vscode": "^1.69.0",
+    "esbuild": "^0.14.51",
+    "vsce": "^2.10.0"
   },
   "displayName": "Purple Yolk",
   "keywords": [
@@ -130,7 +130,7 @@
     "vscode": "^1.69.2"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
-  "icon": "images/purple-yolk.png",
+  "icon": "data/image/icon.png",
   "license": "MIT",
   "main": "dist/client.js",
   "name": "purple-yolk",
@@ -140,7 +140,7 @@
     "url": "https://github.com/tfausak/purple-yolk.git"
   },
   "scripts": {
-    "vscode:prepublish": "webpack --mode production"
+    "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node16 source/client.ts"
   },
-  "version": "0.7.2"
+  "version": "0.8.0"
 }
