@@ -1,5 +1,6 @@
 import assert from 'assert'
 import childProcess from 'child_process'
+import perfHooks from 'perf_hooks'
 import readline from 'readline'
 import vscode from 'vscode'
 
@@ -82,6 +83,7 @@ const HASKELL_LANGUAGE_ID = 'haskell'
 export function activate(context: vscode.ExtensionContext): void {
   const channel = vscode.window.createOutputChannel(my.displayName)
   const key = newKey()
+  const start = perfHooks.performance.now()
   log(channel, key, `Activating ${my.name} version ${my.version} ...`)
 
   const interpreterCollection = vscode.languages.createDiagnosticCollection(my.name)
@@ -134,7 +136,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   commandHaskellInterpret(channel, status, interpreterCollection)
 
-  log(channel, key, 'Successfully activated.')
+  const end = perfHooks.performance.now()
+  const elapsed = ((end - start) / 1000).toFixed(3)
+  log(channel, key, `Successfully activated in ${elapsed} seconds.`)
 }
 
 function commandHaskellInterpret(
@@ -192,6 +196,7 @@ async function formatHaskellRange(
   token: vscode.CancellationToken
 ): Promise<vscode.TextEdit[]> {
   const key = newKey()
+  const start = perfHooks.performance.now()
   log(channel, key, `Formatting ${document.uri} ...`)
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
@@ -240,7 +245,9 @@ async function formatHaskellRange(
     return []
   }
 
-  log(channel, key, 'Successfully formatted.')
+  const end = perfHooks.performance.now()
+  const elapsed = ((end - start) / 1000).toFixed(3)
+  log(channel, key, `Successfully formatted in ${elapsed} seconds.`)
   return [new vscode.TextEdit(range, output)]
 }
 
@@ -281,6 +288,7 @@ async function lintHaskell(
   token: vscode.CancellationToken
 ): Promise<vscode.Diagnostic[]> {
   const key = newKey()
+  const start = perfHooks.performance.now()
   log(channel, key, `Linting ${document.uri} ...`)
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
@@ -338,7 +346,9 @@ async function lintHaskell(
     return []
   }
 
-  log(channel, key, 'Successfully linted.')
+  const end = perfHooks.performance.now()
+  const elapsed = ((end - start) / 1000).toFixed(3)
+  log(channel, key, `Successfully linted in ${elapsed} seconds.`)
   return ideas.map(ideaToDiagnostic)
 }
 
@@ -385,6 +395,7 @@ async function reloadInterpreter(
   status: vscode.LanguageStatusItem
 ): Promise<void> {
   const key = newKey()
+  const start = perfHooks.performance.now()
   log(channel, key, 'Reloading interpreter ...')
 
   if (!INTERPRETER) {
@@ -412,7 +423,9 @@ async function reloadInterpreter(
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
 
-  log(channel, key, 'Successfully reloaded.')
+  const end = perfHooks.performance.now()
+  const elapsed = ((end - start) / 1000).toFixed(3)
+  log(channel, key, `Successfully reloaded in ${elapsed} seconds.`)
 }
 
 async function startInterpreter(
@@ -422,6 +435,7 @@ async function startInterpreter(
   document: vscode.TextDocument
 ): Promise<void> {
   const key = newKey()
+  const start = perfHooks.performance.now()
   log(channel, key, 'Starting interpreter ...')
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
@@ -523,5 +537,7 @@ async function startInterpreter(
     })
   })
 
-  log(channel, key, 'Successfully started.')
+  const end = perfHooks.performance.now()
+  const elapsed = ((end - start) / 1000).toFixed(3)
+  log(channel, key, `Successfully started in ${elapsed} seconds.`)
 }
