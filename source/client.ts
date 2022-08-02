@@ -107,7 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
   vscode.workspace.onDidSaveTextDocument((document) => {
     switch (document.languageId) {
       case HASKELL_LANGUAGE_ID:
-        reloadInterpreter(channel, status, interpreterCollection)
+        reloadInterpreter(channel, status)
 
         const shouldLint: boolean | undefined = vscode.workspace
           .getConfiguration(my.name)
@@ -382,8 +382,7 @@ function newKey(): Key {
 
 async function reloadInterpreter(
   channel: vscode.OutputChannel,
-  status: vscode.LanguageStatusItem,
-  collection: vscode.DiagnosticCollection
+  status: vscode.LanguageStatusItem
 ): Promise<void> {
   const key = newKey()
   log(channel, key, 'Reloading interpreter ...')
