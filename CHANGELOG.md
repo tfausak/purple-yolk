@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-08-02: 0.8.2
+
+- Fixed language status item details.
+
 ## 2022-08-02: 0.8.1
 
 - Changed interpreter to avoid reloading while a reload is ongoing.
