@@ -2,6 +2,14 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-08-02: 0.8.1
+
+- Changed interpreter to avoid reloading while a reload is ongoing.
+- Added workspace diagnostics to interpreter.
+- Changed interpreter to clear workspace diagnostics on reload.
+- Changed linter to report all diagnostics as "information".
+- Fixed language status item severity.
+
 ## 2022-08-02: 0.8.0
 
 - Rewrote everything: <https://github.com/tfausak/purple-yolk/pull/32>.
