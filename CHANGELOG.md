@@ -2,6 +2,21 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-08-02: 0.8.0
+
+- Rewrote everything: <https://github.com/tfausak/purple-yolk/pull/32>.
+  - No more LSP server; now just a VSCode client.
+  - Status reported through a language status bar item.
+- Changed commands:
+  - `purple-yolk.lintFile` is now `purple-yolk.haskell.lint`
+  - `purple-yolk.restart` is now `purple-yolk.haskell.interpret`
+  - `purple-yolk.showOutput` is now `purple-yolk.output.show`
+- Changed configuration properties:
+  - `purple-yolk.brittany.command` is now `purple-yolk.haskell.formatter.command`
+  - `purple-yolk.ghci.command` is now `purple-yolk.haskell.interpreter.command`
+  - `purple-yolk.hlint.command` is now `purple-yolk.haskell.linter.command`
+  - `purple-yolk.hlint.onSave` is now `purple-yolk.haskell.linter.onSave`
+
 ## 2022-07-27: 0.7.2
 
 - Added syntax highlighting for `cabal.project`, `cabal.project.local`, and
