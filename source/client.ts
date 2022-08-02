@@ -109,7 +109,7 @@ export function activate(context: vscode.ExtensionContext): void {
   vscode.workspace.onDidSaveTextDocument((document) => {
     switch (document.languageId) {
       case HASKELL_LANGUAGE_ID:
-        reloadInterpreter(channel, status)
+        reloadInterpreter(channel, status, interpreterCollection)
 
         const shouldLint: boolean | undefined = vscode.workspace
           .getConfiguration(my.name)
@@ -390,7 +390,8 @@ function newKey(): Key {
 
 async function reloadInterpreter(
   channel: vscode.OutputChannel,
-  status: vscode.LanguageStatusItem
+  status: vscode.LanguageStatusItem,
+  collection: vscode.DiagnosticCollection
 ): Promise<void> {
   const key = newKey()
   const start = perfHooks.performance.now()
@@ -412,6 +413,14 @@ async function reloadInterpreter(
   status.busy = true
   status.detail = undefined
   status.text = 'Loading'
+
+  const document = vscode.window.activeTextEditor?.document
+  if (document) {
+    const folder = vscode.workspace.getWorkspaceFolder(document.uri)
+    if (folder) {
+      collection.delete(folder.uri)
+    }
+  }
 
   const input = ':reload'
   log(channel, key, `[stdin] ${input}`)
@@ -530,13 +539,13 @@ async function startInterpreter(
           }
         } else {
           uri = folder.uri
-      }
+        }
 
         if (uri) {
-        const diagnostic = messageToDiagnostic(message)
-        collection.set(uri, (collection.get(uri) || []).concat(diagnostic))
+          const diagnostic = messageToDiagnostic(message)
+          collection.set(uri, (collection.get(uri) || []).concat(diagnostic))
 
-        shouldLog = false
+          shouldLog = false
         }
       }
 
