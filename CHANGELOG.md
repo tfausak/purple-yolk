@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2022-11-01: 0.9.0
+
+- Added the ability to format Cabal files.
+
 ## 2022-08-02: 0.8.2
 
 - Fixed language status item details.
