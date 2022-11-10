@@ -4,6 +4,7 @@
     "onCommand:purple-yolk.haskell.interpret",
     "onCommand:purple-yolk.haskell.lint",
     "onCommand:purple-yolk.output.show",
+    "onLanguage:cabal",
     "onLanguage:haskell"
   ],
   "badges": [
@@ -41,6 +42,11 @@
     ],
     "configuration": {
       "properties": {
+        "purple-yolk.cabal.formatter.command": {
+          "default": "cabal-fmt",
+          "description": "The command to run when formatting Cabal files. This should accept an unformatted Cabal file as input on STDIN. It should emit a formatted Cabal file to STDOUT. STDERR will be ignored.",
+          "type": "string"
+        },
         "purple-yolk.haskell.formatter.command": {
           "default": "ormolu --no-cabal",
           "description": "The command to run when formatting Haskell files. This should accept an unformatted Haskell file as input on STDIN. It should emit a formatted Haskell file to STDOUT. STDERR will be ignored.",

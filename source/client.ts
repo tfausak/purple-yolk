@@ -78,6 +78,8 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
 
 let INTERPRETER: Interpreter | null = null
 
+const CABAL_LANGUAGE_ID = 'cabal'
+
 const HASKELL_LANGUAGE_ID = 'haskell'
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -95,11 +97,11 @@ export function activate(context: vscode.ExtensionContext): void {
   status.name = my.displayName
 
   context.subscriptions.push(vscode.commands.registerCommand(
-    `${my.name}.haskell.interpret`,
+    `${my.name}.${HASKELL_LANGUAGE_ID}.interpret`,
     () => commandHaskellInterpret(channel, status, interpreterCollection)))
 
   context.subscriptions.push(vscode.commands.registerCommand(
-    `${my.name}.haskell.lint`,
+    `${my.name}.${HASKELL_LANGUAGE_ID}.lint`,
     () => commandHaskellLint(channel, linterCollection)))
 
   context.subscriptions.push(vscode.commands.registerCommand(
@@ -113,26 +115,32 @@ export function activate(context: vscode.ExtensionContext): void {
 
         const shouldLint: boolean | undefined = vscode.workspace
           .getConfiguration(my.name)
-          .get('haskell.linter.onSave')
+          .get(`${HASKELL_LANGUAGE_ID}.linter.onSave`)
         if (shouldLint) { commandHaskellLint(channel, linterCollection) }
 
         break
     }
   })
 
-  vscode.languages.registerDocumentFormattingEditProvider(
+  const languageIds = [
+    CABAL_LANGUAGE_ID,
     HASKELL_LANGUAGE_ID,
-    {
-      provideDocumentFormattingEdits: (document, _, token) =>
-        formatHaskell(channel, document, token)
-    })
+  ]
+  languageIds.forEach((languageId: string) => {
+    vscode.languages.registerDocumentFormattingEditProvider(
+      languageId,
+      {
+        provideDocumentFormattingEdits: (document, _, token) =>
+          formatDocument(languageId, channel, document, token)
+      })
 
-  vscode.languages.registerDocumentRangeFormattingEditProvider(
-    HASKELL_LANGUAGE_ID,
-    {
-      provideDocumentRangeFormattingEdits: (document, range, _, token) =>
-        formatHaskellRange(channel, document, range, token)
-    })
+    vscode.languages.registerDocumentRangeFormattingEditProvider(
+      languageId,
+      {
+        provideDocumentRangeFormattingEdits: (document, range, _, token) =>
+          formatDocumentRange(languageId, channel, document, range, token)
+      })
+  })
 
   commandHaskellInterpret(channel, status, interpreterCollection)
 
@@ -178,7 +186,8 @@ function commandOutputShow(channel: vscode.OutputChannel): void {
   channel.show(true)
 }
 
-function formatHaskell(
+function formatDocument(
+  languageId: string,
   channel: vscode.OutputChannel,
   document: vscode.TextDocument,
   token: vscode.CancellationToken
@@ -186,10 +195,11 @@ function formatHaskell(
   const range: vscode.Range = document.validateRange(new vscode.Range(
     new vscode.Position(0, 0),
     new vscode.Position(Infinity, Infinity)))
-  return formatHaskellRange(channel, document, range, token)
+  return formatDocumentRange(languageId, channel, document, range, token)
 }
 
-async function formatHaskellRange(
+async function formatDocumentRange(
+  languageId: string,
   channel: vscode.OutputChannel,
   document: vscode.TextDocument,
   range: vscode.Range,
@@ -197,7 +207,7 @@ async function formatHaskellRange(
 ): Promise<vscode.TextEdit[]> {
   const key = newKey()
   const start = perfHooks.performance.now()
-  log(channel, key, `Formatting ${document.uri} ...`)
+  log(channel, key, `Formatting ${document.uri} using language ${languageId} ...`)
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
   if (!folder) {
@@ -207,7 +217,7 @@ async function formatHaskellRange(
 
   const command: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get('haskell.formatter.command')
+    .get(`${languageId}.formatter.command`)
   if (!command) {
     log(channel, key, 'Error: Missing formatter command!')
     return []
@@ -297,7 +307,7 @@ async function lintHaskell(
 
   const command: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get('haskell.linter.command')
+    .get(`${HASKELL_LANGUAGE_ID}.linter.command`)
   if (!command) {
     log(channel, key, 'Error: Missing linter command!')
     return []
@@ -452,7 +462,7 @@ async function startInterpreter(
 
   const command: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get('haskell.interpreter.command')
+    .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`)
   if (!command) {
     log(channel, key, 'Error: Missing interpreter command!')
     return
