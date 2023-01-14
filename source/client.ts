@@ -40,8 +40,9 @@ type Key = string
 
 interface Message {
   doc: string,
+  messageClass: string | null, // Used by GHC >= 9.4.
   reason: MessageReason | null,
-  severity: MessageSeverity | null,
+  severity: MessageSeverity | null, // Used by GHC < 9.4.
   span: MessageSpan | null,
 }
 
@@ -379,6 +380,19 @@ function messageSeverityToDiagnostic(
   }
 }
 
+function messageClassToDiagnostic(
+  messageClass: string
+): vscode.DiagnosticSeverity {
+  const severities = new Set(Object.values(MessageSeverity))
+  for (const klass of messageClass.split(/ +/)) {
+    const severity = klass as MessageSeverity
+    if (severities.has(severity)) {
+      return messageSeverityToDiagnostic(severity)
+    }
+  }
+  return vscode.DiagnosticSeverity.Information
+}
+
 function messageSpanToRange(span: MessageSpan): vscode.Range {
   return new vscode.Range(
     new vscode.Position(span.startLine - 1, span.startCol - 1),
@@ -389,6 +403,7 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN)
   let severity = vscode.DiagnosticSeverity.Information
   if (message.severity) { severity = messageSeverityToDiagnostic(message.severity) }
+  else if (message.messageClass) { severity = messageClassToDiagnostic(message.messageClass) }
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity)
   if (message.reason) { diagnostic.code = message.reason }
   diagnostic.source = my.name
