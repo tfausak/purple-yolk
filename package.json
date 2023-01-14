@@ -123,11 +123,11 @@
   "description": "A Haskell IDE.",
   "devDependencies": {
     "@tsconfig/node16-strictest": "^1.0.4",
-    "@types/node": "^18.11.9",
-    "@types/vscode": "^1.73.0",
-    "esbuild": "^0.15.13",
-    "typescript": "^4.8.4",
-    "vsce": "^2.14.0"
+    "@types/node": "^18.11.18",
+    "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^2.16.0",
+    "esbuild": "^0.17.0",
+    "typescript": "^4.9.4"
   },
   "displayName": "Purple Yolk",
   "keywords": [
@@ -135,7 +135,7 @@
   ],
   "engines": {
     "node": "^16.14.2",
-    "vscode": "^1.73.1"
+    "vscode": "^1.74.3"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "data/image/icon.png",
