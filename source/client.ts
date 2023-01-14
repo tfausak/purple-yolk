@@ -166,7 +166,7 @@ function commandHaskellLint(
   collection: vscode.DiagnosticCollection
 ): void {
   const document = vscode.window.activeTextEditor?.document
-  if (!document) { return }
+  if (!document || document.languageId !== HASKELL_LANGUAGE_ID) { return }
 
   vscode.window.withProgress(
     {
