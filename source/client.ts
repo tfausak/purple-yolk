@@ -41,7 +41,7 @@ type Key = string
 interface Message {
   doc: string,
   reason: MessageReason | null,
-  severity: MessageSeverity,
+  severity: MessageSeverity | null,
   span: MessageSpan | null,
 }
 
@@ -387,7 +387,8 @@ function messageSpanToRange(span: MessageSpan): vscode.Range {
 
 function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN)
-  const severity = messageSeverityToDiagnostic(message.severity)
+  let severity = vscode.DiagnosticSeverity.Information
+  if (message.severity) { severity = messageSeverityToDiagnostic(message.severity) }
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity)
   if (message.reason) { diagnostic.code = message.reason }
   diagnostic.source = my.name
