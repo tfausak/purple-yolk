@@ -2,6 +2,11 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-01-14: 0.9.1
+
+- Fixed a bug that assigned the wrong severity to diagnostics when using GHC >= 9.4.
+- Fixed a bug that attempted to lint non-Haskell documents in certain situations.
+
 ## 2022-11-01: 0.9.0
 
 - Added the ability to format Cabal files.
