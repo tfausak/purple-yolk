@@ -43,7 +43,7 @@
     "configuration": {
       "properties": {
         "purple-yolk.cabal.formatter.command": {
-          "default": "cabal-fmt --no-tabular",
+          "default": "cabal-fmt --no-cabal-file --no-tabular",
           "description": "The command to run when formatting Cabal files. This should accept an unformatted Cabal file as input on STDIN. It should emit a formatted Cabal file to STDOUT. STDERR will be ignored.",
           "type": "string"
         },
