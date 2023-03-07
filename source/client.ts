@@ -46,10 +46,10 @@ interface Message {
   span: MessageSpan | null,
 }
 
-// https://downloads.haskell.org/~ghc/9.4.3/docs/libraries/ghc-9.4.3/GHC-Driver-Flags.html#t:WarningFlag
+// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Driver-Flags.html#t:WarningFlag
 type MessageReason = string
 
-// https://downloads.haskell.org/~ghc/9.4.3/docs/libraries/ghc-9.4.3/GHC-Types-Error.html#t:Severity
+// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Types-Error.html#t:Severity
 enum MessageSeverity {
   SevDump = 'SevDump',
   SevError = 'SevError',
@@ -60,7 +60,7 @@ enum MessageSeverity {
   SevWarning = 'SevWarning',
 }
 
-// https://downloads.haskell.org/~ghc/9.4.3/docs/libraries/ghc-9.4.3/GHC-Types-SrcLoc.html#t:SrcSpan
+// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Types-SrcLoc.html#t:SrcSpan
 interface MessageSpan {
   endCol: number,
   endLine: number,
@@ -199,6 +199,19 @@ function formatDocument(
   return formatDocumentRange(languageId, channel, document, range, token)
 }
 
+function expandTemplate(
+  template: string,
+  replacements: { [key: string]: string }
+): string {
+  return template
+    .replace(/(?<!\\)\$\{([a-z]+)\}/, (_, key) => {
+      const value = replacements[key]
+      if (typeof value === 'undefined') { throw `unknown variable: ${key}` }
+      return value
+    })
+    .replace('\\$\{([a-z]+)\}', (_, key) => `\${${key}}`)
+}
+
 async function formatDocumentRange(
   languageId: string,
   channel: vscode.OutputChannel,
@@ -208,7 +221,8 @@ async function formatDocumentRange(
 ): Promise<vscode.TextEdit[]> {
   const key = newKey()
   const start = perfHooks.performance.now()
-  log(channel, key, `Formatting ${document.uri} using language ${languageId} ...`)
+  const file = vscode.workspace.asRelativePath(document.uri)
+  log(channel, key, `Formatting ${file} using language ${languageId} ...`)
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
   if (!folder) {
@@ -216,14 +230,15 @@ async function formatDocumentRange(
     return []
   }
 
-  const command: string | undefined = vscode.workspace
+  const template: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${languageId}.formatter.command`)
-  if (!command) {
+  if (!template) {
     log(channel, key, 'Error: Missing formatter command!')
     return []
   }
 
+  const command = expandTemplate(template, { file })
   const cwd = folder.uri.path
   log(channel, key, `Running ${JSON.stringify(command)} in ${JSON.stringify(cwd)} ...`)
   const task: childProcess.ChildProcess = childProcess.spawn(command, {
@@ -250,8 +265,7 @@ async function formatDocumentRange(
   if (code !== 0) {
     log(channel, key, `Error: Formatter exited with ${code}!`)
     if (!task.killed) {
-      const path = vscode.workspace.asRelativePath(document.uri)
-      vscode.window.showErrorMessage(`Failed to format ${path}!`)
+      vscode.window.showErrorMessage(`Failed to format ${file}!`)
     }
     return []
   }
@@ -298,7 +312,8 @@ async function lintHaskell(
 ): Promise<vscode.Diagnostic[]> {
   const key = newKey()
   const start = perfHooks.performance.now()
-  log(channel, key, `Linting ${document.uri} ...`)
+  const file = vscode.workspace.asRelativePath(document.uri)
+  log(channel, key, `Linting ${file} ...`)
 
   const folder = vscode.workspace.getWorkspaceFolder(document.uri)
   if (!folder) {
@@ -306,14 +321,15 @@ async function lintHaskell(
     return []
   }
 
-  const command: string | undefined = vscode.workspace
+  const template: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.linter.command`)
-  if (!command) {
+  if (!template) {
     log(channel, key, 'Error: Missing linter command!')
     return []
   }
 
+  const command = expandTemplate(template, { file })
   const cwd = folder.uri.path
   log(channel, key, `Running ${JSON.stringify(command)} in ${JSON.stringify(cwd)} ...`)
   const task: childProcess.ChildProcess = childProcess.spawn(command, {
@@ -337,11 +353,10 @@ async function lintHaskell(
   task.stdin?.end(document.getText())
 
   const code: number = await new Promise((resolve) => task.on('close', resolve))
-  const path = vscode.workspace.asRelativePath(document.uri)
   if (code !== 0) {
     log(channel, key, `Error: Linter exited with ${code}!`)
     if (!task.killed) {
-      vscode.window.showErrorMessage(`Failed to lint ${path}!`)
+      vscode.window.showErrorMessage(`Failed to lint ${file}!`)
     }
     return []
   }
@@ -351,7 +366,7 @@ async function lintHaskell(
     ideas = JSON.parse(output)
   } catch (error) {
     log(channel, key, `Error: ${error}`)
-    vscode.window.showErrorMessage(`Failed to lint ${path}!`)
+    vscode.window.showErrorMessage(`Failed to lint ${file}!`)
     return []
   }
 
