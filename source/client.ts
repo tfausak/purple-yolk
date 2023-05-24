@@ -204,10 +204,13 @@ function expandTemplate(
   replacements: { [key: string]: string }
 ): string {
   return template
-    .replace(/(?<!\\)\$\{([a-z]+)\}/, (_, key) => {
+    .replace(/(\\*)\$\{([a-z]+)\}/, (match, slashes, key) => {
+      if (slashes.length % 2 !== 0) {
+        return match.slice(1)
+      }
       const value = replacements[key]
       if (typeof value === 'undefined') { throw `unknown variable: ${key}` }
-      return value
+      return `${slashes.slice(2)}${value}`
     })
     .replace('\\$\{([a-z]+)\}', (_, key) => `\${${key}}`)
 }
