@@ -1,4 +1,4 @@
 {
   "containerUser": "node",
-  "image": "node:16.14.2"
+  "image": "node:16.17.1"
 }
