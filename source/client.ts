@@ -204,15 +204,11 @@ function expandTemplate(
   replacements: { [key: string]: string }
 ): string {
   return template
-    .replace(/(\\*)\$\{([a-z]+)\}/, (match, slashes, key) => {
-      if (slashes.length % 2 !== 0) {
-        return match.slice(1)
-      }
+    .replace(/\$\{(.*?)\}/, (_, key) => {
       const value = replacements[key]
       if (typeof value === 'undefined') { throw `unknown variable: ${key}` }
-      return `${slashes.slice(1)}${value}`
+      return value
     })
-    .replace('\\$\{([a-z]+)\}', (_, key) => `\${${key}}`)
 }
 
 async function formatDocumentRange(
