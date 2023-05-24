@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-05-24: 0.10.0
+
+- Added template variable expansion to commands. You can use `${file}` as the path to the current file.
+
 ## 2023-01-25: 0.9.2
 
 - Changed the default Cabal file formatter to allow formatting more files, like `cabal.project`.
