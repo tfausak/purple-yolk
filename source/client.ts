@@ -210,7 +210,7 @@ function expandTemplate(
       }
       const value = replacements[key]
       if (typeof value === 'undefined') { throw `unknown variable: ${key}` }
-      return `${slashes.slice(2)}${value}`
+      return `${slashes.slice(1)}${value}`
     })
     .replace('\\$\{([a-z]+)\}', (_, key) => `\${${key}}`)
 }
