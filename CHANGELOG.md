@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-06-27: 0.10.1
+
+- No changes.
+
 ## 2023-05-24: 0.10.0
 
 - Added template variable expansion to commands. You can use `${file}` as the path to the current file.
