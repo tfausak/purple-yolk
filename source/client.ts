@@ -6,7 +6,7 @@ import vscode from 'vscode'
 
 import my from '../package.json'
 
-// https://hackage.haskell.org/package/hlint-3.5/docs/Language-Haskell-HLint.html#t:Idea
+// https://hackage.haskell.org/package/hlint-3.6.1/docs/Language-Haskell-HLint.html#t:Idea
 interface Idea {
   decl: string[],
   endColumn: number,
@@ -23,7 +23,7 @@ interface Idea {
   to: string | null,
 }
 
-// https://hackage.haskell.org/package/hlint-3.5/docs/Language-Haskell-HLint.html#t:Severity
+// https://hackage.haskell.org/package/hlint-3.6.1/docs/Language-Haskell-HLint.html#t:Severity
 enum IdeaSeverity {
   Ignore = 'Ignore',
   Suggestion = 'Suggestion',
@@ -46,10 +46,10 @@ interface Message {
   span: MessageSpan | null,
 }
 
-// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Driver-Flags.html#t:WarningFlag
+// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Driver-Flags.html#t:WarningFlag
 type MessageReason = string
 
-// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Types-Error.html#t:Severity
+// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Types-Error.html#t:Severity
 enum MessageSeverity {
   SevDump = 'SevDump',
   SevError = 'SevError',
@@ -60,7 +60,7 @@ enum MessageSeverity {
   SevWarning = 'SevWarning',
 }
 
-// https://downloads.haskell.org/~ghc/9.4.4/docs/libraries/ghc-9.4.4/GHC-Types-SrcLoc.html#t:SrcSpan
+// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Types-SrcLoc.html#t:SrcSpan
 interface MessageSpan {
   endCol: number,
   endLine: number,

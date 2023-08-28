@@ -128,7 +128,7 @@
   ],
   "engines": {
     "node": "^16.17.1",
-    "vscode": "^1.78.2"
+    "vscode": "^1.81.1"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "data/image/icon.png",
