@@ -1,5 +1,6 @@
 import assert from 'assert'
 import childProcess from 'child_process'
+import path from 'path'
 import perfHooks from 'perf_hooks'
 import readline from 'readline'
 import vscode from 'vscode'
@@ -577,7 +578,11 @@ async function startInterpreter(
           let uri: vscode.Uri | null = null
           if (message.span) {
             if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-              uri = vscode.Uri.joinPath(folder.uri, message.span.file)
+              if (path.isAbsolute(message.span.file)) {
+                uri = vscode.Uri.file(message.span.file)
+              } else {
+                uri = vscode.Uri.joinPath(folder.uri, message.span.file)
+              }
             }
           } else {
             uri = folder.uri
