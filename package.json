@@ -56,7 +56,7 @@
           "type": "string"
         },
         "purple-yolk.haskell.linter.onSave": {
-          "default": true,
+          "default": false,
           "description": "Should the linter be run automatically on save?",
           "type": "boolean"
         }
