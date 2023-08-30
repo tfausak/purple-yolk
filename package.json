@@ -46,8 +46,31 @@
           "type": "string"
         },
         "purple-yolk.haskell.interpreter.command": {
-          "default": "cabal repl --repl-options -ddump-json",
-          "description": "The command to launch a Haskell interpreter. This should be something like `cabal repl` or `stack ghci`. It should also pass `-ddump-json` to GHCi.",
+          "default": "cabal",
+          "description": "The command to launch a Haskell interpreter.",
+          "enum": [
+            "cabal",
+            "stack",
+            "ghci",
+            "custom"
+          ],
+          "markdownEnumDescriptions": [
+            "Uses `cabal repl`.",
+            "Uses `stack ghci`.",
+            "Uses `ghci`. Only works with a single file.",
+            "Uses the command in `#purple-yolk.haskell.interpreter.custom#`."
+          ],
+          "enumItemLabels": [
+            "Cabal",
+            "Stack",
+            "GHCi",
+            "Custom"
+          ],
+          "type": "string"
+        },
+        "purple-yolk.haskell.interpreter.custom": {
+          "default": "",
+          "markdownDescription": "This should pass `-ddump-json` to GHC.",
           "type": "string"
         },
         "purple-yolk.haskell.linter.command": {

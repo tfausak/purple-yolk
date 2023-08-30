@@ -491,13 +491,36 @@ async function startInterpreter(
     return
   }
 
-  const command: string | undefined = vscode.workspace
+  const interpreter: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`)
-  if (!command) {
+  let template: string | undefined = undefined;
+  switch (interpreter) {
+    case 'cabal':
+      template = 'cabal repl --repl-options -ddump-json'
+      break
+    case 'stack':
+      template = 'stack ghci --ghci-options -ddump-json'
+      break
+    case 'ghci':
+      template = 'ghci -ddump-json ${file}'
+      break
+    case 'custom':
+      template = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${HASKELL_LANGUAGE_ID}.interpreter.custom`)
+      break
+    default:
+      break
+  }
+
+  if (!template) {
     log(channel, key, 'Error: Missing interpreter command!')
     return
   }
+
+  const file = vscode.workspace.asRelativePath(document.uri)
+  const command = expandTemplate(template, { file })
 
   status.busy = true
   status.detail = ''
