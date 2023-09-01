@@ -41,8 +41,28 @@
           "type": "string"
         },
         "purple-yolk.haskell.formatter.command": {
-          "default": "ormolu --no-cabal",
+          "default": "",
           "description": "The command to run when formatting Haskell files. This should accept an unformatted Haskell file as input on STDIN. It should emit a formatted Haskell file to STDOUT. STDERR will be ignored.",
+          "type": "string"
+        },
+        "purple-yolk.haskell.formatter.mode": {
+          "default": "discover",
+          "description": "The command to format a Haskell file.",
+          "enum": [
+            "discover",
+            "ormolu",
+            "custom"
+          ],
+          "enumItemLabels": [
+            "Discover",
+            "Ormolu",
+            "Custom"
+          ],
+          "markdownEnumDescriptions": [
+            "Automatically determines the appropriate command.",
+            "Uses `ormolu`.",
+            "Uses the command in `#purple-yolk.haskell.formatter.command#`."
+          ],
           "type": "string"
         },
         "purple-yolk.haskell.interpreter.command": {

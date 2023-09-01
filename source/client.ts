@@ -93,6 +93,14 @@ const INTERPRETER_STACK = "stack";
 
 const INTERPRETER_GHCI = "ghci";
 
+const INTERPRETER_CUSTOM = "custom";
+
+const FORMATTER_DISCOVER = "discover";
+
+const FORMATTER_ORMOLU = "ormolu";
+
+const FORMATTER_CUSTOM = "custom";
+
 export function activate(context: vscode.ExtensionContext): void {
   const channel = vscode.window.createOutputChannel(my.displayName);
   const key = newKey();
@@ -256,9 +264,30 @@ async function formatDocumentRange(
     return [];
   }
 
-  const template: string | undefined = vscode.workspace
+  let formatter: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${languageId}.formatter.command`);
+    .get(`${languageId}.formatter.mode`);
+  if (formatter === FORMATTER_DISCOVER) {
+    const ormolu = await which("ormolu", { nothrow: true });
+    if (ormolu) {
+      formatter = FORMATTER_ORMOLU;
+    }
+  }
+
+  let template: string | undefined = undefined;
+  switch (formatter) {
+    case FORMATTER_ORMOLU:
+      template = "ormolu --stdin-input-file ${file}";
+      break;
+    case FORMATTER_CUSTOM:
+      template = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${HASKELL_LANGUAGE_ID}.formatter.command`);
+      break;
+    default:
+      break;
+  }
+
   if (!template) {
     log(channel, key, "Error: Missing formatter command!");
     return [];
@@ -587,6 +616,7 @@ async function startInterpreter(
       interpreter = INTERPRETER_GHCI;
     }
   }
+
   let template: string | undefined = undefined;
   switch (interpreter) {
     case INTERPRETER_CABAL:
@@ -598,7 +628,7 @@ async function startInterpreter(
     case INTERPRETER_GHCI:
       template = "ghci -ddump-json ${file}";
       break;
-    case "custom":
+    case INTERPRETER_CUSTOM:
       template = vscode.workspace
         .getConfiguration(my.name)
         .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
