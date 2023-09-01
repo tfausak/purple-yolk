@@ -46,6 +46,11 @@
           "type": "string"
         },
         "purple-yolk.haskell.interpreter.command": {
+          "default": "",
+          "markdownDescription": "This should pass `-ddump-json` to GHC.",
+          "type": "string"
+        },
+        "purple-yolk.haskell.interpreter.mode": {
           "default": "discover",
           "description": "The command to launch a Haskell interpreter.",
           "enum": [
@@ -69,11 +74,6 @@
             "Uses `ghci`. Only works with a single file.",
             "Uses the command in `#purple-yolk.haskell.interpreter.custom#`."
           ],
-          "type": "string"
-        },
-        "purple-yolk.haskell.interpreter.custom": {
-          "default": "",
-          "markdownDescription": "This should pass `-ddump-json` to GHC.",
           "type": "string"
         },
         "purple-yolk.haskell.linter.command": {

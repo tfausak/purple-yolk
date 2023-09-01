@@ -548,7 +548,7 @@ async function startInterpreter(
 
   let interpreter: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
+    .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
   if (interpreter === INTERPRETER_DISCOVER) {
     const cabal = await which("cabal", { nothrow: true });
     const [cabalProject] = await vscode.workspace.findFiles(
@@ -601,7 +601,7 @@ async function startInterpreter(
     case "custom":
       template = vscode.workspace
         .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.interpreter.custom`);
+        .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
       break;
     default:
       break;
