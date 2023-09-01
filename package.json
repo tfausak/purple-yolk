@@ -46,21 +46,24 @@
           "type": "string"
         },
         "purple-yolk.haskell.interpreter.command": {
-          "default": "cabal",
+          "default": "discover",
           "description": "The command to launch a Haskell interpreter.",
           "enum": [
+            "discover",
             "cabal",
             "stack",
             "ghci",
             "custom"
           ],
           "enumItemLabels": [
+            "Discover",
             "Cabal",
             "Stack",
             "GHCi",
             "Custom"
           ],
           "markdownEnumDescriptions": [
+            "Automatically determines the appropriate command.",
             "Uses `cabal repl`.",
             "Uses `stack ghci`.",
             "Uses `ghci`. Only works with a single file.",
@@ -142,9 +145,11 @@
     "@tsconfig/strictest": "^2.0.1",
     "@types/node": "^20.2.3",
     "@types/vscode": "^1.75.1",
+    "@types/which": "^3.0.0",
     "@vscode/vsce": "^2.17.0",
     "esbuild": "^0.19.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "which": "^4.0.0"
   },
   "displayName": "Purple Yolk",
   "engines": {

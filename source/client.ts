@@ -4,6 +4,7 @@ import path from "path";
 import perfHooks from "perf_hooks";
 import readline from "readline";
 import vscode from "vscode";
+import which from "which";
 
 import my from "../package.json";
 
@@ -83,6 +84,14 @@ let INTERPRETER: Interpreter | null = null;
 const CABAL_LANGUAGE_ID = "cabal";
 
 const HASKELL_LANGUAGE_ID = "haskell";
+
+const INTERPRETER_DISCOVER = "discover";
+
+const INTERPRETER_CABAL = "cabal";
+
+const INTERPRETER_STACK = "stack";
+
+const INTERPRETER_GHCI = "ghci";
 
 export function activate(context: vscode.ExtensionContext): void {
   const channel = vscode.window.createOutputChannel(my.displayName);
@@ -537,18 +546,56 @@ async function startInterpreter(
     return;
   }
 
-  const interpreter: string | undefined = vscode.workspace
+  let interpreter: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
+  if (interpreter === INTERPRETER_DISCOVER) {
+    const cabal = await which("cabal", { nothrow: true });
+    const [cabalProject] = await vscode.workspace.findFiles(
+      "cabal.project",
+      undefined,
+      1
+    );
+
+    const stack = await which("stack", { nothrow: true });
+    const [stackYaml] = await vscode.workspace.findFiles(
+      "stack.yaml",
+      undefined,
+      1
+    );
+
+    const ghci = await which("ghci", { nothrow: true });
+
+    if (cabal && !stack) {
+      // If the user only has Cabal available, then use Cabal.
+      interpreter = INTERPRETER_CABAL;
+    } else if (!cabal && stack) {
+      // If the user only has Stack available, then use Stack.
+      interpreter = INTERPRETER_STACK;
+    } else if (cabal && stack) {
+      if (!cabalProject && stackYaml) {
+        // If the user has both Cabal and Stack installed, but they only have a
+        // Stack project file, then use Stack.
+        interpreter = INTERPRETER_STACK;
+      } else {
+        // Otherwise use Cabal.
+        interpreter = INTERPRETER_CABAL;
+      }
+    } else if (ghci) {
+      // If the user has neither Cabal nor Stack installed, then attempt to use
+      // GHCi.
+      interpreter = INTERPRETER_GHCI;
+    }
+  }
   let template: string | undefined = undefined;
   switch (interpreter) {
-    case "cabal":
+    case INTERPRETER_CABAL:
       template = "cabal repl --repl-options -ddump-json";
       break;
-    case "stack":
+    case INTERPRETER_STACK:
       template = "stack ghci --ghci-options -ddump-json";
       break;
-    case "ghci":
+    case INTERPRETER_GHCI:
       template = "ghci -ddump-json ${file}";
       break;
     case "custom":
