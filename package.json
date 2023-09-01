@@ -54,17 +54,17 @@
             "ghci",
             "custom"
           ],
-          "markdownEnumDescriptions": [
-            "Uses `cabal repl`.",
-            "Uses `stack ghci`.",
-            "Uses `ghci`. Only works with a single file.",
-            "Uses the command in `#purple-yolk.haskell.interpreter.custom#`."
-          ],
           "enumItemLabels": [
             "Cabal",
             "Stack",
             "GHCi",
             "Custom"
+          ],
+          "markdownEnumDescriptions": [
+            "Uses `cabal repl`.",
+            "Uses `stack ghci`.",
+            "Uses `ghci`. Only works with a single file.",
+            "Uses the command in `#purple-yolk.haskell.interpreter.custom#`."
           ],
           "type": "string"
         },
@@ -147,15 +147,15 @@
     "typescript": "^5.0.4"
   },
   "displayName": "Purple Yolk",
-  "keywords": [
-    "haskell"
-  ],
   "engines": {
     "node": "^16.17.1",
     "vscode": "^1.81.1"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "data/image/icon.png",
+  "keywords": [
+    "haskell"
+  ],
   "license": "MIT",
   "main": "dist/client.js",
   "name": "purple-yolk",
