@@ -40,6 +40,26 @@
           "description": "The command to run when formatting Cabal files. This should accept an unformatted Cabal file as input on STDIN. It should emit a formatted Cabal file to STDOUT. STDERR will be ignored.",
           "type": "string"
         },
+        "purple-yolk.cabal.formatter.mode": {
+          "default": "discover",
+          "description": "The command to format a Cabal file.",
+          "enum": [
+            "discover",
+            "cabal-fmt",
+            "custom"
+          ],
+          "enumItemLabels": [
+            "Discover",
+            "cabal-fmt",
+            "Custom"
+          ],
+          "markdownEnumDescriptions": [
+            "Automatically determines the appropriate command.",
+            "Uses `cabal-fmt`.",
+            "Uses the command in `#purple-yolk.cabal.formatter.command#`."
+          ],
+          "type": "string"
+        },
         "purple-yolk.haskell.formatter.command": {
           "default": "",
           "description": "The command to run when formatting Haskell files. This should accept an unformatted Haskell file as input on STDIN. It should emit a formatted Haskell file to STDOUT. STDERR will be ignored.",

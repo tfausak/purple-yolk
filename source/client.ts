@@ -105,6 +105,12 @@ const HASKELL_LINTER_MODE_HLINT = "hlint";
 
 const HASKELL_LINTER_MODE_CUSTOM = "custom";
 
+const CABAL_FORMATTER_MODE_DISCOVER = "discover";
+
+const CABAL_FORMATTER_MODE_CABAL_FMT = "cabal-fmt";
+
+const CABAL_FORMATTER_MODE_CUSTOM = "custom";
+
 let INTERPRETER: Interpreter | null = null;
 
 let INTERPRETER_TEMPLATE: string | undefined = undefined;
@@ -112,6 +118,8 @@ let INTERPRETER_TEMPLATE: string | undefined = undefined;
 let HASKELL_FORMATTER_TEMPLATE: string | undefined = undefined;
 
 let HASKELL_LINTER_TEMPLATE: string | undefined = undefined;
+
+let CABAL_FORMATTER_TEMPLATE: string | undefined = undefined;
 
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel,
@@ -260,6 +268,41 @@ async function setHaskellLinterTemplate(
   log(channel, key, `Template is: ${JSON.stringify(HASKELL_LINTER_TEMPLATE)}`);
 }
 
+async function setCabalFormatterTemplate(
+  channel: vscode.OutputChannel,
+  key: Key
+): Promise<void> {
+  log(channel, key, "Getting Cabal formatter ...");
+
+  let mode: string | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${CABAL_LANGUAGE_ID}.formatter.mode`);
+  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+
+  if (mode === CABAL_FORMATTER_MODE_DISCOVER) {
+    const cabalFmt = await which("cabal-fmt", { nothrow: true });
+    if (cabalFmt) {
+      mode = CABAL_FORMATTER_MODE_CABAL_FMT;
+    }
+  }
+  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+
+  switch (mode) {
+    case CABAL_FORMATTER_MODE_CABAL_FMT:
+      CABAL_FORMATTER_TEMPLATE = "cabal-fmt --no-cabal-file --no-tabular";
+      break;
+    case CABAL_FORMATTER_MODE_CUSTOM:
+      CABAL_FORMATTER_TEMPLATE = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${CABAL_LANGUAGE_ID}.formatter.command`);
+      break;
+    default:
+      CABAL_FORMATTER_TEMPLATE = undefined;
+      break;
+  }
+  log(channel, key, `Template is: ${JSON.stringify(CABAL_FORMATTER_TEMPLATE)}`);
+}
+
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
@@ -333,6 +376,7 @@ export async function activate(
   await setInterpreterTemplate(channel, key);
   await setHaskellFormatterTemplate(channel, key);
   await setHaskellLinterTemplate(channel, key);
+  await setCabalFormatterTemplate(channel, key);
   vscode.workspace.onDidChangeConfiguration(async (e) => {
     const affectsHaskellInterpreter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
@@ -353,6 +397,13 @@ export async function activate(
     );
     if (affectsHaskellLinter) {
       await setHaskellLinterTemplate(channel, key);
+    }
+
+    const affectsCabalFormatter = e.affectsConfiguration(
+      `${my.name}.${CABAL_LANGUAGE_ID}.formatter`
+    );
+    if (affectsCabalFormatter) {
+      await setCabalFormatterTemplate(channel, key);
     }
   });
 
@@ -451,12 +502,18 @@ async function formatDocumentRange(
     return [];
   }
 
-  if (!HASKELL_FORMATTER_TEMPLATE) {
+  let template: string | undefined = undefined;
+  if (languageId === HASKELL_LANGUAGE_ID) {
+    template = HASKELL_FORMATTER_TEMPLATE;
+  } else if (languageId === CABAL_LANGUAGE_ID) {
+    template = CABAL_FORMATTER_TEMPLATE;
+  }
+  if (!template) {
     log(channel, key, "Error: Missing formatter command!");
     return [];
   }
 
-  const command = expandTemplate(HASKELL_FORMATTER_TEMPLATE, { file });
+  const command = expandTemplate(template, { file });
   const cwd = folder.uri.path;
   log(
     channel,
