@@ -130,7 +130,7 @@ async function setInterpreterTemplate(
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
-  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Requested Haskell interpreter mode is ${mode}`);
 
   if (mode === INTERPRETER_MODE_DISCOVER) {
     const cabal = await which("cabal", { nothrow: true });
@@ -170,7 +170,7 @@ async function setInterpreterTemplate(
       mode = INTERPRETER_MODE_GHCI;
     }
   }
-  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Actual Haskell interpreter mode is ${mode}`);
 
   switch (mode) {
     case INTERPRETER_MODE_CABAL:
@@ -191,7 +191,6 @@ async function setInterpreterTemplate(
       INTERPRETER_TEMPLATE = undefined;
       break;
   }
-  log(channel, key, `Template is: ${JSON.stringify(INTERPRETER_TEMPLATE)}`);
 }
 
 async function setHaskellFormatterTemplate(
@@ -203,7 +202,7 @@ async function setHaskellFormatterTemplate(
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.formatter.mode`);
-  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Requested Haskell formatter mode is ${mode}`);
 
   if (mode === HASKELL_FORMATTER_MODE_DISCOVER) {
     const ormolu = await which("ormolu", { nothrow: true });
@@ -211,7 +210,7 @@ async function setHaskellFormatterTemplate(
       mode = HASKELL_FORMATTER_MODE_ORMOLU;
     }
   }
-  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Actual Haskell formatter mode is ${mode}`);
 
   switch (mode) {
     case HASKELL_FORMATTER_MODE_ORMOLU:
@@ -226,11 +225,6 @@ async function setHaskellFormatterTemplate(
       HASKELL_FORMATTER_TEMPLATE = undefined;
       break;
   }
-  log(
-    channel,
-    key,
-    `Template is: ${JSON.stringify(HASKELL_FORMATTER_TEMPLATE)}`
-  );
 }
 
 async function setHaskellLinterTemplate(
@@ -242,7 +236,7 @@ async function setHaskellLinterTemplate(
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.linter.mode`);
-  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Requested Haskell linter mode is ${mode}`);
 
   if (mode === HASKELL_LINTER_MODE_DISCOVER) {
     const hlint = await which("hlint", { nothrow: true });
@@ -250,7 +244,7 @@ async function setHaskellLinterTemplate(
       mode = HASKELL_LINTER_MODE_HLINT;
     }
   }
-  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Actual Haskell linter mode is ${mode}`);
 
   switch (mode) {
     case HASKELL_LINTER_MODE_HLINT:
@@ -265,7 +259,6 @@ async function setHaskellLinterTemplate(
       HASKELL_LINTER_TEMPLATE = undefined;
       break;
   }
-  log(channel, key, `Template is: ${JSON.stringify(HASKELL_LINTER_TEMPLATE)}`);
 }
 
 async function setCabalFormatterTemplate(
@@ -277,7 +270,7 @@ async function setCabalFormatterTemplate(
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${CABAL_LANGUAGE_ID}.formatter.mode`);
-  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Requested Cabal formatter is ${mode}`);
 
   if (mode === CABAL_FORMATTER_MODE_DISCOVER) {
     const cabalFmt = await which("cabal-fmt", { nothrow: true });
@@ -285,7 +278,7 @@ async function setCabalFormatterTemplate(
       mode = CABAL_FORMATTER_MODE_CABAL_FMT;
     }
   }
-  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+  log(channel, key, `Actual Cabal formatter is ${mode}`);
 
   switch (mode) {
     case CABAL_FORMATTER_MODE_CABAL_FMT:
@@ -300,7 +293,6 @@ async function setCabalFormatterTemplate(
       CABAL_FORMATTER_TEMPLATE = undefined;
       break;
   }
-  log(channel, key, `Template is: ${JSON.stringify(CABAL_FORMATTER_TEMPLATE)}`);
 }
 
 export async function activate(
