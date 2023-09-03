@@ -97,8 +97,28 @@
           "type": "string"
         },
         "purple-yolk.haskell.linter.command": {
-          "default": "hlint --json --no-exit-code -",
+          "default": "",
           "description": "The command to run when linting Haskell files. This should accept a Haskell file as input on STDIN. It should emit HLint ideas formatted as JSON to STDOUT. STDERR will be ignored.",
+          "type": "string"
+        },
+        "purple-yolk.haskell.linter.mode": {
+          "default": "discover",
+          "description": "The command to lint a Haskell file.",
+          "enum": [
+            "discover",
+            "hlint",
+            "custom"
+          ],
+          "enumItemLabels": [
+            "Discover",
+            "HLint",
+            "Custom"
+          ],
+          "markdownEnumDescriptions": [
+            "Automatically determines the appropriate command.",
+            "Uses `hlint`.",
+            "Uses the command in `#purple-yolk.haskell.linter.command#`."
+          ],
           "type": "string"
         },
         "purple-yolk.haskell.linter.onSave": {

@@ -79,12 +79,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startLine: 1,
 };
 
-let INTERPRETER: Interpreter | null = null;
-
-let INTERPRETER_TEMPLATE: string | undefined = undefined;
-
-let HASKELL_FORMATTER_TEMPLATE: string | undefined = undefined;
-
 const CABAL_LANGUAGE_ID = "cabal";
 
 const HASKELL_LANGUAGE_ID = "haskell";
@@ -104,6 +98,20 @@ const HASKELL_FORMATTER_MODE_DISCOVER = "discover";
 const HASKELL_FORMATTER_MODE_ORMOLU = "ormolu";
 
 const HASKELL_FORMATTER_MODE_CUSTOM = "custom";
+
+const HASKELL_LINTER_MODE_DISCOVER = "discover";
+
+const HASKELL_LINTER_MODE_HLINT = "hlint";
+
+const HASKELL_LINTER_MODE_CUSTOM = "custom";
+
+let INTERPRETER: Interpreter | null = null;
+
+let INTERPRETER_TEMPLATE: string | undefined = undefined;
+
+let HASKELL_FORMATTER_TEMPLATE: string | undefined = undefined;
+
+let HASKELL_LINTER_TEMPLATE: string | undefined = undefined;
 
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel,
@@ -217,6 +225,41 @@ async function setHaskellFormatterTemplate(
   );
 }
 
+async function setHaskellLinterTemplate(
+  channel: vscode.OutputChannel,
+  key: Key
+): Promise<void> {
+  log(channel, key, "Getting Haskell linter ...");
+
+  let mode: string | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${HASKELL_LANGUAGE_ID}.linter.mode`);
+  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+
+  if (mode === HASKELL_LINTER_MODE_DISCOVER) {
+    const hlint = await which("hlint", { nothrow: true });
+    if (hlint) {
+      mode = HASKELL_LINTER_MODE_HLINT;
+    }
+  }
+  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+
+  switch (mode) {
+    case HASKELL_LINTER_MODE_HLINT:
+      HASKELL_LINTER_TEMPLATE = "hlint --json --no-exit-code -";
+      break;
+    case HASKELL_LINTER_MODE_CUSTOM:
+      HASKELL_LINTER_TEMPLATE = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${HASKELL_LANGUAGE_ID}.linter.command`);
+      break;
+    default:
+      HASKELL_LINTER_TEMPLATE = undefined;
+      break;
+  }
+  log(channel, key, `Template is: ${JSON.stringify(HASKELL_LINTER_TEMPLATE)}`);
+}
+
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
@@ -289,6 +332,7 @@ export async function activate(
 
   await setInterpreterTemplate(channel, key);
   await setHaskellFormatterTemplate(channel, key);
+  await setHaskellLinterTemplate(channel, key);
   vscode.workspace.onDidChangeConfiguration(async (e) => {
     const affectsHaskellInterpreter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
@@ -302,6 +346,13 @@ export async function activate(
     );
     if (affectsHaskellFormatter) {
       await setHaskellFormatterTemplate(channel, key);
+    }
+
+    const affectsHaskellLinter = e.affectsConfiguration(
+      `${my.name}.${HASKELL_LANGUAGE_ID}.linter`
+    );
+    if (affectsHaskellLinter) {
+      await setHaskellLinterTemplate(channel, key);
     }
   });
 
@@ -503,15 +554,12 @@ async function lintHaskell(
     return [];
   }
 
-  const template: string | undefined = vscode.workspace
-    .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.linter.command`);
-  if (!template) {
+  if (!HASKELL_LINTER_TEMPLATE) {
     log(channel, key, "Error: Missing linter command!");
     return [];
   }
 
-  const command = expandTemplate(template, { file });
+  const command = expandTemplate(HASKELL_LINTER_TEMPLATE, { file });
   const cwd = folder.uri.path;
   log(
     channel,
