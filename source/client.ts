@@ -83,6 +83,8 @@ let INTERPRETER: Interpreter | null = null;
 
 let INTERPRETER_TEMPLATE: string | undefined = undefined;
 
+let HASKELL_FORMATTER_TEMPLATE: string | undefined = undefined;
+
 const CABAL_LANGUAGE_ID = "cabal";
 
 const HASKELL_LANGUAGE_ID = "haskell";
@@ -97,11 +99,11 @@ const INTERPRETER_MODE_GHCI = "ghci";
 
 const INTERPRETER_MODE_CUSTOM = "custom";
 
-const FORMATTER_DISCOVER = "discover";
+const HASKELL_FORMATTER_MODE_DISCOVER = "discover";
 
-const FORMATTER_ORMOLU = "ormolu";
+const HASKELL_FORMATTER_MODE_ORMOLU = "ormolu";
 
-const FORMATTER_CUSTOM = "custom";
+const HASKELL_FORMATTER_MODE_CUSTOM = "custom";
 
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel,
@@ -176,6 +178,45 @@ async function setInterpreterTemplate(
   log(channel, key, `Template is: ${JSON.stringify(INTERPRETER_TEMPLATE)}`);
 }
 
+async function setHaskellFormatterTemplate(
+  channel: vscode.OutputChannel,
+  key: Key
+): Promise<void> {
+  log(channel, key, "Getting Haskell formatter ...");
+
+  let mode: string | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${HASKELL_LANGUAGE_ID}.formatter.mode`);
+  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+
+  if (mode === HASKELL_FORMATTER_MODE_DISCOVER) {
+    const ormolu = await which("ormolu", { nothrow: true });
+    if (ormolu) {
+      mode = HASKELL_FORMATTER_MODE_ORMOLU;
+    }
+  }
+  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+
+  switch (mode) {
+    case HASKELL_FORMATTER_MODE_ORMOLU:
+      HASKELL_FORMATTER_TEMPLATE = "ormolu --stdin-input-file ${file}";
+      break;
+    case HASKELL_FORMATTER_MODE_CUSTOM:
+      HASKELL_FORMATTER_TEMPLATE = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${HASKELL_LANGUAGE_ID}.formatter.command`);
+      break;
+    default:
+      HASKELL_FORMATTER_TEMPLATE = undefined;
+      break;
+  }
+  log(
+    channel,
+    key,
+    `Template is: ${JSON.stringify(HASKELL_FORMATTER_TEMPLATE)}`
+  );
+}
+
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
@@ -247,12 +288,20 @@ export async function activate(
   });
 
   await setInterpreterTemplate(channel, key);
+  await setHaskellFormatterTemplate(channel, key);
   vscode.workspace.onDidChangeConfiguration(async (e) => {
-    const affectsHaskell = e.affectsConfiguration(
+    const affectsHaskellInterpreter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
     );
-    if (affectsHaskell) {
+    if (affectsHaskellInterpreter) {
       await setInterpreterTemplate(channel, key);
+    }
+
+    const affectsHaskellFormatter = e.affectsConfiguration(
+      `${my.name}.${HASKELL_LANGUAGE_ID}.formatter`
+    );
+    if (affectsHaskellFormatter) {
+      await setHaskellFormatterTemplate(channel, key);
     }
   });
 
@@ -351,36 +400,12 @@ async function formatDocumentRange(
     return [];
   }
 
-  let formatter: string | undefined = vscode.workspace
-    .getConfiguration(my.name)
-    .get(`${languageId}.formatter.mode`);
-  if (formatter === FORMATTER_DISCOVER) {
-    const ormolu = await which("ormolu", { nothrow: true });
-    if (ormolu) {
-      formatter = FORMATTER_ORMOLU;
-    }
-  }
-
-  let template: string | undefined = undefined;
-  switch (formatter) {
-    case FORMATTER_ORMOLU:
-      template = "ormolu --stdin-input-file ${file}";
-      break;
-    case FORMATTER_CUSTOM:
-      template = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.formatter.command`);
-      break;
-    default:
-      break;
-  }
-
-  if (!template) {
+  if (!HASKELL_FORMATTER_TEMPLATE) {
     log(channel, key, "Error: Missing formatter command!");
     return [];
   }
 
-  const command = expandTemplate(template, { file });
+  const command = expandTemplate(HASKELL_FORMATTER_TEMPLATE, { file });
   const cwd = folder.uri.path;
   log(
     channel,
