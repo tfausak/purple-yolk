@@ -1,5 +1,9 @@
 # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#using-.vscodeignore
-.github/
-.vscode/
-node_modules/
-source/
+**/*
+
+!data/
+!dist/
+!CHANGELOG.md
+!LICENSE.txt
+!package.json
+!README.md
