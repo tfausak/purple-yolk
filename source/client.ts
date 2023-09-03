@@ -81,19 +81,21 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
 
 let INTERPRETER: Interpreter | null = null;
 
+let INTERPRETER_TEMPLATE: string | undefined = undefined;
+
 const CABAL_LANGUAGE_ID = "cabal";
 
 const HASKELL_LANGUAGE_ID = "haskell";
 
-const INTERPRETER_DISCOVER = "discover";
+const INTERPRETER_MODE_DISCOVER = "discover";
 
-const INTERPRETER_CABAL = "cabal";
+const INTERPRETER_MODE_CABAL = "cabal";
 
-const INTERPRETER_STACK = "stack";
+const INTERPRETER_MODE_STACK = "stack";
 
-const INTERPRETER_GHCI = "ghci";
+const INTERPRETER_MODE_GHCI = "ghci";
 
-const INTERPRETER_CUSTOM = "custom";
+const INTERPRETER_MODE_CUSTOM = "custom";
 
 const FORMATTER_DISCOVER = "discover";
 
@@ -101,7 +103,82 @@ const FORMATTER_ORMOLU = "ormolu";
 
 const FORMATTER_CUSTOM = "custom";
 
-export function activate(context: vscode.ExtensionContext): void {
+async function setInterpreterTemplate(
+  channel: vscode.OutputChannel,
+  key: Key
+): Promise<void> {
+  log(channel, key, "Getting Haskell interpreter ...");
+
+  let mode: string | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
+  log(channel, key, `Selected mode is: ${JSON.stringify(mode)}`);
+
+  if (mode === INTERPRETER_MODE_DISCOVER) {
+    const cabal = await which("cabal", { nothrow: true });
+    const [cabalProject] = await vscode.workspace.findFiles(
+      "cabal.project",
+      undefined,
+      1
+    );
+
+    const stack = await which("stack", { nothrow: true });
+    const [stackYaml] = await vscode.workspace.findFiles(
+      "stack.yaml",
+      undefined,
+      1
+    );
+
+    const ghci = await which("ghci", { nothrow: true });
+
+    if (cabal && !stack) {
+      // If the user only has Cabal available, then use Cabal.
+      mode = INTERPRETER_MODE_CABAL;
+    } else if (!cabal && stack) {
+      // If the user only has Stack available, then use Stack.
+      mode = INTERPRETER_MODE_STACK;
+    } else if (cabal && stack) {
+      if (!cabalProject && stackYaml) {
+        // If the user has both Cabal and Stack installed, but they only have a
+        // Stack project file, then use Stack.
+        mode = INTERPRETER_MODE_STACK;
+      } else {
+        // Otherwise use Cabal.
+        mode = INTERPRETER_MODE_CABAL;
+      }
+    } else if (ghci) {
+      // If the user has neither Cabal nor Stack installed, then attempt to use
+      // GHCi.
+      mode = INTERPRETER_MODE_GHCI;
+    }
+  }
+  log(channel, key, `Actual mode is: ${JSON.stringify(mode)}`);
+
+  switch (mode) {
+    case INTERPRETER_MODE_CABAL:
+      INTERPRETER_TEMPLATE = "cabal repl --repl-options -ddump-json";
+      break;
+    case INTERPRETER_MODE_STACK:
+      INTERPRETER_TEMPLATE = "stack ghci --ghci-options -ddump-json";
+      break;
+    case INTERPRETER_MODE_GHCI:
+      INTERPRETER_TEMPLATE = "ghci -ddump-json ${file}";
+      break;
+    case INTERPRETER_MODE_CUSTOM:
+      INTERPRETER_TEMPLATE = vscode.workspace
+        .getConfiguration(my.name)
+        .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
+      break;
+    default:
+      INTERPRETER_TEMPLATE = undefined;
+      break;
+  }
+  log(channel, key, `Template is: ${JSON.stringify(INTERPRETER_TEMPLATE)}`);
+}
+
+export async function activate(
+  context: vscode.ExtensionContext
+): Promise<void> {
   const channel = vscode.window.createOutputChannel(my.displayName);
   const key = newKey();
   const start = perfHooks.performance.now();
@@ -167,6 +244,16 @@ export function activate(context: vscode.ExtensionContext): void {
       provideDocumentRangeFormattingEdits: (document, range, _, token) =>
         formatDocumentRange(languageId, channel, document, range, token),
     });
+  });
+
+  await setInterpreterTemplate(channel, key);
+  vscode.workspace.onDidChangeConfiguration(async (e) => {
+    const affectsHaskell = e.affectsConfiguration(
+      `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
+    );
+    if (affectsHaskell) {
+      await setInterpreterTemplate(channel, key);
+    }
   });
 
   commandHaskellInterpret(channel, status, interpreterCollection);
@@ -575,75 +662,13 @@ async function startInterpreter(
     return;
   }
 
-  let interpreter: string | undefined = vscode.workspace
-    .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
-  if (interpreter === INTERPRETER_DISCOVER) {
-    const cabal = await which("cabal", { nothrow: true });
-    const [cabalProject] = await vscode.workspace.findFiles(
-      "cabal.project",
-      undefined,
-      1
-    );
-
-    const stack = await which("stack", { nothrow: true });
-    const [stackYaml] = await vscode.workspace.findFiles(
-      "stack.yaml",
-      undefined,
-      1
-    );
-
-    const ghci = await which("ghci", { nothrow: true });
-
-    if (cabal && !stack) {
-      // If the user only has Cabal available, then use Cabal.
-      interpreter = INTERPRETER_CABAL;
-    } else if (!cabal && stack) {
-      // If the user only has Stack available, then use Stack.
-      interpreter = INTERPRETER_STACK;
-    } else if (cabal && stack) {
-      if (!cabalProject && stackYaml) {
-        // If the user has both Cabal and Stack installed, but they only have a
-        // Stack project file, then use Stack.
-        interpreter = INTERPRETER_STACK;
-      } else {
-        // Otherwise use Cabal.
-        interpreter = INTERPRETER_CABAL;
-      }
-    } else if (ghci) {
-      // If the user has neither Cabal nor Stack installed, then attempt to use
-      // GHCi.
-      interpreter = INTERPRETER_GHCI;
-    }
-  }
-
-  let template: string | undefined = undefined;
-  switch (interpreter) {
-    case INTERPRETER_CABAL:
-      template = "cabal repl --repl-options -ddump-json";
-      break;
-    case INTERPRETER_STACK:
-      template = "stack ghci --ghci-options -ddump-json";
-      break;
-    case INTERPRETER_GHCI:
-      template = "ghci -ddump-json ${file}";
-      break;
-    case INTERPRETER_CUSTOM:
-      template = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
-      break;
-    default:
-      break;
-  }
-
-  if (!template) {
+  if (!INTERPRETER_TEMPLATE) {
     log(channel, key, "Error: Missing interpreter command!");
     return;
   }
 
   const file = vscode.workspace.asRelativePath(document.uri);
-  const command = expandTemplate(template, { file });
+  const command = expandTemplate(INTERPRETER_TEMPLATE, { file });
 
   status.busy = true;
   status.detail = "";
