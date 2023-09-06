@@ -10,6 +10,7 @@ import Idea from "./type/Idea";
 import IdeaSeverity from "./type/IdeaSeverity";
 import Interpreter from "./type/Interpreter";
 import Key from "./type/Key";
+import LanguageId from "./type/LanguageId";
 import Message from "./type/Message";
 import MessageSeverity from "./type/MessageSeverity";
 import MessageSpan from "./type/MessageSpan";
@@ -23,10 +24,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startCol: 1,
   startLine: 1,
 };
-
-const CABAL_LANGUAGE_ID = "cabal";
-
-const HASKELL_LANGUAGE_ID = "haskell";
 
 const INTERPRETER_MODE_DISCOVER = "discover";
 
@@ -74,7 +71,7 @@ async function setInterpreterTemplate(
 
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
+    .get(`${LanguageId.Haskell}.interpreter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === INTERPRETER_MODE_DISCOVER) {
@@ -124,7 +121,7 @@ async function setInterpreterTemplate(
     case INTERPRETER_MODE_CUSTOM:
       INTERPRETER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.interpreter.command`);
+        .get(`${LanguageId.Haskell}.interpreter.command`);
       break;
     default:
       INTERPRETER_TEMPLATE = undefined;
@@ -140,7 +137,7 @@ async function setHaskellFormatterTemplate(
 
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.formatter.mode`);
+    .get(`${LanguageId.Haskell}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HASKELL_FORMATTER_MODE_DISCOVER) {
@@ -158,7 +155,7 @@ async function setHaskellFormatterTemplate(
     case HASKELL_FORMATTER_MODE_CUSTOM:
       HASKELL_FORMATTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.formatter.command`);
+        .get(`${LanguageId.Haskell}.formatter.command`);
       break;
     default:
       HASKELL_FORMATTER_TEMPLATE = undefined;
@@ -174,7 +171,7 @@ async function setHaskellLinterTemplate(
 
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${HASKELL_LANGUAGE_ID}.linter.mode`);
+    .get(`${LanguageId.Haskell}.linter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HASKELL_LINTER_MODE_DISCOVER) {
@@ -192,7 +189,7 @@ async function setHaskellLinterTemplate(
     case HASKELL_LINTER_MODE_CUSTOM:
       HASKELL_LINTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
-        .get(`${HASKELL_LANGUAGE_ID}.linter.command`);
+        .get(`${LanguageId.Haskell}.linter.command`);
       break;
     default:
       HASKELL_LINTER_TEMPLATE = undefined;
@@ -208,7 +205,7 @@ async function setCabalFormatterTemplate(
 
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
-    .get(`${CABAL_LANGUAGE_ID}.formatter.mode`);
+    .get(`${LanguageId.Cabal}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === CABAL_FORMATTER_MODE_DISCOVER) {
@@ -226,7 +223,7 @@ async function setCabalFormatterTemplate(
     case CABAL_FORMATTER_MODE_CUSTOM:
       CABAL_FORMATTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
-        .get(`${CABAL_LANGUAGE_ID}.formatter.command`);
+        .get(`${LanguageId.Cabal}.formatter.command`);
       break;
     default:
       CABAL_FORMATTER_TEMPLATE = undefined;
@@ -249,7 +246,7 @@ export async function activate(
 
   const status = vscode.languages.createLanguageStatusItem(
     my.name,
-    HASKELL_LANGUAGE_ID
+    LanguageId.Haskell
   );
   status.command = { command: `${my.name}.output.show`, title: "Show Output" };
   status.text = "Idle";
@@ -257,14 +254,14 @@ export async function activate(
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      `${my.name}.${HASKELL_LANGUAGE_ID}.interpret`,
+      `${my.name}.${LanguageId.Haskell}.interpret`,
       () => commandHaskellInterpret(channel, status, interpreterCollection)
     )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      `${my.name}.${HASKELL_LANGUAGE_ID}.lint`,
+      `${my.name}.${LanguageId.Haskell}.lint`,
       () => commandHaskellLint(channel, linterCollection)
     )
   );
@@ -277,12 +274,12 @@ export async function activate(
 
   vscode.workspace.onDidSaveTextDocument((document) => {
     switch (document.languageId) {
-      case HASKELL_LANGUAGE_ID:
+      case LanguageId.Haskell:
         reloadInterpreter(channel, status, interpreterCollection);
 
         const shouldLint: boolean | undefined = vscode.workspace
           .getConfiguration(my.name)
-          .get(`${HASKELL_LANGUAGE_ID}.linter.onSave`);
+          .get(`${document.languageId}.linter.onSave`);
         if (shouldLint) {
           commandHaskellLint(channel, linterCollection);
         }
@@ -291,8 +288,8 @@ export async function activate(
     }
   });
 
-  const languageIds = [CABAL_LANGUAGE_ID, HASKELL_LANGUAGE_ID];
-  languageIds.forEach((languageId: string) => {
+  const languageIds = [LanguageId.Cabal, LanguageId.Haskell];
+  languageIds.forEach((languageId: LanguageId) => {
     vscode.languages.registerDocumentFormattingEditProvider(languageId, {
       provideDocumentFormattingEdits: (document, _, token) =>
         formatDocument(languageId, channel, document, token),
@@ -314,28 +311,28 @@ export async function activate(
     const promises = [];
 
     const affectsHaskellInterpreter = e.affectsConfiguration(
-      `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
+      `${my.name}.${LanguageId.Haskell}.interpreter`
     );
     if (affectsHaskellInterpreter) {
       promises.push(setInterpreterTemplate(channel));
     }
 
     const affectsHaskellFormatter = e.affectsConfiguration(
-      `${my.name}.${HASKELL_LANGUAGE_ID}.formatter`
+      `${my.name}.${LanguageId.Haskell}.formatter`
     );
     if (affectsHaskellFormatter) {
       promises.push(setHaskellFormatterTemplate(channel));
     }
 
     const affectsHaskellLinter = e.affectsConfiguration(
-      `${my.name}.${HASKELL_LANGUAGE_ID}.linter`
+      `${my.name}.${LanguageId.Haskell}.linter`
     );
     if (affectsHaskellLinter) {
       promises.push(setHaskellLinterTemplate(channel));
     }
 
     const affectsCabalFormatter = e.affectsConfiguration(
-      `${my.name}.${CABAL_LANGUAGE_ID}.formatter`
+      `${my.name}.${LanguageId.Cabal}.formatter`
     );
     if (affectsCabalFormatter) {
       promises.push(setCabalFormatterTemplate(channel));
@@ -369,7 +366,7 @@ function commandHaskellLint(
   collection: vscode.DiagnosticCollection
 ): void {
   const document = vscode.window.activeTextEditor?.document;
-  if (!document || document.languageId !== HASKELL_LANGUAGE_ID) {
+  if (!document || document.languageId !== LanguageId.Haskell) {
     return;
   }
 
@@ -394,7 +391,7 @@ function commandOutputShow(channel: vscode.OutputChannel): void {
 }
 
 function formatDocument(
-  languageId: string,
+  languageId: LanguageId,
   channel: vscode.OutputChannel,
   document: vscode.TextDocument,
   token: vscode.CancellationToken
@@ -422,7 +419,7 @@ function expandTemplate(
 }
 
 async function formatDocumentRange(
-  languageId: string,
+  languageId: LanguageId,
   channel: vscode.OutputChannel,
   document: vscode.TextDocument,
   range: vscode.Range,
@@ -440,9 +437,9 @@ async function formatDocumentRange(
   }
 
   let template: string | undefined = undefined;
-  if (languageId === HASKELL_LANGUAGE_ID) {
+  if (languageId === LanguageId.Haskell) {
     template = HASKELL_FORMATTER_TEMPLATE;
-  } else if (languageId === CABAL_LANGUAGE_ID) {
+  } else if (languageId === LanguageId.Cabal) {
     template = CABAL_FORMATTER_TEMPLATE;
   }
   if (!template) {
