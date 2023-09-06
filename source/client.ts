@@ -118,14 +118,23 @@ async function setHaskellFormatterTemplate(
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HaskellFormatterMode.Discover) {
-    const ormolu = await which("ormolu", { nothrow: true });
+    const [fourmolu, ormolu] = await Promise.all([
+      which("fourmolu", { nothrow: true }),
+      which("ormolu", { nothrow: true }),
+    ]);
+
     if (ormolu) {
       mode = HaskellFormatterMode.Ormolu;
+    } else if (fourmolu) {
+      mode = HaskellFormatterMode.Fourmolu;
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
+    case HaskellFormatterMode.Fourmolu:
+      HASKELL_FORMATTER_TEMPLATE = "fourmolu --stdin-input-file ${file}";
+      break;
     case HaskellFormatterMode.Ormolu:
       HASKELL_FORMATTER_TEMPLATE = "ormolu --stdin-input-file ${file}";
       break;
