@@ -6,6 +6,7 @@ import readline from "readline";
 import vscode from "vscode";
 import which from "which";
 
+import HaskellFormatterMode from "./type/HaskellFormatterMode";
 import Idea from "./type/Idea";
 import IdeaSeverity from "./type/IdeaSeverity";
 import Interpreter from "./type/Interpreter";
@@ -25,12 +26,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startCol: 1,
   startLine: 1,
 };
-
-const HASKELL_FORMATTER_MODE_DISCOVER = "discover";
-
-const HASKELL_FORMATTER_MODE_ORMOLU = "ormolu";
-
-const HASKELL_FORMATTER_MODE_CUSTOM = "custom";
 
 const HASKELL_LINTER_MODE_DISCOVER = "discover";
 
@@ -126,24 +121,24 @@ async function setHaskellFormatterTemplate(
   const key = newKey();
   log(channel, key, "Getting Haskell formatter ...");
 
-  let mode: string | undefined = vscode.workspace
+  let mode: HaskellFormatterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === HASKELL_FORMATTER_MODE_DISCOVER) {
+  if (mode === HaskellFormatterMode.Discover) {
     const ormolu = await which("ormolu", { nothrow: true });
     if (ormolu) {
-      mode = HASKELL_FORMATTER_MODE_ORMOLU;
+      mode = HaskellFormatterMode.Ormolu;
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
-    case HASKELL_FORMATTER_MODE_ORMOLU:
+    case HaskellFormatterMode.Ormolu:
       HASKELL_FORMATTER_TEMPLATE = "ormolu --stdin-input-file ${file}";
       break;
-    case HASKELL_FORMATTER_MODE_CUSTOM:
+    case HaskellFormatterMode.Custom:
       HASKELL_FORMATTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
         .get(`${LanguageId.Haskell}.formatter.command`);
