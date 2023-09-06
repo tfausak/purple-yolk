@@ -7,6 +7,7 @@ import vscode from "vscode";
 import which from "which";
 
 import HaskellFormatterMode from "./type/HaskellFormatterMode";
+import HaskellLinterMode from "./type/HaskellLinterMode";
 import Idea from "./type/Idea";
 import IdeaSeverity from "./type/IdeaSeverity";
 import Interpreter from "./type/Interpreter";
@@ -26,12 +27,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startCol: 1,
   startLine: 1,
 };
-
-const HASKELL_LINTER_MODE_DISCOVER = "discover";
-
-const HASKELL_LINTER_MODE_HLINT = "hlint";
-
-const HASKELL_LINTER_MODE_CUSTOM = "custom";
 
 const CABAL_FORMATTER_MODE_DISCOVER = "discover";
 
@@ -155,24 +150,24 @@ async function setHaskellLinterTemplate(
   const key = newKey();
   log(channel, key, "Getting Haskell linter ...");
 
-  let mode: string | undefined = vscode.workspace
+  let mode: HaskellLinterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.linter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === HASKELL_LINTER_MODE_DISCOVER) {
+  if (mode === HaskellLinterMode.Discover) {
     const hlint = await which("hlint", { nothrow: true });
     if (hlint) {
-      mode = HASKELL_LINTER_MODE_HLINT;
+      mode = HaskellLinterMode.Hlint;
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
-    case HASKELL_LINTER_MODE_HLINT:
+    case HaskellLinterMode.Hlint:
       HASKELL_LINTER_TEMPLATE = "hlint --json --no-exit-code -";
       break;
-    case HASKELL_LINTER_MODE_CUSTOM:
+    case HaskellLinterMode.Custom:
       HASKELL_LINTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
         .get(`${LanguageId.Haskell}.linter.command`);
