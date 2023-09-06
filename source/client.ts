@@ -6,6 +6,7 @@ import readline from "readline";
 import vscode from "vscode";
 import which from "which";
 
+import CabalFormatterMode from "./type/CabalFormatterMode";
 import HaskellFormatterMode from "./type/HaskellFormatterMode";
 import HaskellLinterMode from "./type/HaskellLinterMode";
 import Idea from "./type/Idea";
@@ -27,12 +28,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startCol: 1,
   startLine: 1,
 };
-
-const CABAL_FORMATTER_MODE_DISCOVER = "discover";
-
-const CABAL_FORMATTER_MODE_CABAL_FMT = "cabal-fmt";
-
-const CABAL_FORMATTER_MODE_CUSTOM = "custom";
 
 let INTERPRETER: Interpreter | null = null;
 
@@ -184,24 +179,24 @@ async function setCabalFormatterTemplate(
   const key = newKey();
   log(channel, key, "Getting Cabal formatter ...");
 
-  let mode: string | undefined = vscode.workspace
+  let mode: CabalFormatterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Cabal}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === CABAL_FORMATTER_MODE_DISCOVER) {
+  if (mode === CabalFormatterMode.Discover) {
     const cabalFmt = await which("cabal-fmt", { nothrow: true });
     if (cabalFmt) {
-      mode = CABAL_FORMATTER_MODE_CABAL_FMT;
+      mode = CabalFormatterMode.CabalFmt;
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
-    case CABAL_FORMATTER_MODE_CABAL_FMT:
+    case CabalFormatterMode.CabalFmt:
       CABAL_FORMATTER_TEMPLATE = "cabal-fmt --no-cabal-file --no-tabular";
       break;
-    case CABAL_FORMATTER_MODE_CUSTOM:
+    case CabalFormatterMode.Custom:
       CABAL_FORMATTER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
         .get(`${LanguageId.Cabal}.formatter.command`);
