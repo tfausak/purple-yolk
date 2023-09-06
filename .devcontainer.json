@@ -1,4 +1,4 @@
 {
   "containerUser": "node",
-  "image": "node:16.17.1"
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:16"
 }

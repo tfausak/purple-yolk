@@ -3,5 +3,8 @@
     "outDir": "dist",
     "resolveJsonModule": true
   },
-  "extends": "@tsconfig/node16-strictest/tsconfig.json"
+  "extends": [
+    "@tsconfig/node16/tsconfig.json",
+    "@tsconfig/strictest/tsconfig.json"
+  ]
 }
