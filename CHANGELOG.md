@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-09-06: 0.11.0
+
+- Improved configuration to be more automatic. <https://github.com/tfausak/purple-yolk/pull/46>
+
 ## 2023-08-28: 0.10.2
 
 - Fixed a bug that caused diagnostics from Stack to be reported at the wrong location. <https://github.com/tfausak/purple-yolk/pull/44>
@@ -12,20 +16,20 @@ Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 2023-05-24: 0.10.0
 
-- Added template variable expansion to commands. You can use `${file}` as the path to the current file.
+- Added template variable expansion to commands. You can use `${file}` as the path to the current file. <https://github.com/tfausak/purple-yolk/pull/39>
 
 ## 2023-01-25: 0.9.2
 
-- Changed the default Cabal file formatter to allow formatting more files, like `cabal.project`.
+- Changed the default Cabal file formatter to allow formatting more files, like `cabal.project`. <https://github.com/tfausak/purple-yolk/pull/38>
 
 ## 2023-01-14: 0.9.1
 
-- Fixed a bug that assigned the wrong severity to diagnostics when using GHC >= 9.4.
-- Fixed a bug that attempted to lint non-Haskell documents in certain situations.
+- Fixed a bug that assigned the wrong severity to diagnostics when using GHC >= 9.4. <https://github.com/tfausak/purple-yolk/pull/36>
+- Fixed a bug that attempted to lint non-Haskell documents in certain situations. <https://github.com/tfausak/purple-yolk/pull/37>
 
 ## 2022-11-01: 0.9.0
 
-- Added the ability to format Cabal files.
+- Added the ability to format Cabal files. <https://github.com/tfausak/purple-yolk/pull/35>
 
 ## 2022-08-02: 0.8.2
 
