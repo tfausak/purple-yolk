@@ -6,70 +6,15 @@ import readline from "readline";
 import vscode from "vscode";
 import which from "which";
 
+import Idea from "./type/Idea";
+import IdeaSeverity from "./type/IdeaSeverity";
+import Interpreter from "./type/Interpreter";
+import Key from "./type/Key";
+import Message from "./type/Message";
+import MessageSeverity from "./type/MessageSeverity";
+import MessageSpan from "./type/MessageSpan";
+
 import my from "../package.json";
-
-// https://hackage.haskell.org/package/hlint-3.6.1/docs/Language-Haskell-HLint.html#t:Idea
-interface Idea {
-  decl: string[];
-  endColumn: number;
-  endLine: number;
-  file: string;
-  from: string;
-  hint: string;
-  module: string[];
-  note: string[];
-  refactorings: string;
-  severity: IdeaSeverity;
-  startColumn: number;
-  startLine: number;
-  to: string | null;
-}
-
-// https://hackage.haskell.org/package/hlint-3.6.1/docs/Language-Haskell-HLint.html#t:Severity
-enum IdeaSeverity {
-  Ignore = "Ignore",
-  Suggestion = "Suggestion",
-  Warning = "Warning",
-  Error = "Error",
-}
-
-interface Interpreter {
-  key: Key | null;
-  task: childProcess.ChildProcess;
-}
-
-type Key = string;
-
-interface Message {
-  doc: string;
-  messageClass: string | null; // Used by GHC >= 9.4.
-  reason: MessageReason | null;
-  severity: MessageSeverity | null; // Used by GHC < 9.4.
-  span: MessageSpan | null;
-}
-
-// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Driver-Flags.html#t:WarningFlag
-type MessageReason = string;
-
-// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Types-Error.html#t:Severity
-enum MessageSeverity {
-  SevDump = "SevDump",
-  SevError = "SevError",
-  SevFatal = "SevFatal",
-  SevInfo = "SevInfo",
-  SevInteractive = "SevInteractive",
-  SevOutput = "SevOutput",
-  SevWarning = "SevWarning",
-}
-
-// https://downloads.haskell.org/ghc/9.6.2/docs/libraries/ghc-9.6.2/GHC-Types-SrcLoc.html#t:SrcSpan
-interface MessageSpan {
-  endCol: number;
-  endLine: number;
-  file: string; // Can be `"<interactive>"`.
-  startCol: number;
-  startLine: number;
-}
 
 const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   endCol: 1,
