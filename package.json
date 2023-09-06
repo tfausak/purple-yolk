@@ -235,5 +235,5 @@
   "scripts": {
     "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node16 source/client.ts"
   },
-  "version": "0.10.2"
+  "version": "0.11.0"
 }
