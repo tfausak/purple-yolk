@@ -121,10 +121,8 @@ let HASKELL_LINTER_TEMPLATE: string | undefined = undefined;
 
 let CABAL_FORMATTER_TEMPLATE: string | undefined = undefined;
 
-async function setInterpreterTemplate(
-  channel: vscode.OutputChannel,
-  key: Key
-): Promise<void> {
+async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+  const key = newKey();
   log(channel, key, "Getting Haskell interpreter ...");
 
   let mode: string | undefined = vscode.workspace
@@ -193,10 +191,8 @@ async function setInterpreterTemplate(
   }
 }
 
-async function setHaskellFormatterTemplate(
-  channel: vscode.OutputChannel,
-  key: Key
-): Promise<void> {
+async function setHaskellFormatterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+  const key = newKey();
   log(channel, key, "Getting Haskell formatter ...");
 
   let mode: string | undefined = vscode.workspace
@@ -227,10 +223,8 @@ async function setHaskellFormatterTemplate(
   }
 }
 
-async function setHaskellLinterTemplate(
-  channel: vscode.OutputChannel,
-  key: Key
-): Promise<void> {
+async function setHaskellLinterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+  const key = newKey();
   log(channel, key, "Getting Haskell linter ...");
 
   let mode: string | undefined = vscode.workspace
@@ -261,10 +255,8 @@ async function setHaskellLinterTemplate(
   }
 }
 
-async function setCabalFormatterTemplate(
-  channel: vscode.OutputChannel,
-  key: Key
-): Promise<void> {
+async function setCabalFormatterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+  const key = newKey();
   log(channel, key, "Getting Cabal formatter ...");
 
   let mode: string | undefined = vscode.workspace
@@ -365,37 +357,37 @@ export async function activate(
     });
   });
 
-  await setInterpreterTemplate(channel, key);
-  await setHaskellFormatterTemplate(channel, key);
-  await setHaskellLinterTemplate(channel, key);
-  await setCabalFormatterTemplate(channel, key);
+  await setInterpreterTemplate(channel);
+  await setHaskellFormatterTemplate(channel);
+  await setHaskellLinterTemplate(channel);
+  await setCabalFormatterTemplate(channel);
   vscode.workspace.onDidChangeConfiguration(async (e) => {
     const affectsHaskellInterpreter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
     );
     if (affectsHaskellInterpreter) {
-      await setInterpreterTemplate(channel, key);
+      await setInterpreterTemplate(channel);
     }
 
     const affectsHaskellFormatter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.formatter`
     );
     if (affectsHaskellFormatter) {
-      await setHaskellFormatterTemplate(channel, key);
+      await setHaskellFormatterTemplate(channel);
     }
 
     const affectsHaskellLinter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.linter`
     );
     if (affectsHaskellLinter) {
-      await setHaskellLinterTemplate(channel, key);
+      await setHaskellLinterTemplate(channel);
     }
 
     const affectsCabalFormatter = e.affectsConfiguration(
       `${my.name}.${CABAL_LANGUAGE_ID}.formatter`
     );
     if (affectsCabalFormatter) {
-      await setCabalFormatterTemplate(channel, key);
+      await setCabalFormatterTemplate(channel);
     }
   });
 
