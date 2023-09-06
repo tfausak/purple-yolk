@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-09-06: 0.11.0
+
+- Improved configuration to be more automatic. <https://github.com/tfausak/purple-yolk/pull/46>
+
 ## 2023-08-28: 0.10.2
 
 - Fixed a bug that caused diagnostics from Stack to be reported at the wrong location. <https://github.com/tfausak/purple-yolk/pull/44>
