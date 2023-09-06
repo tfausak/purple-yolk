@@ -121,7 +121,9 @@ let HASKELL_LINTER_TEMPLATE: string | undefined = undefined;
 
 let CABAL_FORMATTER_TEMPLATE: string | undefined = undefined;
 
-async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+async function setInterpreterTemplate(
+  channel: vscode.OutputChannel
+): Promise<void> {
   const key = newKey();
   log(channel, key, "Getting Haskell interpreter ...");
 
@@ -131,21 +133,15 @@ async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === INTERPRETER_MODE_DISCOVER) {
-    const [cabal, [cabalProject], stack, [stackYaml], ghci] = await Promise.all([
-      which("cabal", { nothrow: true }),
-      vscode.workspace.findFiles(
-        "cabal.project",
-        undefined,
-        1
-      ),
-      which("stack", { nothrow: true }),
-      vscode.workspace.findFiles(
-        "stack.yaml",
-        undefined,
-        1
-      ),
-      which("ghci", { nothrow: true }),
-    ]);
+    const [cabal, [cabalProject], stack, [stackYaml], ghci] = await Promise.all(
+      [
+        which("cabal", { nothrow: true }),
+        vscode.workspace.findFiles("cabal.project", undefined, 1),
+        which("stack", { nothrow: true }),
+        vscode.workspace.findFiles("stack.yaml", undefined, 1),
+        which("ghci", { nothrow: true }),
+      ]
+    );
 
     if (cabal && !stack) {
       // If the user only has Cabal available, then use Cabal.
@@ -191,7 +187,9 @@ async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<
   }
 }
 
-async function setHaskellFormatterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+async function setHaskellFormatterTemplate(
+  channel: vscode.OutputChannel
+): Promise<void> {
   const key = newKey();
   log(channel, key, "Getting Haskell formatter ...");
 
@@ -223,7 +221,9 @@ async function setHaskellFormatterTemplate( channel: vscode.OutputChannel ): Pro
   }
 }
 
-async function setHaskellLinterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+async function setHaskellLinterTemplate(
+  channel: vscode.OutputChannel
+): Promise<void> {
   const key = newKey();
   log(channel, key, "Getting Haskell linter ...");
 
@@ -255,7 +255,9 @@ async function setHaskellLinterTemplate( channel: vscode.OutputChannel ): Promis
   }
 }
 
-async function setCabalFormatterTemplate( channel: vscode.OutputChannel ): Promise<void> {
+async function setCabalFormatterTemplate(
+  channel: vscode.OutputChannel
+): Promise<void> {
   const key = newKey();
   log(channel, key, "Getting Cabal formatter ...");
 
@@ -362,7 +364,7 @@ export async function activate(
     setHaskellFormatterTemplate(channel),
     setHaskellLinterTemplate(channel),
     setCabalFormatterTemplate(channel),
-  ])
+  ]);
   vscode.workspace.onDidChangeConfiguration(async (e) => {
     const promises = [];
 
