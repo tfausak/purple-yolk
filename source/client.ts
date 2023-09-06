@@ -18,6 +18,7 @@ import LanguageId from "./type/LanguageId";
 import Message from "./type/Message";
 import MessageSeverity from "./type/MessageSeverity";
 import MessageSpan from "./type/MessageSpan";
+import Template from "./type/Template";
 
 import my from "../package.json";
 
@@ -31,13 +32,13 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
 
 let INTERPRETER: Interpreter | null = null;
 
-let INTERPRETER_TEMPLATE: string | undefined = undefined;
+let INTERPRETER_TEMPLATE: Template | undefined = undefined;
 
-let HASKELL_FORMATTER_TEMPLATE: string | undefined = undefined;
+let HASKELL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
-let HASKELL_LINTER_TEMPLATE: string | undefined = undefined;
+let HASKELL_LINTER_TEMPLATE: Template | undefined = undefined;
 
-let CABAL_FORMATTER_TEMPLATE: string | undefined = undefined;
+let CABAL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel
@@ -382,7 +383,7 @@ function formatDocument(
 }
 
 function expandTemplate(
-  template: string,
+  template: Template,
   replacements: { [key: string]: string }
 ): string {
   return template.replace(/\$\{(.*?)\}/, (_, key) => {
@@ -412,7 +413,7 @@ async function formatDocumentRange(
     return [];
   }
 
-  let template: string | undefined = undefined;
+  let template: Template | undefined = undefined;
   if (languageId === LanguageId.Haskell) {
     template = HASKELL_FORMATTER_TEMPLATE;
   } else if (languageId === LanguageId.Cabal) {
