@@ -128,24 +128,24 @@ async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.interpreter.mode`);
-  log(channel, key, `Requested Haskell interpreter mode is ${mode}`);
+  log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === INTERPRETER_MODE_DISCOVER) {
-    const cabal = await which("cabal", { nothrow: true });
-    const [cabalProject] = await vscode.workspace.findFiles(
-      "cabal.project",
-      undefined,
-      1
-    );
-
-    const stack = await which("stack", { nothrow: true });
-    const [stackYaml] = await vscode.workspace.findFiles(
-      "stack.yaml",
-      undefined,
-      1
-    );
-
-    const ghci = await which("ghci", { nothrow: true });
+    const [cabal, [cabalProject], stack, [stackYaml], ghci] = await Promise.all([
+      which("cabal", { nothrow: true }),
+      vscode.workspace.findFiles(
+        "cabal.project",
+        undefined,
+        1
+      ),
+      which("stack", { nothrow: true }),
+      vscode.workspace.findFiles(
+        "stack.yaml",
+        undefined,
+        1
+      ),
+      which("ghci", { nothrow: true }),
+    ]);
 
     if (cabal && !stack) {
       // If the user only has Cabal available, then use Cabal.
@@ -168,7 +168,7 @@ async function setInterpreterTemplate( channel: vscode.OutputChannel ): Promise<
       mode = INTERPRETER_MODE_GHCI;
     }
   }
-  log(channel, key, `Actual Haskell interpreter mode is ${mode}`);
+  log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
     case INTERPRETER_MODE_CABAL:
@@ -198,7 +198,7 @@ async function setHaskellFormatterTemplate( channel: vscode.OutputChannel ): Pro
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.formatter.mode`);
-  log(channel, key, `Requested Haskell formatter mode is ${mode}`);
+  log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HASKELL_FORMATTER_MODE_DISCOVER) {
     const ormolu = await which("ormolu", { nothrow: true });
@@ -206,7 +206,7 @@ async function setHaskellFormatterTemplate( channel: vscode.OutputChannel ): Pro
       mode = HASKELL_FORMATTER_MODE_ORMOLU;
     }
   }
-  log(channel, key, `Actual Haskell formatter mode is ${mode}`);
+  log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
     case HASKELL_FORMATTER_MODE_ORMOLU:
@@ -230,7 +230,7 @@ async function setHaskellLinterTemplate( channel: vscode.OutputChannel ): Promis
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${HASKELL_LANGUAGE_ID}.linter.mode`);
-  log(channel, key, `Requested Haskell linter mode is ${mode}`);
+  log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HASKELL_LINTER_MODE_DISCOVER) {
     const hlint = await which("hlint", { nothrow: true });
@@ -238,7 +238,7 @@ async function setHaskellLinterTemplate( channel: vscode.OutputChannel ): Promis
       mode = HASKELL_LINTER_MODE_HLINT;
     }
   }
-  log(channel, key, `Actual Haskell linter mode is ${mode}`);
+  log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
     case HASKELL_LINTER_MODE_HLINT:
@@ -262,7 +262,7 @@ async function setCabalFormatterTemplate( channel: vscode.OutputChannel ): Promi
   let mode: string | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${CABAL_LANGUAGE_ID}.formatter.mode`);
-  log(channel, key, `Requested Cabal formatter is ${mode}`);
+  log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === CABAL_FORMATTER_MODE_DISCOVER) {
     const cabalFmt = await which("cabal-fmt", { nothrow: true });
@@ -270,7 +270,7 @@ async function setCabalFormatterTemplate( channel: vscode.OutputChannel ): Promi
       mode = CABAL_FORMATTER_MODE_CABAL_FMT;
     }
   }
-  log(channel, key, `Actual Cabal formatter is ${mode}`);
+  log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
     case CABAL_FORMATTER_MODE_CABAL_FMT:
@@ -357,38 +357,44 @@ export async function activate(
     });
   });
 
-  await setInterpreterTemplate(channel);
-  await setHaskellFormatterTemplate(channel);
-  await setHaskellLinterTemplate(channel);
-  await setCabalFormatterTemplate(channel);
+  await Promise.all([
+    setInterpreterTemplate(channel),
+    setHaskellFormatterTemplate(channel),
+    setHaskellLinterTemplate(channel),
+    setCabalFormatterTemplate(channel),
+  ])
   vscode.workspace.onDidChangeConfiguration(async (e) => {
+    const promises = [];
+
     const affectsHaskellInterpreter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.interpreter`
     );
     if (affectsHaskellInterpreter) {
-      await setInterpreterTemplate(channel);
+      promises.push(setInterpreterTemplate(channel));
     }
 
     const affectsHaskellFormatter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.formatter`
     );
     if (affectsHaskellFormatter) {
-      await setHaskellFormatterTemplate(channel);
+      promises.push(setHaskellFormatterTemplate(channel));
     }
 
     const affectsHaskellLinter = e.affectsConfiguration(
       `${my.name}.${HASKELL_LANGUAGE_ID}.linter`
     );
     if (affectsHaskellLinter) {
-      await setHaskellLinterTemplate(channel);
+      promises.push(setHaskellLinterTemplate(channel));
     }
 
     const affectsCabalFormatter = e.affectsConfiguration(
       `${my.name}.${CABAL_LANGUAGE_ID}.formatter`
     );
     if (affectsCabalFormatter) {
-      await setCabalFormatterTemplate(channel);
+      promises.push(setCabalFormatterTemplate(channel));
     }
+
+    await Promise.all(promises);
   });
 
   commandHaskellInterpret(channel, status, interpreterCollection);
