@@ -9,6 +9,7 @@ import which from "which";
 import Idea from "./type/Idea";
 import IdeaSeverity from "./type/IdeaSeverity";
 import Interpreter from "./type/Interpreter";
+import InterpreterMode from "./type/InterpreterMode";
 import Key from "./type/Key";
 import LanguageId from "./type/LanguageId";
 import Message from "./type/Message";
@@ -24,16 +25,6 @@ const DEFAULT_MESSAGE_SPAN: MessageSpan = {
   startCol: 1,
   startLine: 1,
 };
-
-const INTERPRETER_MODE_DISCOVER = "discover";
-
-const INTERPRETER_MODE_CABAL = "cabal";
-
-const INTERPRETER_MODE_STACK = "stack";
-
-const INTERPRETER_MODE_GHCI = "ghci";
-
-const INTERPRETER_MODE_CUSTOM = "custom";
 
 const HASKELL_FORMATTER_MODE_DISCOVER = "discover";
 
@@ -69,12 +60,12 @@ async function setInterpreterTemplate(
   const key = newKey();
   log(channel, key, "Getting Haskell interpreter ...");
 
-  let mode: string | undefined = vscode.workspace
+  let mode: InterpreterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.interpreter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === INTERPRETER_MODE_DISCOVER) {
+  if (mode === InterpreterMode.Discover) {
     const [cabal, [cabalProject], stack, [stackYaml], ghci] = await Promise.all(
       [
         which("cabal", { nothrow: true }),
@@ -87,38 +78,38 @@ async function setInterpreterTemplate(
 
     if (cabal && !stack) {
       // If the user only has Cabal available, then use Cabal.
-      mode = INTERPRETER_MODE_CABAL;
+      mode = InterpreterMode.Cabal;
     } else if (!cabal && stack) {
       // If the user only has Stack available, then use Stack.
-      mode = INTERPRETER_MODE_STACK;
+      mode = InterpreterMode.Stack;
     } else if (cabal && stack) {
       if (!cabalProject && stackYaml) {
         // If the user has both Cabal and Stack installed, but they only have a
         // Stack project file, then use Stack.
-        mode = INTERPRETER_MODE_STACK;
+        mode = InterpreterMode.Stack;
       } else {
         // Otherwise use Cabal.
-        mode = INTERPRETER_MODE_CABAL;
+        mode = InterpreterMode.Cabal;
       }
     } else if (ghci) {
       // If the user has neither Cabal nor Stack installed, then attempt to use
       // GHCi.
-      mode = INTERPRETER_MODE_GHCI;
+      mode = InterpreterMode.Ghci;
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
   switch (mode) {
-    case INTERPRETER_MODE_CABAL:
+    case InterpreterMode.Cabal:
       INTERPRETER_TEMPLATE = "cabal repl --repl-options -ddump-json";
       break;
-    case INTERPRETER_MODE_STACK:
+    case InterpreterMode.Stack:
       INTERPRETER_TEMPLATE = "stack ghci --ghci-options -ddump-json";
       break;
-    case INTERPRETER_MODE_GHCI:
+    case InterpreterMode.Ghci:
       INTERPRETER_TEMPLATE = "ghci -ddump-json ${file}";
       break;
-    case INTERPRETER_MODE_CUSTOM:
+    case InterpreterMode.Custom:
       INTERPRETER_TEMPLATE = vscode.workspace
         .getConfiguration(my.name)
         .get(`${LanguageId.Haskell}.interpreter.command`);
