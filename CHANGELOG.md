@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2023-09-09: 0.11.1
+
+- Improved automatic discovery of Haskell formatter. <https://github.com/tfausak/purple-yolk/pull/49>
+
 ## 2023-09-06: 0.11.0
 
 - Improved configuration to be more automatic. <https://github.com/tfausak/purple-yolk/pull/46>
