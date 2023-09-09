@@ -124,6 +124,36 @@ async function setInterpreterTemplate(
   }
 }
 
+function discoverHaskellFormatterMode(
+  fourmolu: string | undefined,
+  fourmoluConfig: vscode.Uri | undefined,
+  ormolu: string | undefined,
+  ormoluConfig: vscode.Uri | undefined
+): HaskellFormatterMode {
+  if (fourmolu && !ormolu) {
+    // If the user only has Fourmolu available, then use Fourmolu.
+    return HaskellFormatterMode.Fourmolu;
+  }
+
+  if (!fourmolu && ormolu) {
+    // If the user only has Ormolu available, then use Ormolu.
+    return HaskellFormatterMode.Ormolu;
+  }
+
+  if (fourmolu && ormolu) {
+    if (fourmoluConfig && !ormoluConfig) {
+      // If the user has both Fourmolu and Ormolu installed, but they only
+      // have a Fourmolu config file, then use Fourmolu.
+      return HaskellFormatterMode.Fourmolu;
+    }
+
+    // Otherwise use Ormolu.
+    return HaskellFormatterMode.Ormolu;
+  }
+
+  return HaskellFormatterMode.Discover;
+}
+
 async function setHaskellFormatterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -144,22 +174,12 @@ async function setHaskellFormatterTemplate(
         vscode.workspace.findFiles(".ormolu", undefined, 1),
       ]);
 
-    if (fourmolu && !ormolu) {
-      // If the user only has Fourmolu available, then use Fourmolu.
-      mode = HaskellFormatterMode.Fourmolu;
-    } else if (!fourmolu && ormolu) {
-      // If the user only has Ormolu available, then use Ormolu.
-      mode = HaskellFormatterMode.Ormolu;
-    } else if (fourmolu && ormolu) {
-      if (fourmoluConfig && !ormoluConfig) {
-        // If the user has both Fourmolu and Ormolu installed, but they only
-        // have a Fourmolu config file, then use Fourmolu.
-        mode = HaskellFormatterMode.Fourmolu;
-      } else {
-        // Otherwise use Ormolu.
-        mode = HaskellFormatterMode.Ormolu;
-      }
-    }
+    mode = discoverHaskellFormatterMode(
+      fourmolu,
+      fourmoluConfig,
+      ormolu,
+      ormoluConfig
+    );
   }
   log(channel, key, `Actual mode is ${mode}`);
 
