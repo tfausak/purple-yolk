@@ -40,6 +40,43 @@ let HASKELL_LINTER_TEMPLATE: Template | undefined = undefined;
 
 let CABAL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
+function discoverInterpreterMode(
+  cabal: string | undefined,
+  cabalConfig: vscode.Uri | undefined,
+  ghci: string | undefined,
+  stack: string | undefined,
+  stackConfig: vscode.Uri | undefined
+): InterpreterMode {
+  if (cabal && !stack) {
+    // If the user only has Cabal available, then use Cabal.
+    return InterpreterMode.Cabal;
+  }
+
+  if (!cabal && stack) {
+    // If the user only has Stack available, then use Stack.
+    return InterpreterMode.Stack;
+  }
+
+  if (cabal && stack) {
+    if (!cabalConfig && stackConfig) {
+      // If the user has both Cabal and Stack installed, but they only have a
+      // Stack project file, then use Stack.
+      return InterpreterMode.Stack;
+    }
+
+    // Otherwise use Cabal.
+    return InterpreterMode.Cabal;
+  }
+
+  if (ghci) {
+    // If the user has neither Cabal nor Stack installed, then attempt to use
+    // GHCi.
+    return InterpreterMode.Ghci;
+  }
+
+  return InterpreterMode.Discover;
+}
+
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -62,26 +99,7 @@ async function setInterpreterTemplate(
       ]
     );
 
-    if (cabal && !stack) {
-      // If the user only has Cabal available, then use Cabal.
-      mode = InterpreterMode.Cabal;
-    } else if (!cabal && stack) {
-      // If the user only has Stack available, then use Stack.
-      mode = InterpreterMode.Stack;
-    } else if (cabal && stack) {
-      if (!cabalProject && stackYaml) {
-        // If the user has both Cabal and Stack installed, but they only have a
-        // Stack project file, then use Stack.
-        mode = InterpreterMode.Stack;
-      } else {
-        // Otherwise use Cabal.
-        mode = InterpreterMode.Cabal;
-      }
-    } else if (ghci) {
-      // If the user has neither Cabal nor Stack installed, then attempt to use
-      // GHCi.
-      mode = InterpreterMode.Ghci;
-    }
+    mode = discoverInterpreterMode(cabal, cabalProject, ghci, stack, stackYaml);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
