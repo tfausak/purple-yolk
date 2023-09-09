@@ -244,6 +244,16 @@ async function setHaskellLinterTemplate(
   }
 }
 
+function discoverCabalFormatterMode(
+  cabalFmt: string | undefined
+): CabalFormatterMode {
+  if (cabalFmt) {
+    return CabalFormatterMode.CabalFmt;
+  }
+
+  return CabalFormatterMode.Discover;
+}
+
 async function setCabalFormatterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -257,9 +267,8 @@ async function setCabalFormatterTemplate(
 
   if (mode === CabalFormatterMode.Discover) {
     const cabalFmt = await which("cabal-fmt", { nothrow: true });
-    if (cabalFmt) {
-      mode = CabalFormatterMode.CabalFmt;
-    }
+
+    mode = discoverCabalFormatterMode(cabalFmt);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
