@@ -118,15 +118,29 @@ async function setHaskellFormatterTemplate(
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HaskellFormatterMode.Discover) {
-    const [fourmolu, ormolu] = await Promise.all([
-      which("fourmolu", { nothrow: true }),
-      which("ormolu", { nothrow: true }),
-    ]);
+    const [fourmolu, [fourmoluConfig], ormolu, [ormoluConfig]] =
+      await Promise.all([
+        which("fourmolu", { nothrow: true }),
+        vscode.workspace.findFiles("fourmolu.yaml", undefined, 1),
+        which("ormolu", { nothrow: true }),
+        vscode.workspace.findFiles(".ormolu", undefined, 1),
+      ]);
 
-    if (ormolu) {
-      mode = HaskellFormatterMode.Ormolu;
-    } else if (fourmolu) {
+    if (fourmolu && !ormolu) {
+      // If the user only has Fourmolu available, then use Fourmolu.
       mode = HaskellFormatterMode.Fourmolu;
+    } else if (!fourmolu && ormolu) {
+      // If the user only has Ormolu available, then use Ormolu.
+      mode = HaskellFormatterMode.Ormolu;
+    } else if (fourmolu && ormolu) {
+      if (fourmoluConfig && !ormoluConfig) {
+        // If the user has both Fourmolu and Ormolu installed, but they only
+        // have a Fourmolu config file, then use Fourmolu.
+        mode = HaskellFormatterMode.Fourmolu;
+      } else {
+        // Otherwise use Ormolu.
+        mode = HaskellFormatterMode.Ormolu;
+      }
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
