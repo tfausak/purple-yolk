@@ -201,6 +201,16 @@ async function setHaskellFormatterTemplate(
   }
 }
 
+function discoverHaskellLinterMode(
+  hlint: string | undefined
+): HaskellLinterMode {
+  if (hlint) {
+    return HaskellLinterMode.Hlint;
+  }
+
+  return HaskellLinterMode.Discover;
+}
+
 async function setHaskellLinterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -214,9 +224,8 @@ async function setHaskellLinterTemplate(
 
   if (mode === HaskellLinterMode.Discover) {
     const hlint = await which("hlint", { nothrow: true });
-    if (hlint) {
-      mode = HaskellLinterMode.Hlint;
-    }
+
+    mode = discoverHaskellLinterMode(hlint);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
