@@ -40,6 +40,43 @@ let HASKELL_LINTER_TEMPLATE: Template | undefined = undefined;
 
 let CABAL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
+function discoverInterpreterMode(
+  cabal: string | undefined,
+  cabalConfig: vscode.Uri | undefined,
+  ghci: string | undefined,
+  stack: string | undefined,
+  stackConfig: vscode.Uri | undefined
+): InterpreterMode {
+  if (cabal && !stack) {
+    // If the user only has Cabal available, then use Cabal.
+    return InterpreterMode.Cabal;
+  }
+
+  if (!cabal && stack) {
+    // If the user only has Stack available, then use Stack.
+    return InterpreterMode.Stack;
+  }
+
+  if (cabal && stack) {
+    if (!cabalConfig && stackConfig) {
+      // If the user has both Cabal and Stack installed, but they only have a
+      // Stack project file, then use Stack.
+      return InterpreterMode.Stack;
+    }
+
+    // Otherwise use Cabal.
+    return InterpreterMode.Cabal;
+  }
+
+  if (ghci) {
+    // If the user has neither Cabal nor Stack installed, then attempt to use
+    // GHCi.
+    return InterpreterMode.Ghci;
+  }
+
+  return InterpreterMode.Discover;
+}
+
 async function setInterpreterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -62,26 +99,7 @@ async function setInterpreterTemplate(
       ]
     );
 
-    if (cabal && !stack) {
-      // If the user only has Cabal available, then use Cabal.
-      mode = InterpreterMode.Cabal;
-    } else if (!cabal && stack) {
-      // If the user only has Stack available, then use Stack.
-      mode = InterpreterMode.Stack;
-    } else if (cabal && stack) {
-      if (!cabalProject && stackYaml) {
-        // If the user has both Cabal and Stack installed, but they only have a
-        // Stack project file, then use Stack.
-        mode = InterpreterMode.Stack;
-      } else {
-        // Otherwise use Cabal.
-        mode = InterpreterMode.Cabal;
-      }
-    } else if (ghci) {
-      // If the user has neither Cabal nor Stack installed, then attempt to use
-      // GHCi.
-      mode = InterpreterMode.Ghci;
-    }
+    mode = discoverInterpreterMode(cabal, cabalProject, ghci, stack, stackYaml);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -106,6 +124,36 @@ async function setInterpreterTemplate(
   }
 }
 
+function discoverHaskellFormatterMode(
+  fourmolu: string | undefined,
+  fourmoluConfig: vscode.Uri | undefined,
+  ormolu: string | undefined,
+  ormoluConfig: vscode.Uri | undefined
+): HaskellFormatterMode {
+  if (fourmolu && !ormolu) {
+    // If the user only has Fourmolu available, then use Fourmolu.
+    return HaskellFormatterMode.Fourmolu;
+  }
+
+  if (!fourmolu && ormolu) {
+    // If the user only has Ormolu available, then use Ormolu.
+    return HaskellFormatterMode.Ormolu;
+  }
+
+  if (fourmolu && ormolu) {
+    if (fourmoluConfig && !ormoluConfig) {
+      // If the user has both Fourmolu and Ormolu installed, but they only
+      // have a Fourmolu config file, then use Fourmolu.
+      return HaskellFormatterMode.Fourmolu;
+    }
+
+    // Otherwise use Ormolu.
+    return HaskellFormatterMode.Ormolu;
+  }
+
+  return HaskellFormatterMode.Discover;
+}
+
 async function setHaskellFormatterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -118,16 +166,20 @@ async function setHaskellFormatterTemplate(
   log(channel, key, `Requested mode is ${mode}`);
 
   if (mode === HaskellFormatterMode.Discover) {
-    const [fourmolu, ormolu] = await Promise.all([
-      which("fourmolu", { nothrow: true }),
-      which("ormolu", { nothrow: true }),
-    ]);
+    const [fourmolu, [fourmoluConfig], ormolu, [ormoluConfig]] =
+      await Promise.all([
+        which("fourmolu", { nothrow: true }),
+        vscode.workspace.findFiles("fourmolu.yaml", undefined, 1),
+        which("ormolu", { nothrow: true }),
+        vscode.workspace.findFiles(".ormolu", undefined, 1),
+      ]);
 
-    if (ormolu) {
-      mode = HaskellFormatterMode.Ormolu;
-    } else if (fourmolu) {
-      mode = HaskellFormatterMode.Fourmolu;
-    }
+    mode = discoverHaskellFormatterMode(
+      fourmolu,
+      fourmoluConfig,
+      ormolu,
+      ormoluConfig
+    );
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -149,6 +201,16 @@ async function setHaskellFormatterTemplate(
   }
 }
 
+function discoverHaskellLinterMode(
+  hlint: string | undefined
+): HaskellLinterMode {
+  if (hlint) {
+    return HaskellLinterMode.Hlint;
+  }
+
+  return HaskellLinterMode.Discover;
+}
+
 async function setHaskellLinterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -162,9 +224,8 @@ async function setHaskellLinterTemplate(
 
   if (mode === HaskellLinterMode.Discover) {
     const hlint = await which("hlint", { nothrow: true });
-    if (hlint) {
-      mode = HaskellLinterMode.Hlint;
-    }
+
+    mode = discoverHaskellLinterMode(hlint);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -183,6 +244,16 @@ async function setHaskellLinterTemplate(
   }
 }
 
+function discoverCabalFormatterMode(
+  cabalFmt: string | undefined
+): CabalFormatterMode {
+  if (cabalFmt) {
+    return CabalFormatterMode.CabalFmt;
+  }
+
+  return CabalFormatterMode.Discover;
+}
+
 async function setCabalFormatterTemplate(
   channel: vscode.OutputChannel
 ): Promise<void> {
@@ -196,9 +267,8 @@ async function setCabalFormatterTemplate(
 
   if (mode === CabalFormatterMode.Discover) {
     const cabalFmt = await which("cabal-fmt", { nothrow: true });
-    if (cabalFmt) {
-      mode = CabalFormatterMode.CabalFmt;
-    }
+
+    mode = discoverCabalFormatterMode(cabalFmt);
   }
   log(channel, key, `Actual mode is ${mode}`);
 
