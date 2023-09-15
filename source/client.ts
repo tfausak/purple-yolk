@@ -88,18 +88,31 @@ async function setInterpreterTemplate(
     .get(`${LanguageId.Haskell}.interpreter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === InterpreterMode.Discover) {
-    const [cabal, [cabalProject], stack, [stackYaml], ghci] = await Promise.all(
-      [
-        which("cabal", { nothrow: true }),
-        vscode.workspace.findFiles("cabal.project", undefined, 1),
-        which("stack", { nothrow: true }),
-        vscode.workspace.findFiles("stack.yaml", undefined, 1),
-        which("ghci", { nothrow: true }),
-      ]
-    );
+  const custom: Template | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${LanguageId.Haskell}.interpreter.command`);
 
-    mode = discoverInterpreterMode(cabal, cabalProject, ghci, stack, stackYaml);
+  if (mode === InterpreterMode.Discover) {
+    if (custom) {
+      mode = InterpreterMode.Custom;
+    } else {
+      const [cabal, [cabalProject], stack, [stackYaml], ghci] =
+        await Promise.all([
+          which("cabal", { nothrow: true }),
+          vscode.workspace.findFiles("cabal.project", undefined, 1),
+          which("stack", { nothrow: true }),
+          vscode.workspace.findFiles("stack.yaml", undefined, 1),
+          which("ghci", { nothrow: true }),
+        ]);
+
+      mode = discoverInterpreterMode(
+        cabal,
+        cabalProject,
+        ghci,
+        stack,
+        stackYaml
+      );
+    }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -114,9 +127,7 @@ async function setInterpreterTemplate(
       INTERPRETER_TEMPLATE = "ghci -ddump-json ${file}";
       break;
     case InterpreterMode.Custom:
-      INTERPRETER_TEMPLATE = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${LanguageId.Haskell}.interpreter.command`);
+      INTERPRETER_TEMPLATE = custom;
       break;
     default:
       INTERPRETER_TEMPLATE = undefined;
@@ -165,21 +176,29 @@ async function setHaskellFormatterTemplate(
     .get(`${LanguageId.Haskell}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === HaskellFormatterMode.Discover) {
-    const [fourmolu, [fourmoluConfig], ormolu, [ormoluConfig]] =
-      await Promise.all([
-        which("fourmolu", { nothrow: true }),
-        vscode.workspace.findFiles("fourmolu.yaml", undefined, 1),
-        which("ormolu", { nothrow: true }),
-        vscode.workspace.findFiles(".ormolu", undefined, 1),
-      ]);
+  const custom: Template | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${LanguageId.Haskell}.formatter.command`);
 
-    mode = discoverHaskellFormatterMode(
-      fourmolu,
-      fourmoluConfig,
-      ormolu,
-      ormoluConfig
-    );
+  if (mode === HaskellFormatterMode.Discover) {
+    if (custom) {
+      mode = HaskellFormatterMode.Custom;
+    } else {
+      const [fourmolu, [fourmoluConfig], ormolu, [ormoluConfig]] =
+        await Promise.all([
+          which("fourmolu", { nothrow: true }),
+          vscode.workspace.findFiles("fourmolu.yaml", undefined, 1),
+          which("ormolu", { nothrow: true }),
+          vscode.workspace.findFiles(".ormolu", undefined, 1),
+        ]);
+
+      mode = discoverHaskellFormatterMode(
+        fourmolu,
+        fourmoluConfig,
+        ormolu,
+        ormoluConfig
+      );
+    }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -191,9 +210,7 @@ async function setHaskellFormatterTemplate(
       HASKELL_FORMATTER_TEMPLATE = "ormolu --stdin-input-file ${file}";
       break;
     case HaskellFormatterMode.Custom:
-      HASKELL_FORMATTER_TEMPLATE = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${LanguageId.Haskell}.formatter.command`);
+      HASKELL_FORMATTER_TEMPLATE = custom;
       break;
     default:
       HASKELL_FORMATTER_TEMPLATE = undefined;
@@ -222,10 +239,18 @@ async function setHaskellLinterTemplate(
     .get(`${LanguageId.Haskell}.linter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === HaskellLinterMode.Discover) {
-    const hlint = await which("hlint", { nothrow: true });
+  const custom: Template | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${LanguageId.Haskell}.linter.command`);
 
-    mode = discoverHaskellLinterMode(hlint);
+  if (mode === HaskellLinterMode.Discover) {
+    if (custom) {
+      mode = HaskellLinterMode.Custom;
+    } else {
+      const hlint = await which("hlint", { nothrow: true });
+
+      mode = discoverHaskellLinterMode(hlint);
+    }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -234,9 +259,7 @@ async function setHaskellLinterTemplate(
       HASKELL_LINTER_TEMPLATE = "hlint --json --no-exit-code -";
       break;
     case HaskellLinterMode.Custom:
-      HASKELL_LINTER_TEMPLATE = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${LanguageId.Haskell}.linter.command`);
+      HASKELL_LINTER_TEMPLATE = custom;
       break;
     default:
       HASKELL_LINTER_TEMPLATE = undefined;
@@ -265,10 +288,18 @@ async function setCabalFormatterTemplate(
     .get(`${LanguageId.Cabal}.formatter.mode`);
   log(channel, key, `Requested mode is ${mode}`);
 
-  if (mode === CabalFormatterMode.Discover) {
-    const cabalFmt = await which("cabal-fmt", { nothrow: true });
+  const custom: Template | undefined = vscode.workspace
+    .getConfiguration(my.name)
+    .get(`${LanguageId.Cabal}.formatter.command`);
 
-    mode = discoverCabalFormatterMode(cabalFmt);
+  if (mode === CabalFormatterMode.Discover) {
+    if (custom) {
+      mode = CabalFormatterMode.Custom;
+    } else {
+      const cabalFmt = await which("cabal-fmt", { nothrow: true });
+
+      mode = discoverCabalFormatterMode(cabalFmt);
+    }
   }
   log(channel, key, `Actual mode is ${mode}`);
 
@@ -277,9 +308,7 @@ async function setCabalFormatterTemplate(
       CABAL_FORMATTER_TEMPLATE = "cabal-fmt --no-cabal-file --no-tabular";
       break;
     case CabalFormatterMode.Custom:
-      CABAL_FORMATTER_TEMPLATE = vscode.workspace
-        .getConfiguration(my.name)
-        .get(`${LanguageId.Cabal}.formatter.command`);
+      CABAL_FORMATTER_TEMPLATE = custom;
       break;
     default:
       CABAL_FORMATTER_TEMPLATE = undefined;
