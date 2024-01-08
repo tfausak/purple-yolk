@@ -784,7 +784,7 @@ async function reloadInterpreter(
 
   const input = ":reload";
   log(channel, key, `[stdin] ${input}`);
-  INTERPRETER.task.stdin?.write(`${input}\n`);
+  INTERPRETER.task.stdin?.write(`${input}\r\n`);
 
   while (INTERPRETER.key === key) {
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -859,9 +859,9 @@ async function startInterpreter(
   });
 
   const prompt = `{- ${my.name} ${my.version} ${key} -}`;
-  const input = `:set prompt "${prompt}\\n"`;
+  const input = `:set prompt "${prompt}\\r\\n"`;
   log(channel, key, `[stdin] ${input}`);
-  task.stdin?.write(`${input}\n`);
+  task.stdin?.write(`${input}\r\n`);
 
   await new Promise<void>((resolve) => {
     assert.ok(task.stdout);
