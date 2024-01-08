@@ -922,7 +922,7 @@ async function startInterpreter(
         }
       }
 
-      if (shouldLog) {
+      if (shouldLog || true) {
         log(channel, INTERPRETER?.key || "0000", `[stdout] ${line}`);
       }
     });
