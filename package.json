@@ -210,7 +210,7 @@
     "@types/vscode": "^1.75.1",
     "@types/which": "^3.0.0",
     "@vscode/vsce": "^2.17.0",
-    "esbuild": "^0.19.0",
+    "esbuild": "^0.20.0",
     "typescript": "^5.0.4",
     "which": "^4.0.0"
   },
