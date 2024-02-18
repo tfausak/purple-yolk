@@ -204,20 +204,20 @@
   },
   "description": "A Haskell IDE.",
   "devDependencies": {
-    "@tsconfig/node16": "^16.1.1",
-    "@tsconfig/strictest": "^2.0.1",
-    "@types/node": "^20.2.3",
-    "@types/vscode": "^1.75.1",
-    "@types/which": "^3.0.0",
-    "@vscode/vsce": "^2.17.0",
+    "@tsconfig/node18": "^18.2.2",
+    "@tsconfig/strictest": "^2.0.3",
+    "@types/node": "^20.11.19",
+    "@types/vscode": "^1.86.0",
+    "@types/which": "^3.0.3",
+    "@vscode/vsce": "^2.23.0",
     "esbuild": "^0.20.0",
-    "typescript": "^5.0.4",
+    "typescript": "^5.3.3",
     "which": "^4.0.0"
   },
   "displayName": "Purple Yolk",
   "engines": {
-    "node": "^16.17.1",
-    "vscode": "^1.81.1"
+    "node": "^18.17.1",
+    "vscode": "^1.86.2"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "data/image/icon.png",
@@ -233,7 +233,7 @@
     "url": "https://github.com/tfausak/purple-yolk.git"
   },
   "scripts": {
-    "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node16 source/client.ts"
+    "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node8 source/client.ts"
   },
   "version": "0.12.0"
 }
