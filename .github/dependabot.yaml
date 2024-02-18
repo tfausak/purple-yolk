@@ -4,14 +4,14 @@
       "directory": "/",
       "package-ecosystem": "github-actions",
       "schedule": {
-        "interval": "daily"
+        "interval": "weekly"
       }
     },
     {
       "directory": "/",
       "package-ecosystem": "npm",
       "schedule": {
-        "interval": "daily"
+        "interval": "weekly"
       }
     }
   ],
