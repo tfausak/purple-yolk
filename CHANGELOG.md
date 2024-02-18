@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-02-18: 0.13.0
+
+- Added Gild as a formatter for Cabal files. <https://github.com/tfausak/purple-yolk/pull/56>
+
 ## 2023-09-19: 0.12.0
 
 - Changed "discover" configuration to prefer custom commands when they are present. <https://github.com/tfausak/purple-yolk/pull/51>
