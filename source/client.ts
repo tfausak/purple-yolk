@@ -268,8 +268,13 @@ async function setHaskellLinterTemplate(
 }
 
 function discoverCabalFormatterMode(
-  cabalFmt: string | undefined
+  cabalFmt: string | undefined,
+  gild: string | undefined
 ): CabalFormatterMode {
+  if (gild) {
+    return CabalFormatterMode.Gild;
+  }
+
   if (cabalFmt) {
     return CabalFormatterMode.CabalFmt;
   }
@@ -296,9 +301,13 @@ async function setCabalFormatterTemplate(
     if (custom) {
       mode = CabalFormatterMode.Custom;
     } else {
-      const cabalFmt = await which("cabal-fmt", { nothrow: true });
+      const [cabalFmt, gild] =
+        await Promise.all([
+          which("cabal-fmt", { nothrow: true }),
+          which("cabal-gild", { nothrow: true }),
+        ]);
 
-      mode = discoverCabalFormatterMode(cabalFmt);
+      mode = discoverCabalFormatterMode(cabalFmt, gild);
     }
   }
   log(channel, key, `Actual mode is ${mode}`);
@@ -306,6 +315,9 @@ async function setCabalFormatterTemplate(
   switch (mode) {
     case CabalFormatterMode.CabalFmt:
       CABAL_FORMATTER_TEMPLATE = "cabal-fmt --no-cabal-file --no-tabular";
+      break;
+    case CabalFormatterMode.Gild:
+      CABAL_FORMATTER_TEMPLATE = "cabal-gild --stdin ${file}";
       break;
     case CabalFormatterMode.Custom:
       CABAL_FORMATTER_TEMPLATE = custom;
