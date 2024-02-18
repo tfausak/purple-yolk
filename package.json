@@ -204,7 +204,7 @@
   },
   "description": "A Haskell IDE.",
   "devDependencies": {
-    "@tsconfig/node16": "^16.1.1",
+    "@tsconfig/node18": "^18.2.2",
     "@tsconfig/strictest": "^2.0.3",
     "@types/node": "^20.11.19",
     "@types/vscode": "^1.86.0",
@@ -233,7 +233,7 @@
     "url": "https://github.com/tfausak/purple-yolk.git"
   },
   "scripts": {
-    "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node16 source/client.ts"
+    "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node8 source/client.ts"
   },
   "version": "0.12.0"
 }

@@ -4,7 +4,7 @@
     "resolveJsonModule": true
   },
   "extends": [
-    "@tsconfig/node16/tsconfig.json",
+    "@tsconfig/node18/tsconfig.json",
     "@tsconfig/strictest/tsconfig.json"
   ]
 }
