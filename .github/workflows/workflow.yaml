@@ -7,7 +7,7 @@
           "uses": "actions/checkout@v4"
         },
         {
-          "uses": "actions/setup-node@v3",
+          "uses": "actions/setup-node@v4",
           "with": {
             "node-version": "18"
           }
@@ -19,7 +19,7 @@
           "run": "npx vsce package --out purple-yolk.vsix"
         },
         {
-          "uses": "actions/upload-artifact@v3",
+          "uses": "actions/upload-artifact@v4",
           "with": {
             "name": "purple-yolk-${{ github.sha }}.vsix",
             "path": "purple-yolk.vsix"
@@ -30,12 +30,10 @@
             "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
           },
           "if": "github.event_name == 'release'",
-          "uses": "actions/upload-release-asset@v1",
+          "uses": "svenstaro/upload-release-action@v2",
           "with": {
-            "asset_content_type": "application/vsix",
             "asset_name": "purple-yolk-${{ github.event.release.tag_name }}.vsix",
-            "asset_path": "purple-yolk.vsix",
-            "upload_url": "${{ github.event.release.upload_url }}"
+            "file": "purple-yolk.vsix"
           }
         },
         {
