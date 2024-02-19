@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-02-18: 1.0.0
+
+- Enabled HLint on save by default. <https://github.com/tfausak/purple-yolk/pull/59>
+
 ## 2024-02-18: 0.13.0
 
 - Added Gild as a formatter for Cabal files. <https://github.com/tfausak/purple-yolk/pull/56>
