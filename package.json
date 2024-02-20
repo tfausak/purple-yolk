@@ -205,7 +205,7 @@
       }
     ]
   },
-  "description": "A Haskell IDE.",
+  "description": "A simple IDE for Haskell projects.",
   "devDependencies": {
     "@tsconfig/node18": "^18.2.2",
     "@tsconfig/strictest": "^2.0.3",
