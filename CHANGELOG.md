@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-02-20: 1.0.1
+
+- Updated documentation. <https://github.com/tfausak/purple-yolk/pull/62>
+
 ## 2024-02-18: 1.0.0
 
 - Enabled HLint on save by default. <https://github.com/tfausak/purple-yolk/pull/59>
