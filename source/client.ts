@@ -149,6 +149,8 @@ const GHC_WARNING_FLAGS: { [k: string]: string } = {
 
 // GHC warnings that should get an "unnecessary" tag.
 const UNNECESSARY_WARNINGS = new Set([
+  "Opt_WarnDuplicateConstraints",
+  "Opt_WarnDuplicateExports",
   "Opt_WarnRedundantBangPatterns",
   "Opt_WarnRedundantConstraints",
   "Opt_WarnRedundantRecordWildcards",
