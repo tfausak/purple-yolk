@@ -147,6 +147,29 @@ const GHC_WARNING_FLAGS: { [k: string]: string } = {
   Opt_WarnWrongDoBind: "wrong-do-bind",
 };
 
+// GHC warnings that should get an "unnecessary" tag.
+const UNNECESSARY_WARNINGS = new Set([
+  "Opt_WarnRedundantBangPatterns",
+  "Opt_WarnRedundantConstraints",
+  "Opt_WarnRedundantRecordWildcards",
+  "Opt_WarnRedundantStrictnessFlags",
+  "Opt_WarnUnusedDoBind",
+  "Opt_WarnUnusedForalls",
+  "Opt_WarnUnusedImports",
+  "Opt_WarnUnusedLocalBinds",
+  "Opt_WarnUnusedMatches",
+  "Opt_WarnUnusedPackages",
+  "Opt_WarnUnusedPatternBinds",
+  "Opt_WarnUnusedRecordWildcards",
+  "Opt_WarnUnusedTopBinds",
+  "Opt_WarnUnusedTypePatterns",
+]);
+
+// GHC warnings that should get a "deprecated" tag.
+const DEPRECATED_WARNINGS = new Set([
+  "Opt_WarnDeprecatedFlags",
+]);
+
 function discoverInterpreterMode(
   cabal: string | undefined,
   cabalConfig: vscode.Uri | undefined,
@@ -873,6 +896,19 @@ function messageToDiagnosticCode(message: Message): DiagnosticCode {
   };
 }
 
+function messageToDiagnosticTags(message: Message): vscode.DiagnosticTag[] {
+  const tags: vscode.DiagnosticTag[] = [];
+  for (const klass in (message.reason || message.messageClass || "").split(/ +/)) {
+    if (UNNECESSARY_WARNINGS.has(klass)) {
+      tags.push(vscode.DiagnosticTag.Unnecessary);
+    }
+    if (DEPRECATED_WARNINGS.has(klass)) {
+      tags.push(vscode.DiagnosticTag.Deprecated);
+    }
+  }
+  return tags;
+}
+
 function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN);
 
@@ -886,6 +922,7 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
   diagnostic.code = messageToDiagnosticCode(message);
   diagnostic.source = "ghc";
+  diagnostic.tags = messageToDiagnosticTags(message);
   return diagnostic;
 }
 
