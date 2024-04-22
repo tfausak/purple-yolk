@@ -881,7 +881,7 @@ function makeDiagnosticCode(classes: string[]): DiagnosticCode {
     code ||= (klass.match(/^GHC-\d+$/) || [])[0];
   }
 
-  reason ||= classes.join(" ") || "unknown";
+  reason ||= code || classes.join(" ") || "unknown";
   if (!code) {
     return reason;
   }
