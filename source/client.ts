@@ -894,7 +894,7 @@ function makeDiagnosticCode(classes: string[]): DiagnosticCode {
 
 function makeDiagnosticTags(classes: string[]): vscode.DiagnosticTag[] {
   const tags: vscode.DiagnosticTag[] = [];
-  for (const klass in classes) {
+  for (const klass of classes) {
     if (UNNECESSARY_WARNINGS.has(klass)) {
       tags.push(vscode.DiagnosticTag.Unnecessary);
     }
