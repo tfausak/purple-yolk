@@ -1096,6 +1096,7 @@ async function startInterpreter(
 
           if (uri) {
             const diagnostic = messageToDiagnostic(message);
+            log(channel, INTERPRETER?.key || "0000", `[diagnostic] ${JSON.stringify(diagnostic)}`);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
             shouldLog = false;
