@@ -604,7 +604,7 @@ function ideaToDiagnostic(idea: Idea): vscode.Diagnostic {
   const message = ideaToMessage(idea);
   const diagnosticSeverity = ideaSeverityToDiagnostic(idea.severity);
   const diagnostic = new vscode.Diagnostic(range, message, diagnosticSeverity);
-  diagnostic.source = 'hlint';
+  diagnostic.source = "hlint";
   return diagnostic;
 }
 
@@ -751,7 +751,7 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
   if (message.reason) {
     diagnostic.code = message.reason;
   }
-  diagnostic.source = 'ghc';
+  diagnostic.source = "ghc";
   return diagnostic;
 }
 
