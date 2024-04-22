@@ -86,7 +86,7 @@ async function setInterpreterTemplate(
   let mode: InterpreterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.interpreter.mode`);
-  log(channel, key, `Requested mode is ${mode}`);
+  log(channel, key, `Requested Haskell interpreter mode is ${mode}`);
 
   const custom: Template | undefined = vscode.workspace
     .getConfiguration(my.name)
@@ -114,7 +114,7 @@ async function setInterpreterTemplate(
       );
     }
   }
-  log(channel, key, `Actual mode is ${mode}`);
+  log(channel, key, `Actual Haskell interpreter mode is ${mode}`);
 
   switch (mode) {
     case InterpreterMode.Cabal:
@@ -174,7 +174,7 @@ async function setHaskellFormatterTemplate(
   let mode: HaskellFormatterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.formatter.mode`);
-  log(channel, key, `Requested mode is ${mode}`);
+  log(channel, key, `Requested Haskell formatter mode is ${mode}`);
 
   const custom: Template | undefined = vscode.workspace
     .getConfiguration(my.name)
@@ -200,7 +200,7 @@ async function setHaskellFormatterTemplate(
       );
     }
   }
-  log(channel, key, `Actual mode is ${mode}`);
+  log(channel, key, `Actual Haskell formatter mode is ${mode}`);
 
   switch (mode) {
     case HaskellFormatterMode.Fourmolu:
@@ -237,7 +237,7 @@ async function setHaskellLinterTemplate(
   let mode: HaskellLinterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Haskell}.linter.mode`);
-  log(channel, key, `Requested mode is ${mode}`);
+  log(channel, key, `Requested Haskell linter mode is ${mode}`);
 
   const custom: Template | undefined = vscode.workspace
     .getConfiguration(my.name)
@@ -252,7 +252,7 @@ async function setHaskellLinterTemplate(
       mode = discoverHaskellLinterMode(hlint);
     }
   }
-  log(channel, key, `Actual mode is ${mode}`);
+  log(channel, key, `Actual Haskell linter mode is ${mode}`);
 
   switch (mode) {
     case HaskellLinterMode.Hlint:
@@ -291,7 +291,7 @@ async function setCabalFormatterTemplate(
   let mode: CabalFormatterMode | undefined = vscode.workspace
     .getConfiguration(my.name)
     .get(`${LanguageId.Cabal}.formatter.mode`);
-  log(channel, key, `Requested mode is ${mode}`);
+  log(channel, key, `Requested Cabal formatter mode is ${mode}`);
 
   const custom: Template | undefined = vscode.workspace
     .getConfiguration(my.name)
@@ -310,7 +310,7 @@ async function setCabalFormatterTemplate(
       mode = discoverCabalFormatterMode(cabalFmt, gild);
     }
   }
-  log(channel, key, `Actual mode is ${mode}`);
+  log(channel, key, `Actual Cabal formatter mode is ${mode}`);
 
   switch (mode) {
     case CabalFormatterMode.CabalFmt:
