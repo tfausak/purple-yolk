@@ -169,6 +169,7 @@ const UNNECESSARY_WARNINGS = new Set([
 
 // GHC warnings that should get a "deprecated" tag.
 const DEPRECATED_WARNINGS = new Set([
+  "deprecations",
   "Opt_WarnDeprecatedFlags",
 ]);
 
