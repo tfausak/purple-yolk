@@ -860,9 +860,18 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
     diagnostic.code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[reason] ?? reason;
   } else {
     for (const klass of (message.messageClass || "").split(/ +/)) {
-      const code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[klass];
-      if (code) {
-        diagnostic.code = code;
+      const match = klass.match(/^GHC-\d+$/);
+      if (match && match[0]) {
+        diagnostic.code = {
+          value: match[0],
+          target: vscode.Uri.parse(`https://errors.haskell.org/messages/${match[0]}/`),
+        };
+        break;
+      } else {
+        const code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[klass];
+        if (code) {
+          diagnostic.code = code;
+        }
       }
     }
   }
