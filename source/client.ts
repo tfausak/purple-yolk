@@ -855,8 +855,9 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
     severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
-  if (message.reason) {
-    diagnostic.code = message.reason;
+  const reason = message.reason;
+  if (reason) {
+    diagnostic.code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[reason] ?? reason;
   } else {
     for (const klass of (message.messageClass || "").split(/ +/)) {
       const code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[klass];
