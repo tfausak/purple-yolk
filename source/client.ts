@@ -40,6 +40,113 @@ let HASKELL_LINTER_TEMPLATE: Template | undefined = undefined;
 
 let CABAL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
+// https://hackage.haskell.org/package/ghc-9.8.2/docs/GHC-Driver-Flags.html#v:warnFlagNames
+const MESSAGE_CLASS_TO_DIAGNOSTIC_CODE: { [k: string]: string } = {
+  Opt_WarnAllMissedSpecs: "all-missed-specialisations",
+  Opt_WarnAlternativeLayoutRuleTransitional: "alternative-layout-rule-transitional",
+  Opt_WarnAmbiguousFields: "ambiguous-fields",
+  Opt_WarnAutoOrphans: "auto-orphans",
+  Opt_WarnCompatUnqualifiedImports: "compat-unqualified-imports",
+  Opt_WarnCPPUndef: "cpp-undef",
+  Opt_WarnDeferredOutOfScopeVariables: "deferred-out-of-scope-variables",
+  Opt_WarnDeferredTypeErrors: "deferred-type-errors",
+  Opt_WarnDeprecatedFlags: "deprecated-flags",
+  Opt_WarnDerivingDefaults: "deriving-defaults",
+  Opt_WarnDerivingTypeable: "deriving-typeable",
+  Opt_WarnDodgyExports: "dodgy-exports",
+  Opt_WarnDodgyForeignImports: "dodgy-foreign-imports",
+  Opt_WarnDodgyImports: "dodgy-imports",
+  Opt_WarnDuplicateConstraints: "duplicate-constraints",
+  Opt_WarnDuplicateExports: "duplicate-exports",
+  Opt_WarnEmptyEnumerations: "empty-enumerations",
+  Opt_WarnForallIdentifier: "forall-identifier",
+  Opt_WarnGADTMonoLocalBinds: "gadt-mono-local-binds",
+  Opt_WarnHiShadows: "hi-shadowing",
+  Opt_WarnIdentities: "identities",
+  Opt_WarnImplicitKindVars: "implicit-kind-vars",
+  Opt_WarnImplicitLift: "implicit-lift",
+  Opt_WarnImplicitPrelude: "implicit-prelude",
+  Opt_WarnImplicitRhsQuantification: "implicit-rhs-quantification",
+  Opt_WarnInaccessibleCode: "inaccessible-code",
+  Opt_WarnIncompleteExportWarnings: "incomplete-export-warnings",
+  Opt_WarnIncompletePatterns: "incomplete-patterns",
+  Opt_WarnIncompletePatternsRecUpd: "incomplete-record-updates",
+  Opt_WarnIncompleteUniPatterns: "incomplete-uni-patterns",
+  Opt_WarnInconsistentFlags: "inconsistent-flags",
+  Opt_WarnInferredSafeImports: "inferred-safe-imports",
+  Opt_WarnInlineRuleShadowing: "inline-rule-shadowing",
+  Opt_WarnInvalidHaddock: "invalid-haddock",
+  Opt_WarnLoopySuperclassSolve: "loopy-superclass-solve",
+  Opt_WarnMisplacedPragmas: "misplaced-pragmas",
+  Opt_WarnMissedExtraSharedLib: "missed-extra-shared-lib",
+  Opt_WarnMissedSpecs: "missed-specialisations",
+  Opt_WarnMissingDerivingStrategies: "missing-deriving-strategies",
+  Opt_WarnMissingExportedPatternSynonymSignatures: "missing-exported-pattern-synonym-signatures",
+  Opt_WarnMissingExportedSignatures: "missing-exported-signatures",
+  Opt_WarnMissingExportList: "missing-export-lists",
+  Opt_WarnMissingFields: "missing-fields",
+  Opt_WarnMissingHomeModules: "missing-home-modules",
+  Opt_WarnMissingImportList: "missing-import-lists",
+  Opt_WarnMissingKindSignatures: "missing-kind-signatures",
+  Opt_WarnMissingLocalSignatures: "missing-local-signatures",
+  Opt_WarnMissingMethods: "missing-methods",
+  Opt_WarnMissingMonadFailInstances: "missing-monadfail-instances",
+  Opt_WarnMissingPatternSynonymSignatures: "missing-pattern-synonym-signatures",
+  Opt_WarnMissingPolyKindSignatures: "missing-poly-kind-signatures",
+  Opt_WarnMissingRoleAnnotations: "missing-role-annotations",
+  Opt_WarnMissingSafeHaskellMode: "missing-safe-haskell-mode",
+  Opt_WarnMissingSignatures: "missing-signatures",
+  Opt_WarnMonomorphism: "monomorphism-restriction",
+  Opt_WarnNameShadowing: "name-shadowing",
+  Opt_WarnNonCanonicalMonadFailInstances: "noncanonical-monadfail-instances",
+  Opt_WarnNonCanonicalMonadInstances: "noncanonical-monad-instances",
+  Opt_WarnNonCanonicalMonoidInstances: "noncanonical-monoid-instances",
+  Opt_WarnOperatorWhitespace: "operator-whitespace",
+  Opt_WarnOperatorWhitespaceExtConflict: "operator-whitespace-ext-conflict",
+  Opt_WarnOrphans: "orphans",
+  Opt_WarnOverflowedLiterals: "overflowed-literals",
+  Opt_WarnOverlappingPatterns: "overlapping-patterns",
+  Opt_WarnPartialFields: "partial-fields",
+  Opt_WarnPartialTypeSignatures: "partial-type-signatures",
+  Opt_WarnPrepositiveQualifiedModule: "prepositive-qualified-module",
+  Opt_WarnRedundantBangPatterns: "redundant-bang-patterns",
+  Opt_WarnRedundantConstraints: "redundant-constraints",
+  Opt_WarnRedundantRecordWildcards: "redundant-record-wildcards",
+  Opt_WarnRedundantStrictnessFlags: "redundant-strictness-flags",
+  Opt_WarnSafe: "safe",
+  Opt_WarnSemigroup: "semigroup",
+  Opt_WarnSimplifiableClassConstraints: "simplifiable-class-constraints",
+  Opt_WarnSpaceAfterBang: "missing-space-after-bang",
+  Opt_WarnStarBinder: "star-binder",
+  Opt_WarnStarIsType: "star-is-type",
+  Opt_WarnTabs: "tabs",
+  Opt_WarnTermVariableCapture: "term-variable-capture",
+  Opt_WarnTrustworthySafe: "trustworthy-safe",
+  Opt_WarnTypeDefaults: "type-defaults",
+  Opt_WarnTypedHoles: "typed-holes",
+  Opt_WarnTypeEqualityOutOfScope: "type-equality-out-of-scope",
+  Opt_WarnTypeEqualityRequiresOperators: "type-equality-requires-operators",
+  Opt_WarnUnbangedStrictPatterns: "unbanged-strict-patterns",
+  Opt_WarnUnicodeBidirectionalFormatCharacters: "unicode-bidirectional-format-characters",
+  Opt_WarnUnrecognisedPragmas: "unrecognised-pragmas",
+  Opt_WarnUnrecognisedWarningFlags: "unrecognised-warning-flags",
+  Opt_WarnUnsafe: "unsafe",
+  Opt_WarnUnsupportedCallingConventions: "unsupported-calling-conventions",
+  Opt_WarnUnsupportedLlvmVersion: "unsupported-llvm-version",
+  Opt_WarnUntickedPromotedConstructors: "unticked-promoted-constructors",
+  Opt_WarnUnusedDoBind: "unused-do-bind",
+  Opt_WarnUnusedForalls: "unused-foralls",
+  Opt_WarnUnusedImports: "unused-imports",
+  Opt_WarnUnusedLocalBinds: "unused-local-binds",
+  Opt_WarnUnusedMatches: "unused-matches",
+  Opt_WarnUnusedPackages: "unused-packages",
+  Opt_WarnUnusedPatternBinds: "unused-pattern-binds",
+  Opt_WarnUnusedRecordWildcards: "unused-record-wildcards",
+  Opt_WarnUnusedTopBinds: "unused-top-binds",
+  Opt_WarnUnusedTypePatterns: "unused-type-patterns",
+  Opt_WarnWrongDoBind: "wrong-do-bind",
+};
+
 function discoverInterpreterMode(
   cabal: string | undefined,
   cabalConfig: vscode.Uri | undefined,
@@ -719,7 +826,7 @@ function messageSeverityToDiagnostic(
   }
 }
 
-function messageClassToDiagnostic(
+function messageClassToDiagnosticSeverity(
   messageClass: string
 ): vscode.DiagnosticSeverity {
   const severities = new Set(Object.values(MessageSeverity));
@@ -745,11 +852,18 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
   if (message.severity) {
     severity = messageSeverityToDiagnostic(message.severity);
   } else if (message.messageClass) {
-    severity = messageClassToDiagnostic(message.messageClass);
+    severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
   if (message.reason) {
     diagnostic.code = message.reason;
+  } else {
+    for (const klass of (message.messageClass || "").split(/ +/)) {
+      const code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[klass];
+      if (code) {
+        diagnostic.code = code;
+      }
+    }
   }
   diagnostic.source = "ghc";
   return diagnostic;
