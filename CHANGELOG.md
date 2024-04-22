@@ -2,6 +2,11 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-04-22: 1.0.2
+
+- Fixed diagnostic codes (like `unused-top-binds`) with GHC >= 9.4. <https://github.com/tfausak/purple-yolk/pull/66>
+- Added tags (like unused or deprecated) to diagnostics. <https://github.com/tfausak/purple-yolk/pull/67>
+
 ## 2024-02-20: 1.0.1
 
 - Updated documentation. <https://github.com/tfausak/purple-yolk/pull/62>
