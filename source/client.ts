@@ -41,7 +41,7 @@ let HASKELL_LINTER_TEMPLATE: Template | undefined = undefined;
 let CABAL_FORMATTER_TEMPLATE: Template | undefined = undefined;
 
 // https://hackage.haskell.org/package/ghc-9.8.2/docs/GHC-Driver-Flags.html#v:warnFlagNames
-const MESSAGE_CLASS_TO_DIAGNOSTIC_CODE: { [k: string]: string } = {
+const GHC_WARNING_FLAGS: { [k: string]: string } = {
   Opt_WarnAllMissedSpecs: "all-missed-specialisations",
   Opt_WarnAlternativeLayoutRuleTransitional: "alternative-layout-rule-transitional",
   Opt_WarnAmbiguousFields: "ambiguous-fields",
@@ -846,35 +846,45 @@ function messageSpanToRange(span: MessageSpan): vscode.Range {
   );
 }
 
+type DiagnosticCode
+  = string
+  | number
+  | { value: string | number, target: vscode.Uri };
+
+function messageToDiagnosticCode(message: Message): DiagnosticCode {
+  let reason = message.reason;
+  let code: string | undefined;
+  for (const klass of (message.messageClass || "").split(/ +/)) {
+    reason ||= GHC_WARNING_FLAGS[klass] || null;
+    code ||= (klass.match(/^GHC-\d+$/) || [])[0];
+  }
+
+  if (!reason) {
+    return "unknown";
+  }
+
+  if (!code) {
+    return reason;
+  }
+
+  return {
+    value: reason,
+    target: vscode.Uri.parse(`https://errors.haskell.org/messages/${code}/`),
+  };
+}
+
 function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN);
+
   let severity = vscode.DiagnosticSeverity.Information;
   if (message.severity) {
     severity = messageSeverityToDiagnostic(message.severity);
   } else if (message.messageClass) {
     severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
+
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
-  const reason = message.reason;
-  if (reason) {
-    diagnostic.code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[reason] ?? reason;
-  } else {
-    for (const klass of (message.messageClass || "").split(/ +/)) {
-      const match = klass.match(/^GHC-\d+$/);
-      if (match && match[0]) {
-        diagnostic.code = {
-          value: match[0],
-          target: vscode.Uri.parse(`https://errors.haskell.org/messages/${match[0]}/`),
-        };
-        break;
-      } else {
-        const code = MESSAGE_CLASS_TO_DIAGNOSTIC_CODE[klass];
-        if (code) {
-          diagnostic.code = code;
-        }
-      }
-    }
-  }
+  diagnostic.code = messageToDiagnosticCode(message);
   diagnostic.source = "ghc";
   return diagnostic;
 }
