@@ -871,21 +871,17 @@ function messageSpanToRange(span: MessageSpan): vscode.Range {
 
 type DiagnosticCode
   = string
-  | number
-  | { value: string | number, target: vscode.Uri };
+  | { value: string, target: vscode.Uri };
 
-function messageToDiagnosticCode(message: Message): DiagnosticCode {
-  let reason = message.reason;
+function makeDiagnosticCode(classes: string[]): DiagnosticCode {
+  let reason: string | undefined;
   let code: string | undefined;
-  for (const klass of (message.messageClass || "").split(/ +/)) {
-    reason ||= GHC_WARNING_FLAGS[klass] || null;
+  for (const klass of classes) {
+    reason ||= GHC_WARNING_FLAGS[klass];
     code ||= (klass.match(/^GHC-\d+$/) || [])[0];
   }
 
-  if (!reason) {
-    return "unknown";
-  }
-
+  reason ||= classes.join(" ") || "unknown";
   if (!code) {
     return reason;
   }
@@ -896,9 +892,9 @@ function messageToDiagnosticCode(message: Message): DiagnosticCode {
   };
 }
 
-function messageToDiagnosticTags(message: Message): vscode.DiagnosticTag[] {
+function makeDiagnosticTags(classes: string[]): vscode.DiagnosticTag[] {
   const tags: vscode.DiagnosticTag[] = [];
-  for (const klass in (message.reason || message.messageClass || "").split(/ +/)) {
+  for (const klass in classes) {
     if (UNNECESSARY_WARNINGS.has(klass)) {
       tags.push(vscode.DiagnosticTag.Unnecessary);
     }
@@ -919,10 +915,12 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
     severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
 
+  const classes = (message.reason || message.messageClass || "").split(/ +/);
+
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
-  diagnostic.code = messageToDiagnosticCode(message);
+  diagnostic.code = makeDiagnosticCode(classes);
   diagnostic.source = "ghc";
-  diagnostic.tags = messageToDiagnosticTags(message);
+  diagnostic.tags = makeDiagnosticTags(classes);
   return diagnostic;
 }
 
@@ -1105,7 +1103,7 @@ async function startInterpreter(
         }
       }
 
-      if (shouldLog) {
+      if (shouldLog || true) {
         log(channel, INTERPRETER?.key || "0000", `[stdout] ${line}`);
       }
     });
