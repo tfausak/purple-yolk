@@ -2,6 +2,12 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-05-02: 1.0.3
+
+- Fixed a bug that would sometimes prevent the Haskell interpreter from starting. <https://github.com/tfausak/purple-yolk/pull/71>
+- Fixed diagnostic collection names. Now they're `ghc` and `hlint` rather than `purple-yolk`. <https://github.com/tfausak/purple-yolk/pull/70>
+- Fixed a bug that would sometimes get the status bar item stuck displaying an error icon. <https://github.com/tfausak/purple-yolk/pull/69>
+
 ## 2024-04-22: 1.0.2
 
 - Fixed diagnostic codes (like `unused-top-binds`) with GHC >= 9.4. <https://github.com/tfausak/purple-yolk/pull/66>
