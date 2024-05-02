@@ -481,10 +481,8 @@ export async function activate(
   const start = perfHooks.performance.now();
   log(channel, key, `Activating ${my.name} version ${my.version} ...`);
 
-  const interpreterCollection = vscode.languages.createDiagnosticCollection(
-    my.name
-  );
-  const linterCollection = vscode.languages.createDiagnosticCollection(my.name);
+  const interpreterCollection = vscode.languages.createDiagnosticCollection("ghc");
+  const linterCollection = vscode.languages.createDiagnosticCollection("hlint");
 
   const status = vscode.languages.createLanguageStatusItem(
     my.name,
