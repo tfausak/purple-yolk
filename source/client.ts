@@ -476,6 +476,8 @@ function updateStatus(
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
+  const document = vscode.window.activeTextEditor?.document;
+
   const channel = vscode.window.createOutputChannel(my.displayName);
   const key = newKey();
   const start = perfHooks.performance.now();
@@ -581,7 +583,15 @@ export async function activate(
     await Promise.all(promises);
   });
 
-  commandHaskellInterpret(channel, status, interpreterCollection);
+  if (document) {
+    // If the user had a document open when the extension was activated, then
+    // it can be used for starting the interpreter.
+    startInterpreter(channel, status, interpreterCollection, document);
+  } else {
+    // Otherwise the interpreter command can be run, which will determine the
+    // current active document (if there is one).
+    commandHaskellInterpret(channel, status, interpreterCollection);
+  }
 
   const end = perfHooks.performance.now();
   const elapsed = ((end - start) / 1000).toFixed(3);
