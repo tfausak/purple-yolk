@@ -610,6 +610,8 @@ function commandHaskellLint(
     return;
   }
 
+  collection.delete(document.uri);
+
   vscode.window.withProgress(
     {
       cancellable: true,
