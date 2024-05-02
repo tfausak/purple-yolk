@@ -964,6 +964,10 @@ async function reloadInterpreter(
   const start = perfHooks.performance.now();
   log(channel, key, "Reloading interpreter ...");
 
+  const document = vscode.window.activeTextEditor?.document;
+  if (!INTERPRETER && document) {
+    await startInterpreter(channel, status, collection, document);
+  }
   if (!INTERPRETER) {
     log(channel, key, "Error: Missing interpreter!");
     return;
@@ -978,7 +982,6 @@ async function reloadInterpreter(
 
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading");
 
-  const document = vscode.window.activeTextEditor?.document;
   if (document) {
     const folder = vscode.workspace.getWorkspaceFolder(document.uri);
     if (folder) {
