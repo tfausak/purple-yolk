@@ -467,10 +467,8 @@ function updateStatus(
   busy: boolean,
   severity: vscode.LanguageStatusSeverity,
   text: string,
-  detail: string,
 ) {
   status.busy = busy;
-  status.detail = detail;
   status.severity = severity;
   status.text = text;
 }
@@ -494,7 +492,7 @@ export async function activate(
   );
   status.command = { command: `${my.name}.output.show`, title: "Show Output" };
   status.name = my.displayName;
-  updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle", "");
+  updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle");
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -968,7 +966,7 @@ async function reloadInterpreter(
 
   INTERPRETER.key = key;
 
-  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading", "");
+  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading");
 
   const document = vscode.window.activeTextEditor?.document;
   if (document) {
@@ -1015,7 +1013,7 @@ async function startInterpreter(
   const file = vscode.workspace.asRelativePath(document.uri);
   const command = expandTemplate(INTERPRETER_TEMPLATE, { file });
 
-  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting", "");
+  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
 
   if (INTERPRETER) {
     log(channel, key, `Stopping interpreter ${INTERPRETER.task.pid} ...`);
@@ -1039,7 +1037,7 @@ async function startInterpreter(
   task.on("close", (code) => {
     log(channel, key, `Error: Interpreter exited with ${code}!`);
     if (code !== null) {
-      updateStatus(status, false, vscode.LanguageStatusSeverity.Error, "Exited", "");
+      updateStatus(status, false, vscode.LanguageStatusSeverity.Error, "Exited");
     }
   });
 
@@ -1063,7 +1061,7 @@ async function startInterpreter(
           INTERPRETER.key = null;
         }
         resolve();
-        updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle", "");
+        updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle");
         shouldLog = false;
       }
 
@@ -1080,13 +1078,9 @@ async function startInterpreter(
         const pattern = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
         const match = message.doc.match(pattern);
         if (match) {
-          status.detail = `${match[1]} of ${match[2]}: ${match[3]}`;
-
           assert.ok(match[4]);
           const uri = vscode.Uri.joinPath(folder.uri, match[4]);
           collection.delete(uri);
-
-          shouldLog = false;
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
