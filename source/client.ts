@@ -462,6 +462,19 @@ async function setCabalFormatterTemplate(
   }
 }
 
+function updateStatus(
+  status: vscode.LanguageStatusItem,
+  busy: boolean,
+  severity: vscode.LanguageStatusSeverity,
+  text: string,
+  detail: string,
+) {
+  status.busy = busy;
+  status.detail = detail;
+  status.severity = severity;
+  status.text = text;
+}
+
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
@@ -480,8 +493,8 @@ export async function activate(
     LanguageId.Haskell
   );
   status.command = { command: `${my.name}.output.show`, title: "Show Output" };
-  status.text = "Idle";
   status.name = my.displayName;
+  updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle", "");
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -955,9 +968,7 @@ async function reloadInterpreter(
 
   INTERPRETER.key = key;
 
-  status.busy = true;
-  status.detail = "";
-  status.text = "Loading";
+  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading", "");
 
   const document = vscode.window.activeTextEditor?.document;
   if (document) {
@@ -1004,10 +1015,7 @@ async function startInterpreter(
   const file = vscode.workspace.asRelativePath(document.uri);
   const command = expandTemplate(INTERPRETER_TEMPLATE, { file });
 
-  status.busy = true;
-  status.detail = "";
-  status.severity = vscode.LanguageStatusSeverity.Information;
-  status.text = "Starting";
+  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting", "");
 
   if (INTERPRETER) {
     log(channel, key, `Stopping interpreter ${INTERPRETER.task.pid} ...`);
@@ -1031,10 +1039,7 @@ async function startInterpreter(
   task.on("close", (code) => {
     log(channel, key, `Error: Interpreter exited with ${code}!`);
     if (code !== null) {
-      status.busy = false;
-      status.detail = "";
-      status.text = "Exited";
-      status.severity = vscode.LanguageStatusSeverity.Error;
+      updateStatus(status, false, vscode.LanguageStatusSeverity.Error, "Exited", "");
     }
   });
 
@@ -1058,9 +1063,7 @@ async function startInterpreter(
           INTERPRETER.key = null;
         }
         resolve();
-        status.busy = false;
-        status.detail = "";
-        status.text = "Idle";
+        updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle", "");
         shouldLog = false;
       }
 
