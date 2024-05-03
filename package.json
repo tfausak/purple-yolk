@@ -238,5 +238,5 @@
   "scripts": {
     "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node8 source/client.ts"
   },
-  "version": "1.0.3"
+  "version": "1.0.4"
 }
