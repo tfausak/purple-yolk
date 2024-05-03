@@ -483,8 +483,10 @@ export async function activate(
   const start = perfHooks.performance.now();
   log(channel, key, `Activating ${my.name} version ${my.version} ...`);
 
-  const interpreterCollection = vscode.languages.createDiagnosticCollection("ghc");
-  const linterCollection = vscode.languages.createDiagnosticCollection("hlint");
+  const collections = {
+    ghc: vscode.languages.createDiagnosticCollection("ghc"),
+    hlint: vscode.languages.createDiagnosticCollection("hlint"),
+  };
 
   const status = vscode.languages.createLanguageStatusItem(
     my.name,
@@ -497,14 +499,14 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       `${my.name}.${LanguageId.Haskell}.interpret`,
-      () => commandHaskellInterpret(channel, status, interpreterCollection)
+      () => commandHaskellInterpret(channel, status, collections.ghc)
     )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
       `${my.name}.${LanguageId.Haskell}.lint`,
-      () => commandHaskellLint(channel, linterCollection)
+      () => commandHaskellLint(channel, collections.hlint)
     )
   );
 
@@ -517,13 +519,13 @@ export async function activate(
   vscode.workspace.onDidSaveTextDocument((document) => {
     switch (document.languageId) {
       case LanguageId.Haskell:
-        reloadInterpreter(channel, status, interpreterCollection);
+        reloadInterpreter(channel, status, collections.ghc);
 
         const shouldLint: boolean | undefined = vscode.workspace
           .getConfiguration(my.name)
           .get(`${document.languageId}.linter.onSave`);
         if (shouldLint) {
-          commandHaskellLint(channel, linterCollection);
+          commandHaskellLint(channel, collections.hlint);
         }
 
         break;
@@ -586,11 +588,11 @@ export async function activate(
   if (document) {
     // If the user had a document open when the extension was activated, then
     // it can be used for starting the interpreter.
-    startInterpreter(channel, status, interpreterCollection, document);
+    startInterpreter(channel, status, collections.ghc, document);
   } else {
     // Otherwise the interpreter command can be run, which will determine the
     // current active document (if there is one).
-    commandHaskellInterpret(channel, status, interpreterCollection);
+    commandHaskellInterpret(channel, status, collections.ghc);
   }
 
   const end = perfHooks.performance.now();
