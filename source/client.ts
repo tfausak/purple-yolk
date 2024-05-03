@@ -1026,14 +1026,14 @@ async function startInterpreter(
   const file = vscode.workspace.asRelativePath(document.uri);
   const command = expandTemplate(INTERPRETER_TEMPLATE, { file });
 
-  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
-
   if (INTERPRETER) {
     log(channel, key, `Stopping interpreter ${INTERPRETER.task.pid} ...`);
     INTERPRETER.task.kill();
     INTERPRETER = null;
     collection.clear();
   }
+
+  updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
 
   const cwd = folder.uri.path;
   log(
