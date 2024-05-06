@@ -1004,6 +1004,21 @@ async function reloadInterpreter(
   log(channel, key, `Finished reloading in ${elapsed} seconds.`);
 }
 
+// If the given string is an absolute path, then it is returned as a file URI.
+// Otherwise the relative segment is joined with the root URI.
+//
+// This is necessary because Cabal uses relative paths and Stack uses absolute
+// ones. See the following issues for more details:
+//
+// - <https://github.com/tfausak/purple-yolk/issues/43>
+// - <https://github.com/tfausak/purple-yolk/issues/76>
+function toAbsoluteUri(root: vscode.Uri, segment: string): vscode.Uri {
+  if (path.isAbsolute(segment)) {
+    return vscode.Uri.file(segment)
+  }
+  return vscode.Uri.joinPath(root, segment);
+}
+
 async function startInterpreter(
   channel: vscode.OutputChannel,
   status: vscode.LanguageStatusItem,
@@ -1094,17 +1109,13 @@ async function startInterpreter(
         const match = message.doc.match(pattern);
         if (match) {
           assert.ok(match[4]);
-          const uri = vscode.Uri.joinPath(folder.uri, match[4]);
+          const uri = toAbsoluteUri(folder.uri, match[4]);
           collection.delete(uri);
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
             if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-              if (path.isAbsolute(message.span.file)) {
-                uri = vscode.Uri.file(message.span.file);
-              } else {
-                uri = vscode.Uri.joinPath(folder.uri, message.span.file);
-              }
+              uri = toAbsoluteUri(folder.uri, message.span.file);
             }
           } else {
             uri = folder.uri;
