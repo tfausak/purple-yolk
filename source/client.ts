@@ -1112,15 +1112,21 @@ async function startInterpreter(
           const uri = toAbsoluteUri(folder.uri, match[4]);
           collection.delete(uri);
         } else {
-          let uri = folder.uri;
-          if (message.span && message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-            uri = toAbsoluteUri(folder.uri, message.span.file);
+          let uri: vscode.Uri | null = null;
+          if (message.span) {
+            if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
+              uri = toAbsoluteUri(folder.uri, message.span.file);
+            }
+          } else {
+            uri = folder.uri;
           }
 
-          const diagnostic = messageToDiagnostic(message);
-          collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
+          if (uri) {
+            const diagnostic = messageToDiagnostic(message);
+            collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
-          shouldLog = false;
+            shouldLog = false;
+          }
         }
       }
 
