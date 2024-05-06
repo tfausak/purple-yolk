@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-05-06: 1.0.5
+
+- Fixed a bug that prevented problems from being cleared when using Stack. <https://github.com/tfausak/purple-yolk/pull/77>
+
 ## 2024-05-03: 1.0.4
 
 - Fixed another bug that would sometimes prevent the Haskell interpreter from starting. <https://github.com/tfausak/purple-yolk/pull/73>
