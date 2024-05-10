@@ -215,6 +215,7 @@
     "@vscode/vsce": "^2.26.1",
     "esbuild": "^0.20.2",
     "typescript": "^5.4.5",
+    "vscode-uri": "^3.0.8",
     "which": "^4.0.0"
   },
   "displayName": "Purple Yolk",

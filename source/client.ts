@@ -5,6 +5,7 @@ import perfHooks from "perf_hooks";
 import readline from "readline";
 import vscode from "vscode";
 import which from "which";
+import { Utils } from "vscode-uri";
 
 import CabalFormatterMode from "./type/CabalFormatterMode";
 import HaskellFormatterMode from "./type/HaskellFormatterMode";
@@ -176,11 +177,19 @@ const DEPRECATED_WARNINGS = new Set([
 
 function discoverInterpreterMode(
   cabal: string | undefined,
-  cabalConfig: vscode.Uri | undefined,
+  cabalProject: vscode.Uri | undefined, // cabal.project
+  cabalPackage: vscode.Uri | undefined, // *.cabal
   ghci: string | undefined,
   stack: string | undefined,
-  stackConfig: vscode.Uri | undefined
+  stackProject: vscode.Uri | undefined, // stack.yaml
+  stackPackage: vscode.Uri | undefined // package.yaml
 ): InterpreterMode {
+  // If the user has GHCi installed and there are no Cabal or Stack files, then
+  // use GHCi.
+  if (ghci && !cabalProject && !cabalPackage && !stackProject && !stackPackage) {
+    return InterpreterMode.Ghci;
+  }
+
   if (cabal && !stack) {
     // If the user only has Cabal available, then use Cabal.
     return InterpreterMode.Cabal;
@@ -192,7 +201,7 @@ function discoverInterpreterMode(
   }
 
   if (cabal && stack) {
-    if (!cabalConfig && stackConfig) {
+    if (!cabalProject && stackProject) {
       // If the user has both Cabal and Stack installed, but they only have a
       // Stack project file, then use Stack.
       return InterpreterMode.Stack;
@@ -230,21 +239,25 @@ async function setInterpreterTemplate(
     if (custom) {
       mode = InterpreterMode.Custom;
     } else {
-      const [cabal, [cabalProject], stack, [stackYaml], ghci] =
+      const [cabal, [cabalProject], [cabalPackage], stack, [stackProject], [stackPackage], ghci] =
         await Promise.all([
           which("cabal", { nothrow: true }),
           vscode.workspace.findFiles("cabal.project", undefined, 1),
+          vscode.workspace.findFiles("*.cabal", undefined, 1),
           which("stack", { nothrow: true }),
           vscode.workspace.findFiles("stack.yaml", undefined, 1),
+          vscode.workspace.findFiles("package.yaml", undefined, 1),
           which("ghci", { nothrow: true }),
         ]);
 
       mode = discoverInterpreterMode(
         cabal,
         cabalProject,
+        cabalPackage,
         ghci,
         stack,
-        stackYaml
+        stackProject,
+        stackPackage
       );
     }
   }
@@ -672,6 +685,9 @@ function expandTemplate(
   });
 }
 
+const getRootUri = (uri: vscode.Uri): vscode.Uri =>
+  vscode.workspace.getWorkspaceFolder(uri)?.uri ?? Utils.dirname(uri);
+
 async function formatDocumentRange(
   languageId: LanguageId,
   channel: vscode.OutputChannel,
@@ -684,11 +700,7 @@ async function formatDocumentRange(
   const file = vscode.workspace.asRelativePath(document.uri);
   log(channel, key, `Formatting ${file} using language ${languageId} ...`);
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return [];
-  }
+  const rootUri = getRootUri(document.uri);
 
   let template: Template | undefined = undefined;
   if (languageId === LanguageId.Haskell) {
@@ -702,7 +714,7 @@ async function formatDocumentRange(
   }
 
   const command = expandTemplate(template, { file });
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -793,11 +805,7 @@ async function lintHaskell(
   const file = vscode.workspace.asRelativePath(document.uri);
   log(channel, key, `Linting ${file} ...`);
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return [];
-  }
+  const rootUri = getRootUri(document.uri);
 
   if (!HASKELL_LINTER_TEMPLATE) {
     log(channel, key, "Error: Missing linter command!");
@@ -805,7 +813,7 @@ async function lintHaskell(
   }
 
   const command = expandTemplate(HASKELL_LINTER_TEMPLATE, { file });
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -985,10 +993,8 @@ async function reloadInterpreter(
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading");
 
   if (document) {
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-    if (folder) {
-      collection.delete(folder.uri);
-    }
+    const rootUri = getRootUri(document.uri);
+    collection.delete(rootUri);
   }
 
   const input = ":reload";
@@ -1029,11 +1035,7 @@ async function startInterpreter(
   const start = perfHooks.performance.now();
   log(channel, key, "Starting interpreter ...");
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return;
-  }
+  const rootUri = getRootUri(document.uri);
 
   if (!INTERPRETER_TEMPLATE) {
     log(channel, key, "Error: Missing interpreter command!");
@@ -1052,7 +1054,7 @@ async function startInterpreter(
 
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
 
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -1109,16 +1111,16 @@ async function startInterpreter(
         const match = message.doc.match(pattern);
         if (match) {
           assert.ok(match[4]);
-          const uri = toAbsoluteUri(folder.uri, match[4]);
+          const uri = toAbsoluteUri(rootUri, match[4]);
           collection.delete(uri);
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
             if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-              uri = toAbsoluteUri(folder.uri, message.span.file);
+              uri = toAbsoluteUri(rootUri, message.span.file);
             }
           } else {
-            uri = folder.uri;
+            uri = rootUri;
           }
 
           if (uri) {
