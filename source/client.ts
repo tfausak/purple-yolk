@@ -177,11 +177,19 @@ const DEPRECATED_WARNINGS = new Set([
 
 function discoverInterpreterMode(
   cabal: string | undefined,
-  cabalConfig: vscode.Uri | undefined,
+  cabalProject: vscode.Uri | undefined, // cabal.project
+  cabalPackage: vscode.Uri | undefined, // *.cabal
   ghci: string | undefined,
   stack: string | undefined,
-  stackConfig: vscode.Uri | undefined
+  stackProject: vscode.Uri | undefined, // stack.yaml
+  stackPackage: vscode.Uri | undefined // package.yaml
 ): InterpreterMode {
+  // If the user has GHCi installed and there are no Cabal or Stack files, then
+  // use GHCi.
+  if (ghci && !cabalProject && !cabalPackage && !stackProject && !stackPackage) {
+    return InterpreterMode.Ghci;
+  }
+
   if (cabal && !stack) {
     // If the user only has Cabal available, then use Cabal.
     return InterpreterMode.Cabal;
@@ -193,7 +201,7 @@ function discoverInterpreterMode(
   }
 
   if (cabal && stack) {
-    if (!cabalConfig && stackConfig) {
+    if (!cabalProject && stackProject) {
       // If the user has both Cabal and Stack installed, but they only have a
       // Stack project file, then use Stack.
       return InterpreterMode.Stack;
@@ -231,21 +239,25 @@ async function setInterpreterTemplate(
     if (custom) {
       mode = InterpreterMode.Custom;
     } else {
-      const [cabal, [cabalProject], stack, [stackYaml], ghci] =
+      const [cabal, [cabalProject], [cabalPackage], stack, [stackProject], [stackPackage], ghci] =
         await Promise.all([
           which("cabal", { nothrow: true }),
           vscode.workspace.findFiles("cabal.project", undefined, 1),
+          vscode.workspace.findFiles("*.cabal", undefined, 1),
           which("stack", { nothrow: true }),
           vscode.workspace.findFiles("stack.yaml", undefined, 1),
+          vscode.workspace.findFiles("package.yaml", undefined, 1),
           which("ghci", { nothrow: true }),
         ]);
 
       mode = discoverInterpreterMode(
         cabal,
         cabalProject,
+        cabalPackage,
         ghci,
         stack,
-        stackYaml
+        stackProject,
+        stackPackage
       );
     }
   }
