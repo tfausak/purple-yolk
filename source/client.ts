@@ -5,6 +5,7 @@ import perfHooks from "perf_hooks";
 import readline from "readline";
 import vscode from "vscode";
 import which from "which";
+import { Utils } from "vscode-uri";
 
 import CabalFormatterMode from "./type/CabalFormatterMode";
 import HaskellFormatterMode from "./type/HaskellFormatterMode";
@@ -672,6 +673,9 @@ function expandTemplate(
   });
 }
 
+const getRootUri = (uri: vscode.Uri): vscode.Uri =>
+  vscode.workspace.getWorkspaceFolder(uri)?.uri ?? Utils.dirname(uri);
+
 async function formatDocumentRange(
   languageId: LanguageId,
   channel: vscode.OutputChannel,
@@ -684,11 +688,7 @@ async function formatDocumentRange(
   const file = vscode.workspace.asRelativePath(document.uri);
   log(channel, key, `Formatting ${file} using language ${languageId} ...`);
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return [];
-  }
+  const rootUri = getRootUri(document.uri);
 
   let template: Template | undefined = undefined;
   if (languageId === LanguageId.Haskell) {
@@ -702,7 +702,7 @@ async function formatDocumentRange(
   }
 
   const command = expandTemplate(template, { file });
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -793,11 +793,7 @@ async function lintHaskell(
   const file = vscode.workspace.asRelativePath(document.uri);
   log(channel, key, `Linting ${file} ...`);
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return [];
-  }
+  const rootUri = getRootUri(document.uri);
 
   if (!HASKELL_LINTER_TEMPLATE) {
     log(channel, key, "Error: Missing linter command!");
@@ -805,7 +801,7 @@ async function lintHaskell(
   }
 
   const command = expandTemplate(HASKELL_LINTER_TEMPLATE, { file });
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -985,10 +981,8 @@ async function reloadInterpreter(
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading");
 
   if (document) {
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-    if (folder) {
-      collection.delete(folder.uri);
-    }
+    const rootUri = getRootUri(document.uri);
+    collection.delete(rootUri);
   }
 
   const input = ":reload";
@@ -1029,11 +1023,7 @@ async function startInterpreter(
   const start = perfHooks.performance.now();
   log(channel, key, "Starting interpreter ...");
 
-  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-  if (!folder) {
-    log(channel, key, "Error: Missing workspace folder!");
-    return;
-  }
+  const rootUri = getRootUri(document.uri);
 
   if (!INTERPRETER_TEMPLATE) {
     log(channel, key, "Error: Missing interpreter command!");
@@ -1052,7 +1042,7 @@ async function startInterpreter(
 
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
 
-  const cwd = folder.uri.path;
+  const cwd = rootUri.path;
   log(
     channel,
     key,
@@ -1109,16 +1099,16 @@ async function startInterpreter(
         const match = message.doc.match(pattern);
         if (match) {
           assert.ok(match[4]);
-          const uri = toAbsoluteUri(folder.uri, match[4]);
+          const uri = toAbsoluteUri(rootUri, match[4]);
           collection.delete(uri);
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
             if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
-              uri = toAbsoluteUri(folder.uri, message.span.file);
+              uri = toAbsoluteUri(rootUri, message.span.file);
             }
           } else {
-            uri = folder.uri;
+            uri = rootUri;
           }
 
           if (uri) {
