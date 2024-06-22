@@ -209,11 +209,19 @@
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",
     "@tsconfig/strictest": "^2.0.5",
+    "@types/chai": "4.3.16",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "10.0.6",
     "@types/node": "^20.12.8",
     "@types/vscode": "^1.89.0",
     "@types/which": "^3.0.3",
+    "@vscode/test-electron": "2.3.9",
     "@vscode/vsce": "^2.26.1",
+    "c8": "^10.1.2",
+    "chai": "4.4.1",
     "esbuild": "^0.21.2",
+    "mocha": "10.4.0",
+    "ts-node": "10.9.2",
     "typescript": "^5.4.5",
     "vscode-uri": "^3.0.8",
     "which": "^4.0.0"
@@ -237,7 +245,31 @@
     "url": "https://github.com/tfausak/purple-yolk.git"
   },
   "scripts": {
+    "precompile": "rm -rf ./dist",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "mocha dist/test/runTest.js",
+    "coverage": "c8 npm test",
+    "prepackage": "npm run compile",
+    "package": "vsce package",
     "vscode:prepublish": "esbuild --bundle --external:vscode --outdir=dist --platform=node --target=node8 source/client.ts"
   },
-  "version": "1.0.6"
+  "version": "1.0.6",
+  "c8": {
+    "include": [
+      "source/**/*.ts",
+      "dist/**/*.js"
+    ],
+    "exclude": [
+      "source/test/*",
+      "dist/test/*"
+    ],
+    "reporter": [
+      "text-summary",
+      "html",
+      "lcov"
+    ],
+    "report-dir": ".coverage"
+  }
 }

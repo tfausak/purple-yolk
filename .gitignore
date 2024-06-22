@@ -1,5 +1,6 @@
 # https://git-scm.com/docs/gitignore
-/.vscode/
+/.coverage
+/.vscode*
 /dist/
 /node_modules/
 /package-lock.json

@@ -41,6 +41,104 @@
           "run": "npx vsce publish --packagePath purple-yolk.vsix --pat \"${{ secrets.AZURE_PERSONAL_ACCESS_TOKEN }}\""
         }
       ]
+    },
+    "matrix-build": {
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "ghc": [
+            "8.10.7",
+            "9.0.2",
+            "9.6.5"
+          ],
+          "env": [
+            {
+              "CODE_VERSION": "stable",
+              "DISPLAY": ":99.0"
+            }
+          ]
+        }
+      },
+      "runs-on": "${{ matrix.os }}",
+      "env": "${{ matrix.env }}",
+      "steps": [
+        {
+          "uses": "actions/checkout@v4"
+        },
+        {
+          "name": "Set up npm",
+          "uses": "actions/setup-node@v4",
+          "with": {
+            "node-version": 18
+          }
+        },
+        {
+          "name": "Install Haskell Stack",
+          "if": "runner.os == 'macOS'",
+          "run": "brew install llvm@12\necho \"/opt/homebrew/opt/llvm@12/bin\" >> $GITHUB_PATH\nbrew install haskell-stack\n"
+        },
+        {
+          "name": "Set up GHC ${{ matrix.ghc }} environment",
+          "run": "echo \"resolver: ghc-${{ matrix.ghc }}\" > stack.yaml\necho \"packages: []\" >> stack.yaml\nstack setup\n"
+        },
+        {
+          "run": "npm install"
+        },
+        {
+          "name": "Run npm test",
+          "uses": "coactions/setup-xvfb@v1",
+          "with": {
+            "run": "npm test"
+          }
+        }
+      ]
+    },
+    "metrics": {
+      "runs-on": "ubuntu-latest",
+      "env": {
+        "CODE_VERSION": "stable",
+        "DISPLAY": ":99.0",
+        "GHC": "9.4.5"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v4"
+        },
+        {
+          "name": "Set up npm",
+          "uses": "actions/setup-node@v4",
+          "with": {
+            "node-version": 18
+          }
+        },
+        {
+          "name": "Set up GHC ${{ env.GHC }} environment",
+          "run": "echo \"resolver: ghc-${{ env.GHC }}\" > stack.yaml\necho \"packages: []\" >> stack.yaml\nstack setup\n"
+        },
+        {
+          "run": "npm install"
+        },
+        {
+          "name": "Run tests with coverage",
+          "uses": "coactions/setup-xvfb@v1",
+          "with": {
+            "run": "npm run coverage"
+          }
+        },
+        {
+          "name": "Publish coverage on Coveralls.io",
+          "uses": "coverallsapp/github-action@v2",
+          "with": {
+            "github-token": "${{ secrets.GITHUB_TOKEN }}",
+            "path-to-lcov": ".coverage/lcov.info"
+          }
+        }
+      ]
     }
   },
   "name": "Workflow",
