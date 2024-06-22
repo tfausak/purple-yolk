@@ -714,7 +714,7 @@ async function formatDocumentRange(
   }
 
   const command = expandTemplate(template, { file });
-  const cwd = rootUri.path;
+  const cwd = rootUri.fsPath;
   log(
     channel,
     key,
@@ -813,7 +813,7 @@ async function lintHaskell(
   }
 
   const command = expandTemplate(HASKELL_LINTER_TEMPLATE, { file });
-  const cwd = rootUri.path;
+  const cwd = rootUri.fsPath;
   log(
     channel,
     key,
@@ -1054,7 +1054,7 @@ async function startInterpreter(
 
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Starting");
 
-  const cwd = rootUri.path;
+  const cwd = rootUri.fsPath;
   log(
     channel,
     key,
