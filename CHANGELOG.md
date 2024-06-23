@@ -2,6 +2,12 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2024-06-22: 1.0.7
+
+- Fixed a bug that prevented Purple Yolk from working on Windows due to problems with getting the current directory. <https://github.com/tfausak/purple-yolk/pull/86>
+- Fixed CI to run on pull requests. <https://github.com/tfausak/purple-yolk/pull/87>
+- Bumped esbuild from 0.20.2 to 0.21.2. <https://github.com/tfausak/purple-yolk/pull/82>
+
 ## 2024-05-09: 1.0.6
 
 - Fixed a bug that prevented Purple Yolk from working with individual Haskell files through GHCi. <https://github.com/tfausak/purple-yolk/pull/80>
