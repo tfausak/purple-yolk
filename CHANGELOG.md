@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2025-03-02: 1.0.8
+
+- Fixed a bug that caused diagnostics to not be cleared when using Cabal's `--enable-multi-repl` flag. <https://github.com/tfausak/purple-yolk/pull/98>
+
 ## 2024-06-22: 1.0.7
 
 - Fixed a bug that prevented Purple Yolk from working on Windows due to problems with getting the current directory. <https://github.com/tfausak/purple-yolk/pull/86>
