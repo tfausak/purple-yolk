@@ -1019,10 +1019,13 @@ async function reloadInterpreter(
 // - <https://github.com/tfausak/purple-yolk/issues/43>
 // - <https://github.com/tfausak/purple-yolk/issues/76>
 function toAbsoluteUri(root: vscode.Uri, segment: string): vscode.Uri {
-  if (path.isAbsolute(segment)) {
-    return vscode.Uri.file(segment)
+  // <https://github.com/tfausak/purple-yolk/issues/97>
+  const normalized = path.normalize(segment);
+
+  if (path.isAbsolute(normalized)) {
+    return vscode.Uri.file(normalized)
   }
-  return vscode.Uri.joinPath(root, segment);
+  return vscode.Uri.joinPath(root, normalized);
 }
 
 async function startInterpreter(
