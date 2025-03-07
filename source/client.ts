@@ -16,6 +16,9 @@ import Interpreter from "./type/Interpreter";
 import InterpreterMode from "./type/InterpreterMode";
 import Key from "./type/Key";
 import LanguageId from "./type/LanguageId";
+import NewMessage from "./type/NewMessage";
+import NewMessageSeverity from "./type/NewMessageSeverity";
+import NewMessageSpan from "./type/NewMessageSpan";
 import OldMessage from "./type/OldMessage";
 import OldMessageSeverity from "./type/OldMessageSeverity";
 import OldMessageSpan from "./type/OldMessageSpan";
@@ -29,6 +32,18 @@ const DEFAULT_OLD_MESSAGE_SPAN: OldMessageSpan = {
   file: "<interactive>",
   startCol: 1,
   startLine: 1,
+};
+
+const DEFAULT_NEW_MESSAGE_SPAN: NewMessageSpan = {
+  end: {
+    column: 1,
+    line: 1
+  },
+  file: "<interactive>",
+  start: {
+    column: 1,
+    line: 1
+  },
 };
 
 let INTERPRETER: Interpreter | null = null;
@@ -174,6 +189,8 @@ const DEPRECATED_WARNINGS = new Set([
   "GHC-63394", // WarningWithCategory x-partial
   "Opt_WarnDeprecatedFlags",
 ]);
+
+const COMPILING_PATTERN = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
 
 function discoverInterpreterMode(
   cabal: string | undefined,
@@ -884,6 +901,19 @@ function oldMessageSeverityToDiagnostic(
   }
 }
 
+function newMessageSeverityToDiagnostic(
+  severity: NewMessageSeverity
+): vscode.DiagnosticSeverity {
+  switch (severity) {
+    case NewMessageSeverity.Error:
+      return vscode.DiagnosticSeverity.Error;
+    case NewMessageSeverity.Warning:
+      return vscode.DiagnosticSeverity.Warning;
+    default:
+      return vscode.DiagnosticSeverity.Information;
+  }
+}
+
 function messageClassToDiagnosticSeverity(
   messageClass: string
 ): vscode.DiagnosticSeverity {
@@ -901,6 +931,13 @@ function oldMessageSpanToRange(span: OldMessageSpan): vscode.Range {
   return new vscode.Range(
     new vscode.Position(span.startLine - 1, span.startCol - 1),
     new vscode.Position(span.endLine - 1, span.endCol - 1)
+  );
+}
+
+function newMessageSpanToRange(span: NewMessageSpan): vscode.Range {
+  return new vscode.Range(
+    new vscode.Position(span.start.line - 1, span.start.column - 1),
+    new vscode.Position(span.end.line - 1, span.end.column - 1)
   );
 }
 
@@ -953,6 +990,27 @@ function oldMessageToDiagnostic(message: OldMessage): vscode.Diagnostic {
   const classes = (message.reason || message.messageClass || "").split(/ +/);
 
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
+  diagnostic.code = makeDiagnosticCode(classes);
+  diagnostic.source = "ghc";
+  diagnostic.tags = makeDiagnosticTags(classes);
+  return diagnostic;
+}
+
+function newMessageToDiagnostic(message: NewMessage): vscode.Diagnostic {
+  const range = newMessageSpanToRange(message.span || DEFAULT_NEW_MESSAGE_SPAN);
+
+  let severity = vscode.DiagnosticSeverity.Information;
+  if (message.severity) {
+    severity = newMessageSeverityToDiagnostic(message.severity);
+  }
+
+  const classes = message.reason
+    ? ('flags' in message.reason
+      ? message.reason.flags
+      : [message.reason.category])
+    : [];
+
+  const diagnostic = new vscode.Diagnostic(range, message.message.join("\n"), severity);
   diagnostic.code = makeDiagnosticCode(classes);
   diagnostic.source = "ghc";
   diagnostic.tags = makeDiagnosticTags(classes);
@@ -1100,7 +1158,7 @@ async function startInterpreter(
         shouldLog = false;
       }
 
-      let message: OldMessage | null = null;
+      let message: OldMessage | NewMessage | null = null;
       try {
         message = JSON.parse(line);
       } catch (error) {
@@ -1110,8 +1168,11 @@ async function startInterpreter(
       }
 
       if (message) {
-        const pattern = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
-        const match = message.doc.match(pattern);
+        const doc = 'doc' in message
+          ? message.doc
+          : message.message.join("\n");
+        const match = doc.match(COMPILING_PATTERN);
+
         if (match) {
           assert.ok(match[4]);
           const uri = toAbsoluteUri(rootUri, match[4]);
@@ -1127,7 +1188,9 @@ async function startInterpreter(
           }
 
           if (uri) {
-            const diagnostic = oldMessageToDiagnostic(message);
+            const diagnostic = 'doc' in message
+              ? oldMessageToDiagnostic(message)
+              : newMessageToDiagnostic(message);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
             shouldLog = false;
