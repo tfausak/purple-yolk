@@ -1136,7 +1136,38 @@ async function startInterpreter(
 
   assert.ok(task.stderr);
   readline.createInterface(task.stderr).on("line", (line) => {
-    log(channel, key, `[stderr] ${line}`);
+    let shouldLog: boolean = true;
+
+    let message: NewMessage | null = null;
+    try {
+      message = JSON.parse(line);
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) {
+        throw error;
+      }
+    }
+
+    if (message) {
+      let uri: vscode.Uri | null = null;
+      if (message.span) {
+        if (message.span.file !== DEFAULT_NEW_MESSAGE_SPAN.file) {
+          uri = toAbsoluteUri(rootUri, message.span.file);
+        }
+      } else {
+        uri = rootUri;
+      }
+
+      if (uri) {
+        const diagnostic = newMessageToDiagnostic(message);
+        collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
+
+        shouldLog = false;
+      }
+    }
+
+    if (shouldLog) {
+      log(channel, INTERPRETER?.key || "0000", `[stderr] ${line}`);
+    }
   });
 
   const prompt = `{- ${my.name} ${my.version} ${key} -}`;
@@ -1155,10 +1186,17 @@ async function startInterpreter(
         }
         resolve();
         updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle");
-        // shouldLog = false;
+        shouldLog = false;
       }
 
-      let message: OldMessage | NewMessage | null = null;
+      const lineMatch = line.match(COMPILING_PATTERN);
+      if (lineMatch) {
+        assert.ok(lineMatch[4]);
+        const uri = toAbsoluteUri(rootUri, lineMatch[4]);
+        collection.delete(uri);
+      }
+
+      let message: OldMessage | null = null;
       try {
         message = JSON.parse(line);
       } catch (error) {
@@ -1166,13 +1204,9 @@ async function startInterpreter(
           throw error;
         }
       }
-      log(channel, INTERPRETER?.key || "0000", `message = ${message}`);
 
       if (message) {
-        const doc = 'doc' in message
-          ? message.doc
-          : message.message.join("\n");
-        const match = doc.match(COMPILING_PATTERN);
+        const match = message.doc.match(COMPILING_PATTERN);
 
         if (match) {
           assert.ok(match[4]);
@@ -1189,12 +1223,10 @@ async function startInterpreter(
           }
 
           if (uri) {
-            const diagnostic = 'doc' in message
-              ? oldMessageToDiagnostic(message)
-              : newMessageToDiagnostic(message);
+            const diagnostic = oldMessageToDiagnostic(message);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
-            // shouldLog = false;
+            shouldLog = false;
           }
         }
       }
