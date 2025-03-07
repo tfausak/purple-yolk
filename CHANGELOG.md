@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2025-03-08: 1.0.9
+
+- Fixed handling of JSON diagnostics from newer versions of GHC using `-fdiagnostics-as-json`. <https://github.com/tfausak/purple-yolk/pull/100>
+
 ## 2025-03-02: 1.0.8
 
 - Fixed a bug that caused diagnostics to not be cleared when using Cabal's `--enable-multi-repl` flag. <https://github.com/tfausak/purple-yolk/pull/98>
