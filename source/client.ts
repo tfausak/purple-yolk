@@ -1155,7 +1155,7 @@ async function startInterpreter(
         }
         resolve();
         updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle");
-        shouldLog = false;
+        // shouldLog = false;
       }
 
       let message: OldMessage | NewMessage | null = null;
@@ -1166,6 +1166,7 @@ async function startInterpreter(
           throw error;
         }
       }
+      log(channel, INTERPRETER?.key || "0000", `message = ${message}`);
 
       if (message) {
         const doc = 'doc' in message
@@ -1193,7 +1194,7 @@ async function startInterpreter(
               : newMessageToDiagnostic(message);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
-            shouldLog = false;
+            // shouldLog = false;
           }
         }
       }
