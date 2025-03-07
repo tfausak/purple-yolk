@@ -16,19 +16,34 @@ import Interpreter from "./type/Interpreter";
 import InterpreterMode from "./type/InterpreterMode";
 import Key from "./type/Key";
 import LanguageId from "./type/LanguageId";
-import Message from "./type/Message";
-import MessageSeverity from "./type/MessageSeverity";
-import MessageSpan from "./type/MessageSpan";
+import NewMessage from "./type/NewMessage";
+import NewMessageSeverity from "./type/NewMessageSeverity";
+import NewMessageSpan from "./type/NewMessageSpan";
+import OldMessage from "./type/OldMessage";
+import OldMessageSeverity from "./type/OldMessageSeverity";
+import OldMessageSpan from "./type/OldMessageSpan";
 import Template from "./type/Template";
 
 import my from "../package.json";
 
-const DEFAULT_MESSAGE_SPAN: MessageSpan = {
+const DEFAULT_OLD_MESSAGE_SPAN: OldMessageSpan = {
   endCol: 1,
   endLine: 1,
   file: "<interactive>",
   startCol: 1,
   startLine: 1,
+};
+
+const DEFAULT_NEW_MESSAGE_SPAN: NewMessageSpan = {
+  end: {
+    column: 1,
+    line: 1
+  },
+  file: "<interactive>",
+  start: {
+    column: 1,
+    line: 1
+  },
 };
 
 let INTERPRETER: Interpreter | null = null;
@@ -150,30 +165,32 @@ const GHC_WARNING_FLAGS: { [k: string]: string } = {
 
 // GHC warnings that should get an "unnecessary" tag.
 const UNNECESSARY_WARNINGS = new Set([
-  "Opt_WarnDuplicateConstraints",
-  "Opt_WarnDuplicateExports",
-  "Opt_WarnRedundantBangPatterns",
-  "Opt_WarnRedundantConstraints",
-  "Opt_WarnRedundantRecordWildcards",
-  "Opt_WarnRedundantStrictnessFlags",
-  "Opt_WarnUnusedDoBind",
-  "Opt_WarnUnusedForalls",
-  "Opt_WarnUnusedImports",
-  "Opt_WarnUnusedLocalBinds",
-  "Opt_WarnUnusedMatches",
-  "Opt_WarnUnusedPackages",
-  "Opt_WarnUnusedPatternBinds",
-  "Opt_WarnUnusedRecordWildcards",
-  "Opt_WarnUnusedTopBinds",
-  "Opt_WarnUnusedTypePatterns",
+  "Opt_WarnDuplicateConstraints", GHC_WARNING_FLAGS['Opt_WarnDuplicateConstraints'],
+  "Opt_WarnDuplicateExports", GHC_WARNING_FLAGS['Opt_WarnDuplicateExports'],
+  "Opt_WarnRedundantBangPatterns", GHC_WARNING_FLAGS['Opt_WarnRedundantBangPatterns'],
+  "Opt_WarnRedundantConstraints", GHC_WARNING_FLAGS['Opt_WarnRedundantConstraints'],
+  "Opt_WarnRedundantRecordWildcards", GHC_WARNING_FLAGS['Opt_WarnRedundantRecordWildcards'],
+  "Opt_WarnRedundantStrictnessFlags", GHC_WARNING_FLAGS['Opt_WarnRedundantStrictnessFlags'],
+  "Opt_WarnUnusedDoBind", GHC_WARNING_FLAGS['Opt_WarnUnusedDoBind'],
+  "Opt_WarnUnusedForalls", GHC_WARNING_FLAGS['Opt_WarnUnusedForalls'],
+  "Opt_WarnUnusedImports", GHC_WARNING_FLAGS['Opt_WarnUnusedImports'],
+  "Opt_WarnUnusedLocalBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedLocalBinds'],
+  "Opt_WarnUnusedMatches", GHC_WARNING_FLAGS['Opt_WarnUnusedMatches'],
+  "Opt_WarnUnusedPackages", GHC_WARNING_FLAGS['Opt_WarnUnusedPackages'],
+  "Opt_WarnUnusedPatternBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedPatternBinds'],
+  "Opt_WarnUnusedRecordWildcards", GHC_WARNING_FLAGS['Opt_WarnUnusedRecordWildcards'],
+  "Opt_WarnUnusedTopBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedTopBinds'],
+  "Opt_WarnUnusedTypePatterns", GHC_WARNING_FLAGS['Opt_WarnUnusedTypePatterns'],
 ]);
 
 // GHC warnings that should get a "deprecated" tag.
 const DEPRECATED_WARNINGS = new Set([
-  "GHC-15328", // WarningWithCategory deprecations
-  "GHC-63394", // WarningWithCategory x-partial
-  "Opt_WarnDeprecatedFlags",
+  "GHC-15328", "deprecations",
+  "GHC-63394", "x-partial",
+  "Opt_WarnDeprecatedFlags", GHC_WARNING_FLAGS['Opt_WarnDeprecatedFlags'],
 ]);
+
+const COMPILING_PATTERN = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
 
 function discoverInterpreterMode(
   cabal: string | undefined,
@@ -869,15 +886,28 @@ function log(channel: vscode.OutputChannel, key: Key, message: string): void {
   channel.appendLine(`${new Date().toISOString()} [${key}] ${message}`);
 }
 
-function messageSeverityToDiagnostic(
-  severity: MessageSeverity
+function oldMessageSeverityToDiagnostic(
+  severity: OldMessageSeverity
 ): vscode.DiagnosticSeverity {
   switch (severity) {
-    case MessageSeverity.SevError:
+    case OldMessageSeverity.SevError:
       return vscode.DiagnosticSeverity.Error;
-    case MessageSeverity.SevFatal:
+    case OldMessageSeverity.SevFatal:
       return vscode.DiagnosticSeverity.Error;
-    case MessageSeverity.SevWarning:
+    case OldMessageSeverity.SevWarning:
+      return vscode.DiagnosticSeverity.Warning;
+    default:
+      return vscode.DiagnosticSeverity.Information;
+  }
+}
+
+function newMessageSeverityToDiagnostic(
+  severity: NewMessageSeverity
+): vscode.DiagnosticSeverity {
+  switch (severity) {
+    case NewMessageSeverity.Error:
+      return vscode.DiagnosticSeverity.Error;
+    case NewMessageSeverity.Warning:
       return vscode.DiagnosticSeverity.Warning;
     default:
       return vscode.DiagnosticSeverity.Information;
@@ -887,20 +917,27 @@ function messageSeverityToDiagnostic(
 function messageClassToDiagnosticSeverity(
   messageClass: string
 ): vscode.DiagnosticSeverity {
-  const severities = new Set(Object.values(MessageSeverity));
+  const severities = new Set(Object.values(OldMessageSeverity));
   for (const klass of messageClass.split(/ +/)) {
-    const severity = klass as MessageSeverity;
+    const severity = klass as OldMessageSeverity;
     if (severities.has(severity)) {
-      return messageSeverityToDiagnostic(severity);
+      return oldMessageSeverityToDiagnostic(severity);
     }
   }
   return vscode.DiagnosticSeverity.Information;
 }
 
-function messageSpanToRange(span: MessageSpan): vscode.Range {
+function oldMessageSpanToRange(span: OldMessageSpan): vscode.Range {
   return new vscode.Range(
     new vscode.Position(span.startLine - 1, span.startCol - 1),
     new vscode.Position(span.endLine - 1, span.endCol - 1)
+  );
+}
+
+function newMessageSpanToRange(span: NewMessageSpan): vscode.Range {
+  return new vscode.Range(
+    new vscode.Position(span.start.line - 1, span.start.column - 1),
+    new vscode.Position(span.end.line - 1, span.end.column - 1)
   );
 }
 
@@ -940,12 +977,12 @@ function makeDiagnosticTags(classes: string[]): vscode.DiagnosticTag[] {
   return tags;
 }
 
-function messageToDiagnostic(message: Message): vscode.Diagnostic {
-  const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN);
+function oldMessageToDiagnostic(message: OldMessage): vscode.Diagnostic {
+  const range = oldMessageSpanToRange(message.span || DEFAULT_OLD_MESSAGE_SPAN);
 
   let severity = vscode.DiagnosticSeverity.Information;
   if (message.severity) {
-    severity = messageSeverityToDiagnostic(message.severity);
+    severity = oldMessageSeverityToDiagnostic(message.severity);
   } else if (message.messageClass) {
     severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
@@ -953,6 +990,30 @@ function messageToDiagnostic(message: Message): vscode.Diagnostic {
   const classes = (message.reason || message.messageClass || "").split(/ +/);
 
   const diagnostic = new vscode.Diagnostic(range, message.doc, severity);
+  diagnostic.code = makeDiagnosticCode(classes);
+  diagnostic.source = "ghc";
+  diagnostic.tags = makeDiagnosticTags(classes);
+  return diagnostic;
+}
+
+function newMessageToDiagnostic(message: NewMessage): vscode.Diagnostic {
+  const range = newMessageSpanToRange(message.span || DEFAULT_NEW_MESSAGE_SPAN);
+
+  let severity = vscode.DiagnosticSeverity.Information;
+  if (message.severity) {
+    severity = newMessageSeverityToDiagnostic(message.severity);
+  }
+
+  const classes = message.reason
+    ? ('flags' in message.reason
+      ? message.reason.flags
+      : [message.reason.category])
+    : [];
+  if (message.code) {
+    classes.push(`GHC-${message.code}`);
+  }
+
+  const diagnostic = new vscode.Diagnostic(range, message.message.join("\n"), severity);
   diagnostic.code = makeDiagnosticCode(classes);
   diagnostic.source = "ghc";
   diagnostic.tags = makeDiagnosticTags(classes);
@@ -1078,7 +1139,38 @@ async function startInterpreter(
 
   assert.ok(task.stderr);
   readline.createInterface(task.stderr).on("line", (line) => {
-    log(channel, key, `[stderr] ${line}`);
+    let shouldLog: boolean = true;
+
+    let message: NewMessage | null = null;
+    try {
+      message = JSON.parse(line);
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) {
+        throw error;
+      }
+    }
+
+    if (message) {
+      let uri: vscode.Uri | null = null;
+      if (message.span) {
+        if (message.span.file !== DEFAULT_NEW_MESSAGE_SPAN.file) {
+          uri = toAbsoluteUri(rootUri, message.span.file);
+        }
+      } else {
+        uri = rootUri;
+      }
+
+      if (uri) {
+        const diagnostic = newMessageToDiagnostic(message);
+        collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
+
+        shouldLog = false;
+      }
+    }
+
+    if (shouldLog) {
+      log(channel, INTERPRETER?.key || "0000", `[stderr] ${line}`);
+    }
   });
 
   const prompt = `{- ${my.name} ${my.version} ${key} -}`;
@@ -1100,7 +1192,15 @@ async function startInterpreter(
         shouldLog = false;
       }
 
-      let message: Message | null = null;
+      const lineMatch = line.match(COMPILING_PATTERN);
+      if (lineMatch) {
+        assert.ok(lineMatch[4]);
+        const uri = toAbsoluteUri(rootUri, lineMatch[4]);
+        collection.delete(uri);
+        shouldLog = false;
+      }
+
+      let message: OldMessage | null = null;
       try {
         message = JSON.parse(line);
       } catch (error) {
@@ -1110,16 +1210,17 @@ async function startInterpreter(
       }
 
       if (message) {
-        const pattern = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
-        const match = message.doc.match(pattern);
+        const match = message.doc.match(COMPILING_PATTERN);
+
         if (match) {
           assert.ok(match[4]);
           const uri = toAbsoluteUri(rootUri, match[4]);
           collection.delete(uri);
+          shouldLog = false;
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
-            if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
+            if (message.span.file !== DEFAULT_OLD_MESSAGE_SPAN.file) {
               uri = toAbsoluteUri(rootUri, message.span.file);
             }
           } else {
@@ -1127,7 +1228,7 @@ async function startInterpreter(
           }
 
           if (uri) {
-            const diagnostic = messageToDiagnostic(message);
+            const diagnostic = oldMessageToDiagnostic(message);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
             shouldLog = false;

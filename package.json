@@ -93,7 +93,7 @@
         },
         "purple-yolk.haskell.interpreter.command": {
           "default": "",
-          "markdownDescription": "This should pass `-ddump-json` to GHC.",
+          "markdownDescription": "This should pass `-fdiagnostics-as-json` (or `-ddump-json`) to GHC.",
           "type": "string"
         },
         "purple-yolk.haskell.interpreter.mode": {
