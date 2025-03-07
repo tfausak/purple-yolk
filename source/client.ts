@@ -1009,6 +1009,9 @@ function newMessageToDiagnostic(message: NewMessage): vscode.Diagnostic {
       ? message.reason.flags
       : [message.reason.category])
     : [];
+  if (message.code) {
+    classes.push(`GHC-${message.code}`);
+  }
 
   const diagnostic = new vscode.Diagnostic(range, message.message.join("\n"), severity);
   diagnostic.code = makeDiagnosticCode(classes);
