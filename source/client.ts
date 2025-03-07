@@ -16,14 +16,14 @@ import Interpreter from "./type/Interpreter";
 import InterpreterMode from "./type/InterpreterMode";
 import Key from "./type/Key";
 import LanguageId from "./type/LanguageId";
-import Message from "./type/Message";
-import MessageSeverity from "./type/MessageSeverity";
-import MessageSpan from "./type/MessageSpan";
+import OldMessage from "./type/OldMessage";
+import OldMessageSeverity from "./type/OldMessageSeverity";
+import OldMessageSpan from "./type/OldMessageSpan";
 import Template from "./type/Template";
 
 import my from "../package.json";
 
-const DEFAULT_MESSAGE_SPAN: MessageSpan = {
+const DEFAULT_OLD_MESSAGE_SPAN: OldMessageSpan = {
   endCol: 1,
   endLine: 1,
   file: "<interactive>",
@@ -869,15 +869,15 @@ function log(channel: vscode.OutputChannel, key: Key, message: string): void {
   channel.appendLine(`${new Date().toISOString()} [${key}] ${message}`);
 }
 
-function messageSeverityToDiagnostic(
-  severity: MessageSeverity
+function oldMessageSeverityToDiagnostic(
+  severity: OldMessageSeverity
 ): vscode.DiagnosticSeverity {
   switch (severity) {
-    case MessageSeverity.SevError:
+    case OldMessageSeverity.SevError:
       return vscode.DiagnosticSeverity.Error;
-    case MessageSeverity.SevFatal:
+    case OldMessageSeverity.SevFatal:
       return vscode.DiagnosticSeverity.Error;
-    case MessageSeverity.SevWarning:
+    case OldMessageSeverity.SevWarning:
       return vscode.DiagnosticSeverity.Warning;
     default:
       return vscode.DiagnosticSeverity.Information;
@@ -887,17 +887,17 @@ function messageSeverityToDiagnostic(
 function messageClassToDiagnosticSeverity(
   messageClass: string
 ): vscode.DiagnosticSeverity {
-  const severities = new Set(Object.values(MessageSeverity));
+  const severities = new Set(Object.values(OldMessageSeverity));
   for (const klass of messageClass.split(/ +/)) {
-    const severity = klass as MessageSeverity;
+    const severity = klass as OldMessageSeverity;
     if (severities.has(severity)) {
-      return messageSeverityToDiagnostic(severity);
+      return oldMessageSeverityToDiagnostic(severity);
     }
   }
   return vscode.DiagnosticSeverity.Information;
 }
 
-function messageSpanToRange(span: MessageSpan): vscode.Range {
+function oldMessageSpanToRange(span: OldMessageSpan): vscode.Range {
   return new vscode.Range(
     new vscode.Position(span.startLine - 1, span.startCol - 1),
     new vscode.Position(span.endLine - 1, span.endCol - 1)
@@ -940,12 +940,12 @@ function makeDiagnosticTags(classes: string[]): vscode.DiagnosticTag[] {
   return tags;
 }
 
-function messageToDiagnostic(message: Message): vscode.Diagnostic {
-  const range = messageSpanToRange(message.span || DEFAULT_MESSAGE_SPAN);
+function oldMessageToDiagnostic(message: OldMessage): vscode.Diagnostic {
+  const range = oldMessageSpanToRange(message.span || DEFAULT_OLD_MESSAGE_SPAN);
 
   let severity = vscode.DiagnosticSeverity.Information;
   if (message.severity) {
-    severity = messageSeverityToDiagnostic(message.severity);
+    severity = oldMessageSeverityToDiagnostic(message.severity);
   } else if (message.messageClass) {
     severity = messageClassToDiagnosticSeverity(message.messageClass);
   }
@@ -1100,7 +1100,7 @@ async function startInterpreter(
         shouldLog = false;
       }
 
-      let message: Message | null = null;
+      let message: OldMessage | null = null;
       try {
         message = JSON.parse(line);
       } catch (error) {
@@ -1119,7 +1119,7 @@ async function startInterpreter(
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
-            if (message.span.file !== DEFAULT_MESSAGE_SPAN.file) {
+            if (message.span.file !== DEFAULT_OLD_MESSAGE_SPAN.file) {
               uri = toAbsoluteUri(rootUri, message.span.file);
             }
           } else {
@@ -1127,7 +1127,7 @@ async function startInterpreter(
           }
 
           if (uri) {
-            const diagnostic = messageToDiagnostic(message);
+            const diagnostic = oldMessageToDiagnostic(message);
             collection.set(uri, (collection.get(uri) || []).concat(diagnostic));
 
             shouldLog = false;
