@@ -165,29 +165,29 @@ const GHC_WARNING_FLAGS: { [k: string]: string } = {
 
 // GHC warnings that should get an "unnecessary" tag.
 const UNNECESSARY_WARNINGS = new Set([
-  "Opt_WarnDuplicateConstraints",
-  "Opt_WarnDuplicateExports",
-  "Opt_WarnRedundantBangPatterns",
-  "Opt_WarnRedundantConstraints",
-  "Opt_WarnRedundantRecordWildcards",
-  "Opt_WarnRedundantStrictnessFlags",
-  "Opt_WarnUnusedDoBind",
-  "Opt_WarnUnusedForalls",
-  "Opt_WarnUnusedImports",
-  "Opt_WarnUnusedLocalBinds",
-  "Opt_WarnUnusedMatches",
-  "Opt_WarnUnusedPackages",
-  "Opt_WarnUnusedPatternBinds",
-  "Opt_WarnUnusedRecordWildcards",
-  "Opt_WarnUnusedTopBinds",
-  "Opt_WarnUnusedTypePatterns",
+  "Opt_WarnDuplicateConstraints", GHC_WARNING_FLAGS['Opt_WarnDuplicateConstraints'],
+  "Opt_WarnDuplicateExports", GHC_WARNING_FLAGS['Opt_WarnDuplicateExports'],
+  "Opt_WarnRedundantBangPatterns", GHC_WARNING_FLAGS['Opt_WarnRedundantBangPatterns'],
+  "Opt_WarnRedundantConstraints", GHC_WARNING_FLAGS['Opt_WarnRedundantConstraints'],
+  "Opt_WarnRedundantRecordWildcards", GHC_WARNING_FLAGS['Opt_WarnRedundantRecordWildcards'],
+  "Opt_WarnRedundantStrictnessFlags", GHC_WARNING_FLAGS['Opt_WarnRedundantStrictnessFlags'],
+  "Opt_WarnUnusedDoBind", GHC_WARNING_FLAGS['Opt_WarnUnusedDoBind'],
+  "Opt_WarnUnusedForalls", GHC_WARNING_FLAGS['Opt_WarnUnusedForalls'],
+  "Opt_WarnUnusedImports", GHC_WARNING_FLAGS['Opt_WarnUnusedImports'],
+  "Opt_WarnUnusedLocalBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedLocalBinds'],
+  "Opt_WarnUnusedMatches", GHC_WARNING_FLAGS['Opt_WarnUnusedMatches'],
+  "Opt_WarnUnusedPackages", GHC_WARNING_FLAGS['Opt_WarnUnusedPackages'],
+  "Opt_WarnUnusedPatternBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedPatternBinds'],
+  "Opt_WarnUnusedRecordWildcards", GHC_WARNING_FLAGS['Opt_WarnUnusedRecordWildcards'],
+  "Opt_WarnUnusedTopBinds", GHC_WARNING_FLAGS['Opt_WarnUnusedTopBinds'],
+  "Opt_WarnUnusedTypePatterns", GHC_WARNING_FLAGS['Opt_WarnUnusedTypePatterns'],
 ]);
 
 // GHC warnings that should get a "deprecated" tag.
 const DEPRECATED_WARNINGS = new Set([
-  "GHC-15328", // WarningWithCategory deprecations
-  "GHC-63394", // WarningWithCategory x-partial
-  "Opt_WarnDeprecatedFlags",
+  "GHC-15328", "deprecations",
+  "GHC-63394", "x-partial",
+  "Opt_WarnDeprecatedFlags", GHC_WARNING_FLAGS['Opt_WarnDeprecatedFlags'],
 ]);
 
 const COMPILING_PATTERN = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
@@ -1194,6 +1194,7 @@ async function startInterpreter(
         assert.ok(lineMatch[4]);
         const uri = toAbsoluteUri(rootUri, lineMatch[4]);
         collection.delete(uri);
+        shouldLog = false;
       }
 
       let message: OldMessage | null = null;
@@ -1212,6 +1213,7 @@ async function startInterpreter(
           assert.ok(match[4]);
           const uri = toAbsoluteUri(rootUri, match[4]);
           collection.delete(uri);
+          shouldLog = false;
         } else {
           let uri: vscode.Uri | null = null;
           if (message.span) {
