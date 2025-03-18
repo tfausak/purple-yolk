@@ -214,7 +214,10 @@ function discoverInterpreterMode(
 
   if (!cabal && stack) {
     // If the user only has Stack available, then use Stack.
-    return InterpreterMode.Stack;
+    if (stackProject) {
+      return InterpreterMode.Stack;
+    }
+    return InterpreterMode.StackNonProject;
   }
 
   if (cabal && stack) {
@@ -278,6 +281,14 @@ async function setInterpreterTemplate(
       );
     }
   }
+
+  if (mode === InterpreterMode.Stack) {
+    const [stackProject] = await vscode.workspace.findFiles("stack.yaml", undefined, 1);
+    if (!stackProject) {
+      mode = InterpreterMode.StackNonProject;
+    }
+  }
+
   log(channel, key, `Actual Haskell interpreter mode is ${mode}`);
 
   switch (mode) {
@@ -286,6 +297,9 @@ async function setInterpreterTemplate(
       break;
     case InterpreterMode.Stack:
       INTERPRETER_TEMPLATE = "stack ghci --ghci-options -ddump-json";
+      break;
+    case InterpreterMode.StackNonProject:
+      INTERPRETER_TEMPLATE = "stack ghci --ghci-options -ddump-json ${file}";
       break;
     case InterpreterMode.Ghci:
       INTERPRETER_TEMPLATE = "ghci -ddump-json ${file}";
