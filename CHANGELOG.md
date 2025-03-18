@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2025-03-17: 1.0.10
+
+- Also publish extension to Open VSX Registry. <https://github.com/tfausak/purple-yolk/pull/102>
+
 ## 2025-03-08: 1.0.9
 
 - Fixed handling of JSON diagnostics from newer versions of GHC using `-fdiagnostics-as-json`. <https://github.com/tfausak/purple-yolk/pull/100>
