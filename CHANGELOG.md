@@ -2,6 +2,10 @@
 
 Purple Yolk uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2025-03-18: 1.1.0
+
+- Added ability to use Stack for non-project workspaces. <https://github.com/tfausak/purple-yolk/pull/105>
+
 ## 2025-03-17: 1.0.10
 
 - Also publish extension to Open VSX Registry. <https://github.com/tfausak/purple-yolk/pull/102>
