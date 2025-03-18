@@ -193,11 +193,11 @@ const DEPRECATED_WARNINGS = new Set([
 const COMPILING_PATTERN = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
 
 function discoverInterpreterMode(
-  cabal: string | undefined,
+  cabal: string | null,
   cabalProject: vscode.Uri | undefined, // cabal.project
   cabalPackage: vscode.Uri | undefined, // *.cabal
-  ghci: string | undefined,
-  stack: string | undefined,
+  ghci: string | null,
+  stack: string | null,
   stackProject: vscode.Uri | undefined, // stack.yaml
   stackPackage: vscode.Uri | undefined // package.yaml
 ): InterpreterMode {
@@ -300,9 +300,9 @@ async function setInterpreterTemplate(
 }
 
 function discoverHaskellFormatterMode(
-  fourmolu: string | undefined,
+  fourmolu: string | null,
   fourmoluConfig: vscode.Uri | undefined,
-  ormolu: string | undefined,
+  ormolu: string | null,
   ormoluConfig: vscode.Uri | undefined
 ): HaskellFormatterMode {
   if (fourmolu && !ormolu) {
@@ -383,7 +383,7 @@ async function setHaskellFormatterTemplate(
 }
 
 function discoverHaskellLinterMode(
-  hlint: string | undefined
+  hlint: string | null
 ): HaskellLinterMode {
   if (hlint) {
     return HaskellLinterMode.Hlint;
@@ -432,8 +432,8 @@ async function setHaskellLinterTemplate(
 }
 
 function discoverCabalFormatterMode(
-  cabalFmt: string | undefined,
-  gild: string | undefined
+  cabalFmt: string | null,
+  gild: string | null
 ): CabalFormatterMode {
   if (gild) {
     return CabalFormatterMode.Gild;
