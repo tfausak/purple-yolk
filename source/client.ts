@@ -214,10 +214,7 @@ function discoverInterpreterMode(
 
   if (!cabal && stack) {
     // If the user only has Stack available, then use Stack.
-    if (stackProject) {
-      return InterpreterMode.Stack;
-    }
-    return InterpreterMode.StackNonProject;
+    return InterpreterMode.Stack;
   }
 
   if (cabal && stack) {
