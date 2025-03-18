@@ -207,21 +207,21 @@
   },
   "description": "A simple IDE for Haskell projects.",
   "devDependencies": {
-    "@tsconfig/node18": "^18.2.4",
+    "@tsconfig/node20": "^20.1.4",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^22.0.0",
-    "@types/vscode": "^1.89.0",
-    "@types/which": "^3.0.3",
-    "@vscode/vsce": "^3.0.0",
-    "esbuild": "^0.25.0",
-    "typescript": "^5.4.5",
-    "vscode-uri": "^3.0.8",
+    "@types/node": "^22.13.10",
+    "@types/vscode": "^1.98.0",
+    "@types/which": "^3.0.4",
+    "@vscode/vsce": "^3.3.0",
+    "esbuild": "^0.25.1",
+    "typescript": "^5.8.2",
+    "vscode-uri": "^3.1.0",
     "which": "^5.0.0"
   },
   "displayName": "Purple Yolk",
   "engines": {
-    "node": "^18.18.2",
-    "vscode": "^1.89.0"
+    "node": "^20.18.2",
+    "vscode": "^1.98.2"
   },
   "homepage": "https://github.com/tfausak/purple-yolk",
   "icon": "data/image/icon.png",
