@@ -39,6 +39,10 @@
         {
           "if": "github.event_name == 'release'",
           "run": "npx vsce publish --packagePath purple-yolk.vsix --pat \"${{ secrets.AZURE_PERSONAL_ACCESS_TOKEN }}\""
+        },
+        {
+          "if": "github.event_name == 'release'",
+          "run": "npx ovsx publish --packagePath purple-yolk.vsix --pat \"${{ secrets.OVSX_PAT }}\""
         }
       ]
     }
