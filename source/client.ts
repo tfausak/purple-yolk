@@ -48,6 +48,8 @@ const DEFAULT_NEW_MESSAGE_SPAN: NewMessageSpan = {
 
 let INTERPRETER: Interpreter | null = null;
 
+let STDOUT_ACCUMULATOR: { lines: string[]; resolve: () => void } | null = null;
+
 let INTERPRETER_TEMPLATE: Template | undefined = undefined;
 
 let HASKELL_FORMATTER_TEMPLATE: Template | undefined = undefined;
@@ -191,6 +193,9 @@ const DEPRECATED_WARNINGS = new Set([
 ]);
 
 const COMPILING_PATTERN = /^\[ *(\d+) of (\d+)\] Compiling ([^ ]+) +\( ([^,]+)/;
+
+const HASKELL_WORD_PATTERN =
+  /[A-Z][A-Za-z0-9_']*(?:\.[A-Z][A-Za-z0-9_']*)*(?:\.[a-z_][A-Za-z0-9_']*)?|[a-z_][A-Za-z0-9_']*|[!#$%&*+./<=>?@\\^|\-~:]+/;
 
 function discoverInterpreterMode(
   cabal: string | null,
@@ -585,6 +590,13 @@ export async function activate(
         formatDocumentRange(languageId, channel, document, range, token),
     });
   });
+
+  context.subscriptions.push(
+    vscode.languages.registerHoverProvider(LanguageId.Haskell, {
+      provideHover: (document, position, token) =>
+        provideHover(channel, document, position, token),
+    })
+  );
 
   await Promise.all([
     setInterpreterTemplate(channel),
@@ -1082,6 +1094,84 @@ async function reloadInterpreter(
   log(channel, key, `Finished reloading in ${elapsed} seconds.`);
 }
 
+async function queryGhci(
+  channel: vscode.OutputChannel,
+  command: string
+): Promise<string[] | null> {
+  const key = newKey();
+  log(channel, key, `Querying GHCi: ${JSON.stringify(command)} ...`);
+
+  if (!INTERPRETER) {
+    log(channel, key, "Error: No interpreter available.");
+    return null;
+  }
+
+  if (INTERPRETER.key) {
+    log(channel, key, `Ignoring because ${INTERPRETER.key} is running.`);
+    return null;
+  }
+
+  INTERPRETER.key = key;
+
+  const lines = await new Promise<string[]>((resolve) => {
+    const accumulator = {
+      lines: [] as string[],
+      resolve: () => resolve(accumulator.lines),
+    };
+    STDOUT_ACCUMULATOR = accumulator;
+    log(channel, key, `[stdin] ${command}`);
+    INTERPRETER!.task.stdin?.write(`${command}\n`);
+  });
+
+  log(channel, key, `Raw output: ${JSON.stringify(lines)}`);
+  return lines;
+}
+
+async function provideHover(
+  channel: vscode.OutputChannel,
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  token: vscode.CancellationToken
+): Promise<vscode.Hover | null> {
+  const key = newKey();
+  log(channel, key, "Providing hover ...");
+
+  const wordRange = document.getWordRangeAtPosition(position, HASKELL_WORD_PATTERN);
+  if (!wordRange) {
+    return null;
+  }
+
+  const word = document.getText(wordRange);
+  if (!word) {
+    return null;
+  }
+
+  // Operators must be parenthesized for :type, identifiers must not.
+  const isOperator = /^[!#$%&*+./<=>?@\\^|\-~:]+$/.test(word);
+  const expr = isOperator ? `(${word})` : word;
+
+  log(channel, key, `Hover word: ${JSON.stringify(word)}, expr: ${JSON.stringify(expr)}`);
+
+  const lines = await queryGhci(channel, `:type ${expr}`);
+
+  if (token.isCancellationRequested || !lines || lines.length === 0) {
+    return null;
+  }
+
+  const result = lines.join("\n");
+
+  // GHCi errors (e.g. "Variable not in scope") come through stdout starting
+  // with "<interactive>:" — suppress these as hover content.
+  if (result.startsWith("<interactive>:")) {
+    log(channel, key, "GHCi returned an error, suppressing hover.");
+    return null;
+  }
+
+  const markdown = new vscode.MarkdownString();
+  markdown.appendCodeblock(result, "haskell");
+  return new vscode.Hover(markdown, wordRange);
+}
+
 // If the given string is an absolute path, then it is returned as a file URI.
 // Otherwise the relative segment is joined with the root URI.
 //
@@ -1194,9 +1284,19 @@ async function startInterpreter(
     readline.createInterface(task.stdout).on("line", (line) => {
       let shouldLog: boolean = true;
 
+      if (STDOUT_ACCUMULATOR && !line.includes(prompt)) {
+        STDOUT_ACCUMULATOR.lines.push(line);
+        return;
+      }
+
       if (line.includes(prompt)) {
         if (INTERPRETER?.key) {
           INTERPRETER.key = null;
+        }
+        if (STDOUT_ACCUMULATOR) {
+          const acc = STDOUT_ACCUMULATOR;
+          STDOUT_ACCUMULATOR = null;
+          acc.resolve();
         }
         resolve();
         updateStatus(status, false, vscode.LanguageStatusSeverity.Information, "Idle");
