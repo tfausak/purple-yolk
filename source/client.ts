@@ -1173,7 +1173,7 @@ async function provideHover(
     const filePath = document.uri.fsPath;
     const moduleName = moduleLines
       .map(line => {
-        const m = line.match(/^(\S+)\s+\(\s*(.+),\s*(interpreted|compiled)/);
+        const m = line.match(/^(\S+)\s*\(\s*(.+?),\s*(interpreted|compiled)/);
         return m && m[1] && m[2] ? { name: m[1], file: m[2].trim() } : null;
       })
       .filter((e): e is { name: string; file: string } => e !== null)
