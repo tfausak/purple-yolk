@@ -1164,10 +1164,34 @@ async function provideHover(
     return null;
   }
 
-  // When we know the module, temporarily set GHCi's context to *Foo so that
-  // :type is evaluated against that module's imports and internal names.
-  // Afterward we restore the context to the full set of interpreted modules
-  // that were loaded before the hover.
+  // :type-at gives the instantiated type at a specific location (e.g. "()"),
+  // while :type gives the general type (e.g. "mempty :: Monoid a => a").
+  // We show both when they differ, so the user sees the full picture.
+
+  // :type-at uses file/line/col directly — no module juggling needed.
+  // Requires :set +c (sent at startup).
+  const filePath = vscode.workspace.asRelativePath(document.uri);
+  const sl = wordRange.start.line + 1;
+  const sc = wordRange.start.character + 1;
+  const el = wordRange.end.line + 1;
+  const ec = wordRange.end.character + 1;
+  const typeAtLines = await queryGhci(
+    channel,
+    `:type-at ${filePath} ${sl} ${sc} ${el} ${ec} ${expr}`
+  );
+
+  if (token.isCancellationRequested) {
+    return null;
+  }
+
+  const typeAtResult =
+    typeAtLines &&
+    typeAtLines.length > 0 &&
+    !typeAtLines.some((l) => l.startsWith("<interactive>:"))
+      ? typeAtLines.join("\n")
+      : null;
+
+  // :type needs module context so it can resolve the name.
   //
   // The file→module map is built lazily and cached; it is invalidated on
   // reload (the only time the set of loaded modules changes).
@@ -1194,35 +1218,42 @@ async function provideHover(
     const moduleName = MODULE_CACHE.fileToModule.get(document.uri.fsPath);
     if (moduleName) {
       restoreCmd = MODULE_CACHE.interpretedModules.length > 0
-        ? `:module ${MODULE_CACHE.interpretedModules.map(m => `*${m}`).join(" ")}`
+        ? `:module ${MODULE_CACHE.interpretedModules.join(" ")}`
         : `:module`;
       log(channel, key, `Setting module context: *${moduleName}`);
       await queryGhci(channel, `:module *${moduleName}`);
     }
   }
 
-  const lines = await queryGhci(channel, `:type ${expr}`);
+  const typeLines = await queryGhci(channel, `:type ${expr}`);
 
   if (restoreCmd) {
     log(channel, key, `Restoring module context: ${restoreCmd}`);
     await queryGhci(channel, restoreCmd);
   }
 
-  if (token.isCancellationRequested || !lines || lines.length === 0) {
+  if (token.isCancellationRequested) {
     return null;
   }
 
-  const result = lines.join("\n");
+  const typeResult =
+    typeLines &&
+    typeLines.length > 0 &&
+    !typeLines.some((l) => l.startsWith("<interactive>:"))
+      ? typeLines.join("\n")
+      : null;
 
-  // GHCi errors (e.g. "Variable not in scope") come through stdout starting
-  // with "<interactive>:" — suppress these as hover content.
-  if (result.startsWith("<interactive>:")) {
-    log(channel, key, "GHCi returned an error, suppressing hover.");
+  if (!typeAtResult && !typeResult) {
     return null;
   }
 
   const markdown = new vscode.MarkdownString();
-  markdown.appendCodeblock(result, "haskell");
+  if (typeAtResult && typeResult && typeAtResult !== typeResult) {
+    markdown.appendCodeblock(typeAtResult, "haskell");
+    markdown.appendCodeblock(typeResult, "haskell");
+  } else {
+    markdown.appendCodeblock(typeResult || typeAtResult!, "haskell");
+  }
   return new vscode.Hover(markdown, wordRange);
 }
 
@@ -1333,6 +1364,9 @@ async function startInterpreter(
   const input = `:set prompt "${prompt}\\n"`;
   log(channel, key, `[stdin] ${input}`);
   task.stdin?.write(`${input}\n`);
+
+  // Enable collecting type/location info so that :type-at works.
+  task.stdin?.write(`:set +c\n`);
 
   await new Promise<void>((resolve) => {
     assert.ok(task.stdout);
