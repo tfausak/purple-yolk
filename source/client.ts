@@ -50,6 +50,13 @@ let INTERPRETER: Interpreter | null = null;
 
 let STDOUT_ACCUMULATOR: { lines: string[]; resolve: () => void } | null = null;
 
+type ModuleCache = {
+  fileToModule: Map<string, string>; // absolute path → module name
+  interpretedModules: string[];      // names of all interpreted modules
+};
+
+let MODULE_CACHE: ModuleCache | null = null;
+
 let INTERPRETER_TEMPLATE: Template | undefined = undefined;
 
 let HASKELL_FORMATTER_TEMPLATE: Template | undefined = undefined;
@@ -1073,6 +1080,7 @@ async function reloadInterpreter(
   }
 
   INTERPRETER.key = key;
+  MODULE_CACHE = null;
 
   updateStatus(status, true, vscode.LanguageStatusSeverity.Information, "Loading");
 
@@ -1160,29 +1168,33 @@ async function provideHover(
   // :type is evaluated against that module's imports and internal names.
   // Afterward we restore the context to the full set of interpreted modules
   // that were loaded before the hover.
-  let restoreCmd: string | null = null;
-  const moduleLines = await queryGhci(channel, ":show modules");
-  if (moduleLines !== null) {
-    const interpretedModules = moduleLines
-      .filter(line => line.includes(", interpreted"))
-      .map(line => line.match(/^(\S+)/)?.[1])
-      .filter((name): name is string => name !== undefined);
-
-    // Look up the module name for this document from GHCi's own file→module
-    // mapping. Each `:show modules` line is: `ModuleName  ( filepath, ... )`.
-    const filePath = document.uri.fsPath;
-    const moduleName = moduleLines
-      .map(line => {
+  //
+  // The file→module map is built lazily and cached; it is invalidated on
+  // reload (the only time the set of loaded modules changes).
+  if (MODULE_CACHE === null) {
+    const moduleLines = await queryGhci(channel, ":show modules");
+    if (moduleLines !== null) {
+      const fileToModule = new Map<string, string>();
+      const interpretedModules: string[] = [];
+      for (const line of moduleLines) {
         const m = line.match(/^(\S+)\s*\(\s*(.+?),\s*(interpreted|compiled)/);
-        return m && m[1] && m[2] ? { name: m[1], file: m[2].trim() } : null;
-      })
-      .filter((e): e is { name: string; file: string } => e !== null)
-      .find(e => path.resolve(e.file) === filePath)
-      ?.name;
+        if (m && m[1] && m[2]) {
+          fileToModule.set(path.resolve(m[2].trim()), m[1]);
+          if (m[3] === "interpreted") {
+            interpretedModules.push(m[1]);
+          }
+        }
+      }
+      MODULE_CACHE = { fileToModule, interpretedModules };
+    }
+  }
 
+  let restoreCmd: string | null = null;
+  if (MODULE_CACHE !== null) {
+    const moduleName = MODULE_CACHE.fileToModule.get(document.uri.fsPath);
     if (moduleName) {
-      restoreCmd = interpretedModules.length > 0
-        ? `:module ${interpretedModules.map(m => `*${m}`).join(" ")}`
+      restoreCmd = MODULE_CACHE.interpretedModules.length > 0
+        ? `:module ${MODULE_CACHE.interpretedModules.map(m => `*${m}`).join(" ")}`
         : `:module`;
       log(channel, key, `Setting module context: *${moduleName}`);
       await queryGhci(channel, `:module *${moduleName}`);
@@ -1256,6 +1268,7 @@ async function startInterpreter(
     log(channel, key, `Stopping interpreter ${INTERPRETER.task.pid} ...`);
     INTERPRETER.task.kill();
     INTERPRETER = null;
+    MODULE_CACHE = null;
     collection.clear();
   }
 
