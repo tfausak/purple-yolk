@@ -1152,7 +1152,49 @@ async function provideHover(
 
   log(channel, key, `Hover word: ${JSON.stringify(word)}, expr: ${JSON.stringify(expr)}`);
 
+  if (token.isCancellationRequested) {
+    return null;
+  }
+
+  // When we know the module, temporarily set GHCi's context to *Foo so that
+  // :type is evaluated against that module's imports and internal names.
+  // Afterward we restore the context to the full set of interpreted modules
+  // that were loaded before the hover.
+  let restoreCmd: string | null = null;
+  const moduleLines = await queryGhci(channel, ":show modules");
+  if (moduleLines !== null) {
+    const interpretedModules = moduleLines
+      .filter(line => line.includes(", interpreted"))
+      .map(line => line.match(/^(\S+)/)?.[1])
+      .filter((name): name is string => name !== undefined);
+
+    // Look up the module name for this document from GHCi's own file→module
+    // mapping. Each `:show modules` line is: `ModuleName  ( filepath, ... )`.
+    const filePath = document.uri.fsPath;
+    const moduleName = moduleLines
+      .map(line => {
+        const m = line.match(/^(\S+)\s+\(\s*(.+),\s*(interpreted|compiled)/);
+        return m && m[1] && m[2] ? { name: m[1], file: m[2].trim() } : null;
+      })
+      .filter((e): e is { name: string; file: string } => e !== null)
+      .find(e => path.resolve(e.file) === filePath)
+      ?.name;
+
+    if (moduleName) {
+      restoreCmd = interpretedModules.length > 0
+        ? `:module ${interpretedModules.map(m => `*${m}`).join(" ")}`
+        : `:module`;
+      log(channel, key, `Setting module context: *${moduleName}`);
+      await queryGhci(channel, `:module *${moduleName}`);
+    }
+  }
+
   const lines = await queryGhci(channel, `:type ${expr}`);
+
+  if (restoreCmd) {
+    log(channel, key, `Restoring module context: ${restoreCmd}`);
+    await queryGhci(channel, restoreCmd);
+  }
 
   if (token.isCancellationRequested || !lines || lines.length === 0) {
     return null;
