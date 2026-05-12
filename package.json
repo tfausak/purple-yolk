@@ -216,7 +216,7 @@
     "esbuild": "^0.28.0",
     "typescript": "^6.0.2",
     "vscode-uri": "^3.1.0",
-    "which": "^6.0.1"
+    "which": "^7.0.0"
   },
   "displayName": "Purple Yolk",
   "engines": {
