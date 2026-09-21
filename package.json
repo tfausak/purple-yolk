@@ -212,7 +212,7 @@
     "@types/node": "^26.0.1",
     "@types/vscode": "^1.109.0",
     "@types/which": "^3.0.4",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.28.0",
     "typescript": "^7.0.2",
     "vscode-uri": "^3.1.0",
